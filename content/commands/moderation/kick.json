@@ -1,0 +1,56 @@
+{
+  "slug": "kick",
+  "name": "kick",
+  "title": "Исключение с сервера",
+  "category": "moderation",
+  "description": "Выгоняет участника с сервера",
+  "type": "slash",
+  "required_module": "moderation",
+  "required_permissions": 2,
+  "default_member_permissions": "2",
+  "required_intents": [
+    "GUILD_MEMBERS"
+  ],
+  "options": [
+    {
+      "name": "user",
+      "description": "Кого исключить",
+      "type": 6,
+      "required": true
+    },
+    {
+      "name": "reason",
+      "description": "Причина кика",
+      "type": 3,
+      "required": false
+    }
+  ],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /kick",
+      "description": "Выгоняет участника с сервера",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "kick"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /kick.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

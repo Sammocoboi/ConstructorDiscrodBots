@@ -1,0 +1,41 @@
+{
+  "slug": "work",
+  "name": "work",
+  "title": "Пойти на работу",
+  "category": "economy",
+  "description": "Выполнить разовую работу и получить честную зарплату",
+  "type": "slash",
+  "required_module": "economy",
+  "cooldown": {
+    "type": "user",
+    "seconds": 3600
+  },
+  "options": [],
+  "required_permissions": 0,
+  "required_intents": [],
+  "default_member_permissions": null,
+  "preview": {
+    "embed": {
+      "title": "Команда /work",
+      "description": "Выполнить разовую работу и получить честную зарплату",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "work"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /work.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "slug": "embed",
+  "name": "embed",
+  "title": "Отправить красивый Embed",
+  "category": "utility",
+  "description": "Отправляет форматированное сообщение-карточку в текущий канал",
+  "type": "slash",
+  "required_permissions": 8192,
+  "default_member_permissions": "8192",
+  "options": [
+    {
+      "name": "title",
+      "description": "Заголовок эмбеда",
+      "type": 3,
+      "required": true
+    },
+    {
+      "name": "description",
+      "description": "Текст сообщения",
+      "type": 3,
+      "required": true
+    },
+    {
+      "name": "color",
+      "description": "HEX-цвет (например #5865F2)",
+      "type": 3,
+      "required": false
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /embed",
+      "description": "Отправляет форматированное сообщение-карточку в текущий канал",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "embed"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /embed.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

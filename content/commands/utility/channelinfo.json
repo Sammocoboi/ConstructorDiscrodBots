@@ -1,0 +1,47 @@
+{
+  "slug": "channelinfo",
+  "name": "channelinfo",
+  "title": "Информация о канале",
+  "category": "utility",
+  "description": "Отображает тип, ID и тему канала",
+  "type": "slash",
+  "options": [
+    {
+      "name": "channel",
+      "description": "Канал",
+      "type": 7,
+      "required": false
+    }
+  ],
+  "required_permissions": 0,
+  "required_intents": [],
+  "default_member_permissions": null,
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /channelinfo",
+      "description": "Отображает тип, ID и тему канала",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "channelinfo"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /channelinfo.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

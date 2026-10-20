@@ -1,0 +1,48 @@
+{
+  "slug": "xpboost",
+  "name": "xpboost",
+  "title": "Множитель опыта",
+  "category": "levels",
+  "description": "Включает глобальный буст опыта на определенное время",
+  "type": "slash",
+  "required_module": "levels",
+  "required_permissions": 8,
+  "default_member_permissions": "8",
+  "options": [
+    {
+      "name": "multiplier",
+      "description": "Множитель (например 2 для x2)",
+      "type": 4,
+      "required": true
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /xpboost",
+      "description": "Включает глобальный буст опыта на определенное время",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "xpboost"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /xpboost.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "slug": "counting",
+  "name": "counting",
+  "title": "Игра в счёт",
+  "category": "automation",
+  "description": "Включает в канале режим счета по порядку (1, 2, 3...)",
+  "type": "slash",
+  "required_module": "automation",
+  "required_permissions": 16,
+  "default_member_permissions": "16",
+  "options": [],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /counting",
+      "description": "Включает в канале режим счета по порядку (1, 2, 3...)",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "counting"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /counting.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

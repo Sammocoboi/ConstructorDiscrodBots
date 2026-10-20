@@ -1,0 +1,41 @@
+{
+  "slug": "colorrole",
+  "name": "colorrole",
+  "title": "Выбрать цвет ника",
+  "category": "roles",
+  "description": "Позволяет пользователю выбрать цвет своего ника из доступных",
+  "type": "slash",
+  "required_module": "roles",
+  "options": [],
+  "required_permissions": 0,
+  "required_intents": [],
+  "default_member_permissions": null,
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /colorrole",
+      "description": "Позволяет пользователю выбрать цвет своего ника из доступных",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "colorrole"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /colorrole.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

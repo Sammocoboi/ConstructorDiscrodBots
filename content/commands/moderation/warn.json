@@ -1,0 +1,54 @@
+{
+  "slug": "warn",
+  "name": "warn",
+  "title": "Выдать предупреждение",
+  "category": "moderation",
+  "description": "Выдает официальный варн участнику с записью в журнал",
+  "type": "slash",
+  "required_module": "moderation",
+  "required_permissions": 8192,
+  "default_member_permissions": "8192",
+  "options": [
+    {
+      "name": "user",
+      "description": "Кому выдать варн",
+      "type": 6,
+      "required": true
+    },
+    {
+      "name": "reason",
+      "description": "Причина варна",
+      "type": 3,
+      "required": true
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /warn",
+      "description": "Выдает официальный варн участнику с записью в журнал",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "warn"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /warn.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

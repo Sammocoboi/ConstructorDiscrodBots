@@ -1,0 +1,40 @@
+{
+  "slug": "serverinfo",
+  "name": "serverinfo",
+  "title": "Информация о сервере",
+  "category": "utility",
+  "description": "Показывает детальную статистику сервера",
+  "type": "slash",
+  "options": [],
+  "required_permissions": 0,
+  "required_intents": [],
+  "default_member_permissions": null,
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /serverinfo",
+      "description": "Показывает детальную статистику сервера",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "serverinfo"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /serverinfo.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}
