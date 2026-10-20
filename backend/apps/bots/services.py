@@ -1,7 +1,3 @@
-"""
-Бизнес-логика управления ботами, проверка токенов, синхронизация команд и обработка 401.
-Соответствие ТЗ §4.2, §4.5, §4.8, §4.10 и задачам SAN-1, SAN-2, SAN-3, SAN-4, SAN-9.
-"""
 
 import hashlib
 import json
@@ -25,18 +21,15 @@ from backend.integrations.discord.permissions import (
 
 logger = logging.getLogger(__name__)
 
-# Тарифные лимиты количества ботов (ТЗ §4.10)
 PLAN_BOT_LIMITS = {
     "free": 1,
     "pro": 5,
     "business": 20,
 }
 
-
 class BotService:
     @staticmethod
     def check_bot_limit(owner_id: str, plan_name: str = "free") -> None:
-        """Проверяет лимит ботов на аккаунте по тарифу."""
         limit = PLAN_BOT_LIMITS.get(plan_name.lower(), 1)
         active_count = Bot.objects.filter(owner_id=owner_id, deleted_at__isnull=True).count()
         if active_count >= limit:
@@ -47,10 +40,6 @@ class BotService:
 
     @staticmethod
     def validate_discord_token(plain_token: str) -> Dict[str, Any]:
-        """
-        Проверяет токен бота через официальный запрос к Discord API GET /users/@me (SAN-2).
-        Возвращает данные о приложении и боте.
-        """
         if not plain_token or len(plain_token.strip()) < 20:
             raise ValidationError("Токен бота имеет некорректный формат")
 
@@ -81,9 +70,6 @@ class BotService:
 
     @staticmethod
     def update_bot_token(bot: Bot, new_plain_token: str, user_email: Optional[str] = None) -> Bot:
-        """
-        Замена токена бота без потери настроек и сценариев (SAN-3).
-        """
         validated = BotService.validate_discord_token(new_plain_token)
         bot.set_token(new_plain_token.strip())
         bot.discord_application_id = validated["id"]
@@ -93,7 +79,6 @@ class BotService:
         bot.discriminator = validated["discriminator"]
         bot.last_error = None
         bot.last_error_at = None
-        # Если бот был в ошибке из-за старого токена, возвращаем статус stopped
         if bot.status == BotStatus.ERROR:
             bot.status = BotStatus.STOPPED
         bot.save()
@@ -101,10 +86,6 @@ class BotService:
 
     @staticmethod
     def handle_unauthorized_token(bot: Bot, user_email: Optional[str] = None) -> None:
-        """
-        Автоматическая остановка бота при получении Discord 401 (SAN-3).
-        Фиксирует ошибку и отправляет пользователю уведомление на email.
-        """
         logger.warning("Остановка бота %s (%s) из-за Discord 401 Unauthorized", bot.name, bot.id)
         bot.status = BotStatus.ERROR
         bot.desired_state = DesiredState.STOPPED
@@ -112,7 +93,6 @@ class BotService:
         bot.last_error_at = timezone.now()
         bot.save()
 
-        # Отправляем email-оповещение
         target_email = user_email or f"{bot.owner_id}@example.com"
         NotificationService.send_bot_token_invalid_alert(
             to_email=target_email,
@@ -124,10 +104,6 @@ class BotService:
 
     @staticmethod
     def get_bot_client(bot: Bot, user_email: Optional[str] = None) -> DiscordRestClient:
-        """
-        Возвращает настроенный клиент Discord REST с привязанным callback
-        для обработки 401 Unauthorized.
-        """
         plain_token = bot.get_token()
         if not plain_token:
             raise ValidationError("У бота не задан токен авторизации Discord")
@@ -139,18 +115,12 @@ class BotService:
 
     @staticmethod
     def get_invite_url(bot: Bot, guild_id: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Рассчитывает permissions integer на основе включенных модулей
-        и генерирует ссылку-приглашение (SAN-4).
-        """
         client_id = bot.discord_application_id or str(bot.id)
         
-        # Собираем все включенные модули по всем серверам бота
         enabled_modules: set = set()
         for guild in bot.guilds.all():
             enabled_modules.update(guild.enabled_modules or [])
         
-        # Если серверов еще нет, берем базовые модули ядра
         if not enabled_modules:
             enabled_modules = {"core", "welcomes", "moderation"}
 
@@ -175,15 +145,9 @@ class BotService:
         force: bool = False,
         user_email: Optional[str] = None
     ) -> Dict[str, Any]:
-        """
-        Синхронизация слэш-команд проекта с Discord API (SAN-9, FR-4.5).
-        Включает bulk overwrite, хеш-сравнение для защиты от лишних запросов
-        и поддержку мгновенной регистрации на тестовой гильдии.
-        """
         if not bot.discord_application_id:
             raise ValidationError("У бота отсутствует discord_application_id. Сначала подключите токен бота.")
 
-        # Вычисляем детерминированный SHA256 хеш от нормализованного списка команд
         dumped = json.dumps(commands_list, sort_keys=True, ensure_ascii=False)
         current_hash = hashlib.sha256(dumped.encode("utf-8")).hexdigest()
 
@@ -197,7 +161,6 @@ class BotService:
 
         client = BotService.get_bot_client(bot, user_email)
 
-        # Регистрация на тестовой гильдии (применяется мгновенно)
         if test_guild_id:
             registered = client.bulk_overwrite_guild_commands(
                 application_id=bot.discord_application_id,
@@ -206,7 +169,6 @@ class BotService:
             )
             mode = f"guild:{test_guild_id}"
         else:
-            # Глобальная публикация
             registered = client.bulk_overwrite_global_commands(
                 application_id=bot.discord_application_id,
                 commands=commands_list

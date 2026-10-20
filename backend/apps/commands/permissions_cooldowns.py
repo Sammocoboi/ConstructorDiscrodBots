@@ -1,16 +1,8 @@
-"""
-Управление правами доступа, кулдаунами и лимитами команд.
-Соответствие ТЗ §4.4 (FR-4.6) и задаче SAN-10.
-"""
 
 import time
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-
 class CommandAccessRule:
-    """
-    Правила доступа к команде по ролям, каналам и пользователям.
-    """
 
     def __init__(
         self,
@@ -39,34 +31,24 @@ class CommandAccessRule:
         channel_id: str,
         user_permissions_int: int = 0
     ) -> Tuple[bool, Optional[str]]:
-        """
-        Проверяет, разрешено ли выполнение команды в данном контексте.
-        Возвращает (is_allowed, error_message).
-        """
-        # 1. Проверка черного списка пользователей
         if user_id in self.denied_users:
             return False, self.no_permission_message
 
-        # 2. Проверка белого списка пользователей (если задан)
         if self.allowed_users and user_id not in self.allowed_users:
             return False, self.no_permission_message
 
-        # 3. Проверка каналов
         if channel_id in self.denied_channels:
             return False, "Команда отключена в этом канале."
         if self.allowed_channels and channel_id not in self.allowed_channels:
             return False, "Команду можно использовать только в разрешенных каналах."
 
-        # 4. Проверка черного списка ролей
         user_role_set = set(user_roles)
         if self.denied_roles.intersection(user_role_set):
             return False, self.no_permission_message
 
-        # 5. Проверка белого списка ролей (если задан)
         if self.allowed_roles and not self.allowed_roles.intersection(user_role_set):
             return False, self.no_permission_message
 
-        # 6. Проверка default_member_permissions Discord
         if self.default_member_permissions:
             try:
                 required = int(self.default_member_permissions)
@@ -89,36 +71,25 @@ class CommandAccessRule:
             "no_permission_message": self.no_permission_message,
         }
 
-
 class CommandCooldownTracker:
-    """
-    Трекер кулдаунов и лимитов использований команды
-    по пользователю, каналу или гильдии (FR-4.6).
-    """
 
     def __init__(self):
-        # ключ: (scope, identifier, command_slug) -> список временных меток [timestamp, ...]
         self._history: Dict[Tuple[str, str, str], List[float]] = {}
 
     def check_and_update(
         self,
         command_slug: str,
-        scope: str,  # "user", "channel", "guild"
+        scope: str,
         identifier: str,
         cooldown_seconds: int = 5,
         max_uses: int = 1,
         window_seconds: Optional[int] = None
     ) -> Tuple[bool, float]:
-        """
-        Проверяет кулдаун.
-        Возвращает (is_available, seconds_remaining).
-        """
         now = time.time()
         window = window_seconds if window_seconds is not None else cooldown_seconds
         key = (scope, identifier, command_slug)
 
         timestamps = self._history.get(key, [])
-        # Очищаем устаревшие метки за пределами окна
         valid_timestamps = [t for t in timestamps if now - t < window]
 
         if len(valid_timestamps) >= max_uses:
@@ -127,7 +98,6 @@ class CommandCooldownTracker:
             self._history[key] = valid_timestamps
             return False, max(0.1, remaining)
 
-        # Разрешено: добавляем текущую отметку
         valid_timestamps.append(now)
         self._history[key] = valid_timestamps
         return True, 0.0
@@ -135,6 +105,5 @@ class CommandCooldownTracker:
     def reset(self, command_slug: str, scope: str, identifier: str) -> None:
         key = (scope, identifier, command_slug)
         self._history.pop(key, None)
-
 
 default_cooldown_tracker = CommandCooldownTracker()

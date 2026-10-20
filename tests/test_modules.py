@@ -1,13 +1,9 @@
-"""
-Тесты модулей, JSON Schema настроек и проверки прав (SAN-7).
-"""
 
 import pytest
 from rest_framework.test import APIClient
 from rest_framework import status
 from backend.apps.bots.models import Bot, BotGuild
 from backend.apps.modules.registry import ModuleRegistry
-
 
 def test_modules_registry_contains_all_core_modules():
     modules = ModuleRegistry.list_all()
@@ -24,25 +20,20 @@ def test_modules_registry_contains_all_core_modules():
     assert "automation" in slugs
     assert "giveaways" in slugs
 
-
 def test_validate_module_settings_json_schema():
-    # Валидные настройки welcomes
     valid_settings = {
         "welcome_channel_id": "123456789",
         "welcome_message": "Привет!",
         "welcome_embed": True,
         "autorole_id": None
     }
-    # Не должно выбрасывать исключений
     ModuleRegistry.validate_settings("welcomes", valid_settings)
 
-    # Невалидные настройки (некорректный тип welcome_embed: строка вместо bool)
     invalid_settings = {
         "welcome_embed": "not_a_boolean"
     }
     with pytest.raises(Exception):
         ModuleRegistry.validate_settings("welcomes", invalid_settings)
-
 
 @pytest.mark.django_db
 def test_bot_module_enable_and_settings_update():
@@ -67,7 +58,6 @@ def test_bot_module_enable_and_settings_update():
     assert resp.data["enabled"] is True
     assert resp.data["validation"]["valid"] is True
 
-    # Проверяем сохранение в BotGuild
     guild = BotGuild.objects.get(bot=bot, guild_id="999111222")
     assert "welcomes" in guild.enabled_modules
     assert guild.settings["welcomes"]["welcome_channel_id"] == "555666777"

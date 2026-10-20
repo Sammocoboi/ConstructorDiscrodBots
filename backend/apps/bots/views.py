@@ -1,7 +1,3 @@
-"""
-API views для управления ботами, токенами, гильдиями и командами.
-Соответствие ТЗ §8.2 и задачам SAN-1, SAN-2, SAN-3, SAN-4, SAN-6, SAN-9.
-"""
 
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -23,12 +19,7 @@ from backend.apps.bots.serializers import (
 from backend.apps.bots.services import BotService
 from backend.integrations.discord.cache import default_discord_cache
 
-
 class BotViewSet(viewsets.ModelViewSet):
-    """
-    CRUD и управление жизненным циклом бота:
-    /api/v1/bots/
-    """
     queryset = Bot.objects.filter(deleted_at__isnull=True)
     serializer_class = BotSerializer
 
@@ -49,13 +40,10 @@ class BotViewSet(viewsets.ModelViewSet):
         return Response(BotSerializer(bot).data, status=status.HTTP_201_CREATED)
 
     def perform_destroy(self, instance):
-        # Мягкое удаление (ТЗ §4.1)
         instance.deleted_at = timezone.now()
         instance.desired_state = DesiredState.STOPPED
         instance.status = BotStatus.STOPPED
         instance.save()
-
-    # --- Управление жизненным циклом (SAN-1, FR-9.1) ---
 
     @action(detail=True, methods=["post"])
     def start(self, request, pk=None):
@@ -91,8 +79,6 @@ class BotViewSet(viewsets.ModelViewSet):
         bot.save(update_fields=["desired_state", "status"])
         return Response({"status": "restarting", "desired_state": "running", "bot_id": str(bot.id)})
 
-    # --- Мастер подключения и токен (SAN-2, SAN-3) ---
-
     @action(detail=True, methods=["post"], url_path="token/validate")
     def validate_token(self, request, pk=None):
         bot = self.get_object()
@@ -104,7 +90,6 @@ class BotViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="validate-token")
     def standalone_validate_token(self, request):
-        """Валидация токена до создания бота в мастере (Шаг 3)."""
         serializer = BotTokenValidateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         raw_token = serializer.validated_data["token"]
@@ -120,16 +105,12 @@ class BotViewSet(viewsets.ModelViewSet):
         bot = BotService.update_bot_token(bot, raw_token)
         return Response(BotSerializer(bot).data)
 
-    # --- Invite URL и права (SAN-4) ---
-
     @action(detail=True, methods=["get"], url_path="invite-url")
     def invite_url(self, request, pk=None):
         bot = self.get_object()
         guild_id = request.query_params.get("guild_id")
         result = BotService.get_invite_url(bot, guild_id=guild_id)
         return Response(result)
-
-    # --- Синхронизация слэш-команд (SAN-9) ---
 
     @action(detail=True, methods=["post"], url_path="commands/sync")
     def sync_commands(self, request, pk=None):
@@ -149,12 +130,7 @@ class BotViewSet(viewsets.ModelViewSet):
         )
         return Response(result)
 
-
 class BotGuildViewSet(viewsets.ModelViewSet):
-    """
-    Управление серверами бота и получение метаданных Discord (SAN-6):
-    /api/v1/bots/{bot_id}/guilds/
-    """
     serializer_class = BotGuildSerializer
 
     def get_queryset(self):
@@ -222,27 +198,19 @@ class BotGuildViewSet(viewsets.ModelViewSet):
         bot_guild.save()
         return Response(BotGuildSerializer(bot_guild).data)
 
-
 class UserDiscordGuildsView(APIView):
-    """
-    Эндпоинт GET /api/v1/me/discord-guilds (SAN-6, FR-4.8).
-    Возвращает список серверов Discord текущего пользователя с правами MANAGE_GUILD.
-    """
     def get(self, request):
         user_oauth_token = request.headers.get("X-Discord-User-Token") or request.query_params.get("oauth_token")
         
-        # Если передан реальный OAuth токен
         if user_oauth_token:
             client = DiscordRestClient()
             raw_guilds = client.get_user_guilds(user_oauth_token)
-            # Фильтруем по праву MANAGE_GUILD (0x20) или OWNER
             result = []
             for g in raw_guilds:
                 perms = int(g.get("permissions", 0))
                 is_owner = g.get("owner", False)
                 can_manage = is_owner or bool(perms & 0x00000020) or bool(perms & 0x00000008)
                 if can_manage:
-                    # Проверяем, добавлен ли уже какой-либо бот на этот сервер
                     has_bot = BotGuild.objects.filter(guild_id=g["id"]).exists()
                     result.append({
                         "id": g["id"],
@@ -253,7 +221,6 @@ class UserDiscordGuildsView(APIView):
                     })
             return Response(result)
 
-        # Демо / мок ответ для локальной разработки
         return Response([
             {
                 "id": "111222333444555666",

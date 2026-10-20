@@ -1,9 +1,3 @@
-"""
-Discord REST API v10 Client.
-Соответствие ТЗ §4.2, §4.5, §8.1, §9.1 и задачам SAN-2, SAN-5, SAN-6, SAN-9.
-Поддерживает rate limiting, автоматический retry при 429 с учетом Retry-After,
-обработку 401 Unauthorized с вызовом обработчика остановки бота.
-"""
 
 import time
 import json
@@ -14,7 +8,6 @@ from urllib.parse import urljoin
 
 logger = logging.getLogger(__name__)
 
-
 class DiscordAPIError(Exception):
     def __init__(self, status_code: int, message: str, response_data: Optional[Dict[str, Any]] = None):
         super().__init__(f"Discord API error {status_code}: {message}")
@@ -22,31 +15,19 @@ class DiscordAPIError(Exception):
         self.message = message
         self.response_data = response_data or {}
 
-
 class DiscordUnauthorizedError(DiscordAPIError):
-    """Вызывается при получении HTTP 401 (неверный или отозванный токен бота)."""
     pass
-
 
 class DiscordForbiddenError(DiscordAPIError):
-    """Вызывается при получении HTTP 403 (недостаточно прав бота в Discord)."""
     pass
-
 
 class DiscordNotFoundError(DiscordAPIError):
-    """Вызывается при получении HTTP 404 (гильдия, канал или сущность не найдена)."""
     pass
-
 
 class DiscordRateLimitError(DiscordAPIError):
-    """Вызывается при превышении лимита повторов при 429."""
     pass
 
-
 class DiscordRestClient:
-    """
-    Клиент для взаимодействия с официальным Discord REST API v10.
-    """
 
     BASE_URL = "https://discord.com/api/v10/"
 
@@ -83,10 +64,6 @@ class DiscordRestClient:
         custom_token: Optional[str] = None,
         is_bearer: bool = False
     ) -> Any:
-        """
-        Выполняет HTTP-запрос к Discord REST API v10 с обработкой
-        rate limiting, 429 Retry-After, 401, 403, 404.
-        """
         url = urljoin(self.BASE_URL, endpoint.lstrip("/"))
         headers = self._get_headers(custom_token, is_bearer)
 
@@ -101,7 +78,6 @@ class DiscordRestClient:
                     timeout=10
                 )
 
-                # 1. Проверка на Rate Limit (HTTP 429)
                 if response.status_code == 429:
                     retry_after = 1.0
                     try:
@@ -123,7 +99,6 @@ class DiscordRestClient:
                     else:
                         raise DiscordRateLimitError(429, f"Превышен лимит запросов Discord, retry_after={retry_after}")
 
-                # 2. Проверка на 401 Unauthorized
                 if response.status_code == 401:
                     logger.error("Discord 401 Unauthorized для токена на эндпоинте %s", endpoint)
                     if self.on_unauthorized_callback:
@@ -133,17 +108,14 @@ class DiscordRestClient:
                             logger.exception("Ошибка в callback on_unauthorized: %s", cb_err)
                     raise DiscordUnauthorizedError(401, "Неверный или отозванный токен бота (Discord 401)")
 
-                # 3. Проверка на 403 Forbidden
                 if response.status_code == 403:
                     data = response.json() if response.content else {}
                     raise DiscordForbiddenError(403, data.get("message", "Доступ запрещен (Discord 403)"), data)
 
-                # 4. Проверка на 404 Not Found
                 if response.status_code == 404:
                     data = response.json() if response.content else {}
                     raise DiscordNotFoundError(404, data.get("message", "Ресурс не найден (Discord 404)"), data)
 
-                # 5. Другие ошибки (5xx, 4xx)
                 if not response.ok:
                     data = {}
                     try:
@@ -152,7 +124,6 @@ class DiscordRestClient:
                         pass
                     raise DiscordAPIError(response.status_code, data.get("message", response.text), data)
 
-                # Успешный ответ
                 if response.status_code == 204 or not response.content:
                     return None
                 return response.json()
@@ -165,22 +136,13 @@ class DiscordRestClient:
 
         raise DiscordAPIError(0, "Не удалось выполнить запрос к Discord API после всех попыток")
 
-    # --- Методы для работы с ботом (SAN-2) ---
-
     def get_current_bot_user(self) -> Dict[str, Any]:
-        """
-        Проверка токена через запрос GET /users/@me.
-        Возвращает информацию о боте (id, username, avatar, bot=True).
-        """
         data = self.request("GET", "users/@me")
         if not data.get("bot", False):
             raise DiscordAPIError(400, "Указанный токен принадлежит обычному пользователю, а не Discord-боту!")
         return data
 
     def modify_current_bot_user(self, username: Optional[str] = None, avatar_base64: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Изменение имени или аватара бота через PATCH /users/@me (FR-2.3).
-        """
         payload = {}
         if username:
             payload["username"] = username
@@ -188,35 +150,22 @@ class DiscordRestClient:
             payload["avatar"] = avatar_base64
         return self.request("PATCH", "users/@me", json_data=payload)
 
-    # --- Методы для работы с гильдиями (SAN-6) ---
-
     def get_guild(self, guild_id: str, with_counts: bool = True) -> Dict[str, Any]:
-        """Получение информации о гильдии: GET /guilds/{guild_id}"""
         return self.request("GET", f"guilds/{guild_id}", params={"with_counts": with_counts})
 
     def get_guild_channels(self, guild_id: str) -> List[Dict[str, Any]]:
-        """Список текстовых, голосовых и категорий каналов: GET /guilds/{guild_id}/channels"""
         return self.request("GET", f"guilds/{guild_id}/channels")
 
     def get_guild_roles(self, guild_id: str) -> List[Dict[str, Any]]:
-        """Список ролей гильдии с правами и позициями: GET /guilds/{guild_id}/roles"""
         return self.request("GET", f"guilds/{guild_id}/roles")
 
     def get_guild_emojis(self, guild_id: str) -> List[Dict[str, Any]]:
-        """Список кастомных эмодзи гильдии: GET /guilds/{guild_id}/emojis"""
         return self.request("GET", f"guilds/{guild_id}/emojis")
 
     def get_guild_member(self, guild_id: str, user_id: str) -> Dict[str, Any]:
-        """Получение участника гильдии: GET /guilds/{guild_id}/members/{user_id}"""
         return self.request("GET", f"guilds/{guild_id}/members/{user_id}")
 
-    # --- Методы для пользователя (OAuth) ---
-
     def get_user_guilds(self, user_oauth_token: str) -> List[Dict[str, Any]]:
-        """
-        Список гильдий пользователя через OAuth2 Bearer токен:
-        GET /users/@me/guilds
-        """
         return self.request(
             "GET",
             "users/@me/guilds",
@@ -224,13 +173,7 @@ class DiscordRestClient:
             is_bearer=True
         )
 
-    # --- Синхронизация слэш-команд (SAN-9, FR-4.5) ---
-
     def bulk_overwrite_global_commands(self, application_id: str, commands: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Глобальная регистрация слэш-команд:
-        PUT /applications/{application_id}/commands
-        """
         return self.request(
             "PUT",
             f"applications/{application_id}/commands",
@@ -240,10 +183,6 @@ class DiscordRestClient:
     def bulk_overwrite_guild_commands(
         self, application_id: str, guild_id: str, commands: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """
-        Регистрация слэш-команд на тестовом сервере (мгновенное применение):
-        PUT /applications/{application_id}/guilds/{guild_id}/commands
-        """
         return self.request(
             "PUT",
             f"applications/{application_id}/guilds/{guild_id}/commands",

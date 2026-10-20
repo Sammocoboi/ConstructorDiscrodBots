@@ -1,6 +1,3 @@
-"""
-Тесты клиента Discord REST API с моками (SAN-5, SAN-13).
-"""
 
 import pytest
 from unittest.mock import MagicMock, patch
@@ -12,7 +9,6 @@ from backend.integrations.discord.client import (
     DiscordRateLimitError,
     DiscordAPIError,
 )
-
 
 def test_get_current_bot_user_success():
     client = DiscordRestClient(bot_token="test_token")
@@ -34,7 +30,6 @@ def test_get_current_bot_user_success():
         assert user["username"] == "MyCoolBot"
         assert user["bot"] is True
 
-
 def test_client_handles_401_unauthorized_with_callback():
     callback_called = False
 
@@ -54,18 +49,15 @@ def test_client_handles_401_unauthorized_with_callback():
 
     assert callback_called is True
 
-
 def test_client_handles_429_rate_limit_and_retries():
     client = DiscordRestClient(bot_token="test_token", max_retries=2)
 
-    # Первый ответ: 429 с retry_after = 0.01
     mock_429 = MagicMock()
     mock_429.ok = False
     mock_429.status_code = 429
     mock_429.headers = {"Retry-After": "0.01"}
     mock_429.json.return_value = {"retry_after": 0.01, "message": "You are being rate limited."}
 
-    # Второй ответ: 200 OK
     mock_200 = MagicMock()
     mock_200.ok = True
     mock_200.status_code = 200

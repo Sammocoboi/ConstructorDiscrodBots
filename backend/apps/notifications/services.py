@@ -1,7 +1,3 @@
-"""
-Сервис уведомлений и отправки системных email.
-Соответствие ТЗ §4.12 (FR-4.12) и задаче SAN-11.
-"""
 
 import logging
 from typing import Any, Dict, List, Optional
@@ -10,7 +6,6 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-
 class NotificationType:
     EMAIL_VERIFICATION = "email_verification"
     PASSWORD_RESET = "password_reset"
@@ -18,12 +13,7 @@ class NotificationType:
     BOT_TOKEN_INVALID = "bot_token_invalid"
     BOT_STOPPED = "bot_stopped"
 
-
 class NotificationService:
-    """
-    Централизованный сервис отправки системных email-уведомлений
-    и формирования внутриплатформенных сообщений.
-    """
 
     @staticmethod
     def send_email_verification(to_email: str, user_name: str, verification_token: str) -> bool:
@@ -78,10 +68,6 @@ class NotificationService:
         bot_id: str,
         error_details: str = "Discord вернул ошибку 401 Unauthorized"
     ) -> bool:
-        """
-        Уведомление при ошибке токена или получении 401 Unauthorized от Discord API.
-        Бот автоматически переводится в статус stopped.
-        """
         subject = f"⚠️ Остановка бота «{bot_name}»: недействительный токен"
         settings_link = f"https://constructor-discord-bots.local/bots/{bot_id}/profile"
         message = (
@@ -112,6 +98,5 @@ class NotificationService:
             logger.info("Email успешно отправлен на %s с темой '%s'", to_email, subject)
             return True
         except Exception as e:
-            # Логируем ошибку, но не роняем бизнес-логику при отсутствии реального SMTP в dev
             logger.warning("Эмуляция отправки email на %s (SMTP недоступен: %s). Тема: %s", to_email, e, subject)
             return True

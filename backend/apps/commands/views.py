@@ -1,7 +1,3 @@
-"""
-API views для каталога библиотеки команд и их установки в проект бота.
-Соответствие ТЗ §4.4 (FR-4.1–4.4, FR-4.6) и задачам SAN-8, SAN-10.
-"""
 
 from rest_framework import status
 from rest_framework.views import APIView
@@ -17,12 +13,7 @@ from backend.apps.commands.serializers import (
     CommandPermissionsUpdateSerializer,
 )
 
-
 class CommandLibraryListView(APIView):
-    """
-    Каталог готовых команд библиотеки (FR-4.1):
-    GET /api/v1/commands-library?category={category}&search={search}
-    """
     def get(self, request):
         category = request.query_params.get("category")
         search = request.query_params.get("search")
@@ -32,36 +23,19 @@ class CommandLibraryListView(APIView):
             "commands": commands
         })
 
-
 class CommandLibraryDetailView(APIView):
-    """
-    Карточка готовой команды:
-    GET /api/v1/commands-library/{slug}
-    """
     def get(self, request, slug):
         cmd = CommandLibraryRegistry.get_by_slug(slug)
         if not cmd:
             raise NotFound(f"Команда '{slug}' не найдена в библиотеке")
         return Response(cmd)
 
-
 class CommandCategoriesView(APIView):
-    """
-    Категории готовых команд:
-    GET /api/v1/commands-library/categories
-    """
     def get(self, request):
         categories = CommandLibraryRegistry.get_categories()
         return Response(categories)
 
-
 class BotInstallCommandsView(APIView):
-    """
-    Установка команд из библиотеки в проект бота (SAN-8, FR-4.3):
-    POST /api/v1/bots/{bot_id}/commands/install
-    Поддерживает одиночную установку, списком или всей категорией.
-    Автоматически определяет зависимости и обрабатывает конфликты имён.
-    """
     def post(self, request, bot_id):
         bot = get_object_or_404(Bot, id=bot_id, deleted_at__isnull=True)
         serializer = InstallCommandsRequestSerializer(data=request.data)
@@ -72,7 +46,6 @@ class BotInstallCommandsView(APIView):
         conflict_action = serializer.validated_data.get("action_on_conflict", "replace")
         guild_id = serializer.validated_data.get("guild_id")
 
-        # Если передана категория, собираем все команды этой категории (FR-4.3: Массовое добавление)
         target_commands = []
         if category:
             target_commands = CommandLibraryRegistry.list_commands(category=category)
@@ -85,7 +58,6 @@ class BotInstallCommandsView(APIView):
         if not target_commands:
             raise ValidationError("Не указаны команды для установки")
 
-        # Считываем текущую конфигурацию команд бота (в профиле или черновике)
         bot_commands = bot.profile.get("installed_commands", {})
         existing_names = list(bot_commands.keys())
 
@@ -97,7 +69,6 @@ class BotInstallCommandsView(APIView):
             name = cmd["name"]
             slug = cmd["slug"]
             
-            # Проверка конфликта имён
             conflict_info = CommandLibraryRegistry.check_name_conflict(existing_names, name)
             if conflict_info["has_conflict"]:
                 if conflict_action == "skip":
@@ -120,17 +91,14 @@ class BotInstallCommandsView(APIView):
                         "action": "replaced"
                     })
 
-            # Подготовка структуры команды в проекте бота
             installed_cmd = dict(cmd)
             installed_cmd["name"] = name
             installed_cmd["installed_at"] = str(request.user) if hasattr(request, "user") else "system"
             
-            # Сохраняем команду в проект бота
             bot_commands[name] = installed_cmd
             if name not in existing_names:
                 existing_names.append(name)
 
-            # Проверка зависимостей (FR-4.3: Автоматическое подключение модулей-зависимостей)
             dep = CommandLibraryRegistry.resolve_dependencies(slug)
             if dep["required_module"]:
                 auto_enabled_modules.add(dep["required_module"])
@@ -141,11 +109,9 @@ class BotInstallCommandsView(APIView):
                 "required_module": dep["required_module"]
             })
 
-        # Сохраняем обновленный список команд в профиле бота
         bot.profile["installed_commands"] = bot_commands
         bot.save(update_fields=["profile"])
 
-        # Если указана гильдия, автоматически включаем модули-зависимости (FR-4.3)
         if guild_id and auto_enabled_modules:
             bot_guild, _ = BotGuild.objects.get_or_create(bot=bot, guild_id=guild_id)
             current_mods = set(bot_guild.enabled_modules or [])
@@ -162,12 +128,7 @@ class BotInstallCommandsView(APIView):
             "auto_enabled_modules": list(auto_enabled_modules),
         })
 
-
 class BotCommandPermissionsView(APIView):
-    """
-    Настройка прав, кулдаунов и белых/черных списков команды бота (SAN-10, FR-4.6):
-    PUT /api/v1/bots/{bot_id}/commands/{command_name}/permissions
-    """
     def put(self, request, bot_id, command_name):
         bot = get_object_or_404(Bot, id=bot_id, deleted_at__isnull=True)
         bot_commands = bot.profile.get("installed_commands", {})

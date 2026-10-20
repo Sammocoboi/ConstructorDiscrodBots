@@ -1,7 +1,3 @@
-"""
-Реестр манифестов модулей платформы и валидация настроек через JSON Schema.
-Соответствие ТЗ §4.7 (FR-4.7, FR-7.1, FR-7.2, FR-7.3) и задаче SAN-7.
-"""
 
 from typing import Any, Dict, List, Optional
 import jsonschema
@@ -14,7 +10,6 @@ from backend.integrations.discord.permissions import (
     check_role_hierarchy,
 )
 
-# Полный список 11 манифестов модулей по спецификации ТЗ
 BUILTIN_MODULES: Dict[str, Dict[str, Any]] = {
     "welcomes": {
         "id": "welcomes",
@@ -360,9 +355,7 @@ BUILTIN_MODULES: Dict[str, Dict[str, Any]] = {
     }
 }
 
-
 class ModuleRegistry:
-    """Сервис для работы со встроенными модулями и проверки настроек."""
 
     @staticmethod
     def list_all() -> List[Dict[str, Any]]:
@@ -374,10 +367,6 @@ class ModuleRegistry:
 
     @staticmethod
     def validate_settings(slug: str, settings_dict: Dict[str, Any]) -> None:
-        """
-        Валидирует переданные настройки по JSON Schema модуля.
-        Выбрасывает ValidationError при несоответствии схемы.
-        """
         manifest = BUILTIN_MODULES.get(slug)
         if not manifest:
             raise ValidationError(f"Модуль '{slug}' не существует")
@@ -398,9 +387,6 @@ class ModuleRegistry:
         bot_highest_role_pos: int = 100,
         target_role_pos: Optional[int] = None
     ) -> Dict[str, Any]:
-        """
-        Проверка прав и порядка ролей перед включением модуля (FR-7.3).
-        """
         manifest = BUILTIN_MODULES.get(slug)
         if not manifest:
             return {"valid": False, "error": f"Модуль {slug} не найден"}

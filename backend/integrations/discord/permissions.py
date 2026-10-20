@@ -1,14 +1,8 @@
-"""
-Расчет permissions integer Discord, генерация ссылок приглашения и проверка прав.
-Соответствие ТЗ §4.2 (FR-2.1), §4.7 (FR-7.3), Приложению A и задаче SAN-4.
-"""
 
 from typing import Dict, List, Optional, Set
 from urllib.parse import urlencode
 
-
 class DiscordPermissions:
-    # Базовые битовые флаги прав Discord API
     CREATE_INSTANT_INVITE = 1 << 0
     KICK_MEMBERS = 1 << 1
     BAN_MEMBERS = 1 << 2
@@ -51,8 +45,6 @@ class DiscordPermissions:
     USE_EMBEDDED_ACTIVITIES = 1 << 39
     MODERATE_MEMBERS = 1 << 40
 
-
-# Названия прав в человекочитаемом виде
 PERMISSION_NAMES: Dict[int, str] = {
     DiscordPermissions.CREATE_INSTANT_INVITE: "Создание приглашения (Create Instant Invite)",
     DiscordPermissions.KICK_MEMBERS: "Выгонять участников (Kick Members)",
@@ -75,7 +67,6 @@ PERMISSION_NAMES: Dict[int, str] = {
     DiscordPermissions.MANAGE_NICKNAMES: "Управление никнеймами (Manage Nicknames)",
 }
 
-# Базовые права для любого бота платформы (Ядро: slash-команды + сообщения)
 BASE_BOT_PERMISSIONS: int = (
     DiscordPermissions.VIEW_CHANNEL
     | DiscordPermissions.SEND_MESSAGES
@@ -84,7 +75,6 @@ BASE_BOT_PERMISSIONS: int = (
     | DiscordPermissions.READ_MESSAGE_HISTORY
 )
 
-# Приложение A ТЗ: Минимальные права по модулям
 MODULE_REQUIRED_PERMISSIONS: Dict[str, int] = {
     "core": BASE_BOT_PERMISSIONS,
     "welcomes": DiscordPermissions.SEND_MESSAGES | DiscordPermissions.EMBED_LINKS | DiscordPermissions.MANAGE_ROLES,
@@ -129,7 +119,6 @@ MODULE_REQUIRED_PERMISSIONS: Dict[str, int] = {
     ),
 }
 
-# Приложение A ТЗ: Privileged Gateway Intents по модулям
 MODULE_REQUIRED_INTENTS: Dict[str, List[str]] = {
     "welcomes": ["GUILD_MEMBERS"],
     "moderation": ["GUILD_MEMBERS", "MESSAGE_CONTENT"],
@@ -139,15 +128,10 @@ MODULE_REQUIRED_INTENTS: Dict[str, List[str]] = {
     "roles": ["GUILD_MEMBERS"],
 }
 
-
 def calculate_permissions_integer(
     enabled_module_ids: Optional[List[str]] = None,
     custom_permissions: int = 0
 ) -> int:
-    """
-    Рассчитывает суммарное permissions integer для бота
-    на основе базовых прав и списка включенных модулей.
-    """
     total = BASE_BOT_PERMISSIONS | custom_permissions
     if enabled_module_ids:
         for mod_id in enabled_module_ids:
@@ -155,12 +139,7 @@ def calculate_permissions_integer(
             total |= mod_perms
     return total
 
-
 def calculate_required_intents(enabled_module_ids: Optional[List[str]] = None) -> List[str]:
-    """
-    Возвращает список уникальных Privileged Gateway Intents,
-    необходимых для работы выбранных модулей.
-    """
     intents: Set[str] = set()
     if enabled_module_ids:
         for mod_id in enabled_module_ids:
@@ -168,17 +147,12 @@ def calculate_required_intents(enabled_module_ids: Optional[List[str]] = None) -
                 intents.add(item)
     return sorted(list(intents))
 
-
 def generate_invite_url(
     client_id: str,
     permissions_integer: int,
     guild_id: Optional[str] = None,
     disable_guild_select: bool = False
 ) -> str:
-    """
-    Генерирует официальную Discord OAuth2 URL-ссылку для добавления бота на сервер
-    с рассчитанными правами permissions и scopes bot + applications.commands.
-    """
     params = {
         "client_id": client_id,
         "permissions": str(permissions_integer),
@@ -190,14 +164,8 @@ def generate_invite_url(
             params["disable_guild_select"] = "true"
     return f"https://discord.com/oauth2/authorize?{urlencode(params)}"
 
-
 def check_missing_permissions(bot_permissions_int: int, required_permissions_int: int) -> List[Dict[str, object]]:
-    """
-    Проверяет, каких прав не хватает боту.
-    Возвращает список недостающих прав с флагами и описаниями.
-    """
     missing = []
-    # Проверяем все известные права
     for perm_flag, perm_name in PERMISSION_NAMES.items():
         if (required_permissions_int & perm_flag) == perm_flag:
             if (bot_permissions_int & perm_flag) != perm_flag:
@@ -207,12 +175,7 @@ def check_missing_permissions(bot_permissions_int: int, required_permissions_int
                 })
     return missing
 
-
 def check_role_hierarchy(bot_highest_role_pos: int, target_role_pos: int) -> Dict[str, object]:
-    """
-    Проверяет Discord Role Hierarchy: бот может управлять ролью только если
-    наивысшая роль бота находится строго ВЫШЕ целевой роли на сервере.
-    """
     can_manage = bot_highest_role_pos > target_role_pos
     return {
         "can_manage": can_manage,

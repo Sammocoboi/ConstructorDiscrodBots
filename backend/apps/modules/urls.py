@@ -1,4 +1,3 @@
-"""URLs for modules application"""
 
 from django.urls import path
 from backend.apps.modules.views import (

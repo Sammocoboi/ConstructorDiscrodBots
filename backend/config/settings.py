@@ -1,6 +1,3 @@
-"""
-Django settings for ConstructorDiscordBots project.
-"""
 
 import os
 from pathlib import Path
@@ -21,7 +18,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    # Платформенные приложения
     "backend.apps.bots",
     "backend.apps.modules",
     "backend.apps.commands",
@@ -58,7 +54,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "backend.config.wsgi.application"
 
-# По умолчанию SQLite для локальных тестов и разработки без поднятой внешней БД PostgreSQL
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
@@ -79,7 +74,6 @@ USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Настройки REST Framework
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
@@ -90,5 +84,4 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Ключ шифрования токенов ботов (32 байта)
 BOT_TOKEN_ENCRYPTION_KEY = os.environ.get("BOT_TOKEN_ENCRYPTION_KEY", "antigravity_discord_bot_aes256_k")

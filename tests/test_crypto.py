@@ -1,10 +1,6 @@
-"""
-Тесты шифрования токенов AES-256-GCM и маскирования (SAN-3).
-"""
 
 import pytest
 from backend.integrations.discord.crypto import TokenCipher, default_cipher
-
 
 def test_token_encryption_and_decryption():
     cipher = TokenCipher()
@@ -17,7 +13,6 @@ def test_token_encryption_and_decryption():
     decrypted = cipher.decrypt(encrypted)
     assert decrypted == raw_token
 
-
 def test_token_masking():
     raw_token = "MTIxMjM0NTY3ODkwMTIzNDU2Nw.Gxyz12.SampleDiscordBotSecretToken12345"
     masked = default_cipher.mask_token(raw_token)
@@ -27,12 +22,10 @@ def test_token_masking():
     assert "SampleDiscordBotSecretToken" not in masked
     assert "••••" in masked
 
-
 def test_empty_token():
     assert default_cipher.encrypt("") == ""
     assert default_cipher.decrypt("") == ""
     assert default_cipher.mask_token("") == ""
-
 
 def test_invalid_key_length():
     with pytest.raises(ValueError):

@@ -1,6 +1,3 @@
-"""
-Discord integration package
-"""
 from .crypto import TokenCipher, default_cipher
 from .permissions import (
     DiscordPermissions,

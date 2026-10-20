@@ -1,7 +1,3 @@
-"""
-Генератор полного набора из 76 готовых команд библиотеки (SAN-12).
-Соответствие ТЗ §4.4 (FR-4.1, FR-4.2).
-"""
 
 import os
 import json
@@ -11,7 +7,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 COMMANDS_DIR = BASE_DIR / "content" / "commands"
 
 ALL_COMMANDS = [
-    # 1. МОДЕРАЦИЯ (13 команд)
     {
         "slug": "ban",
         "name": "ban",
@@ -196,7 +191,6 @@ ALL_COMMANDS = [
         "default_member_permissions": "128"
     },
 
-    # 2. УТИЛИТЫ (10 команд)
     {
         "slug": "ping",
         "name": "ping",
@@ -304,7 +298,6 @@ ALL_COMMANDS = [
         ]
     },
 
-    # 3. РОЛИ (7 команд)
     {
         "slug": "role_add",
         "name": "role_add",
@@ -390,7 +383,6 @@ ALL_COMMANDS = [
         "required_module": "roles"
     },
 
-    # 4. СОЦИАЛЬНЫЕ (8 команд)
     {
         "slug": "profile",
         "name": "profile",
@@ -467,7 +459,6 @@ ALL_COMMANDS = [
         "type": "slash"
     },
 
-    # 5. УРОВНИ (6 команд)
     {
         "slug": "rank",
         "name": "rank",
@@ -537,7 +528,6 @@ ALL_COMMANDS = [
         ]
     },
 
-    # 6. ЭКОНОМИКА (9 команд)
     {
         "slug": "balance",
         "name": "balance",
@@ -629,7 +619,6 @@ ALL_COMMANDS = [
         "required_module": "economy"
     },
 
-    # 7. ИГРЫ И РАЗВЛЕЧЕНИЯ (8 команд)
     {
         "slug": "coinflip",
         "name": "coinflip",
@@ -718,7 +707,6 @@ ALL_COMMANDS = [
         "required_module": "fun"
     },
 
-    # 8. ТИКЕТЫ (5 команд)
     {
         "slug": "ticket_panel",
         "name": "ticket_panel",
@@ -770,7 +758,6 @@ ALL_COMMANDS = [
         "required_module": "tickets"
     },
 
-    # 9. АВТОМАТИЗАЦИЯ (6 команд)
     {
         "slug": "autoresponder",
         "name": "autoresponder",
@@ -858,7 +845,6 @@ ALL_COMMANDS = [
         "default_member_permissions": "16"
     },
 
-    # 10. РОЗЫГРЫШИ (4 команды)
     {
         "slug": "giveaway_start",
         "name": "giveaway_start",
@@ -910,7 +896,6 @@ ALL_COMMANDS = [
     }
 ]
 
-
 def generate_command_json_files():
     COMMANDS_DIR.mkdir(parents=True, exist_ok=True)
     count = 0
@@ -919,7 +904,6 @@ def generate_command_json_files():
         cat_dir = COMMANDS_DIR / category
         cat_dir.mkdir(parents=True, exist_ok=True)
 
-        # Полная карточка команды с flow и preview
         card = dict(cmd)
         card.setdefault("options", [])
         card.setdefault("required_permissions", 0)
@@ -927,7 +911,6 @@ def generate_command_json_files():
         card.setdefault("default_member_permissions", None)
         card.setdefault("cooldown", {"type": "user", "seconds": 3})
         
-        # Генерация preview и типового графа исполнения (flow)
         card["preview"] = {
             "embed": {
                 "title": f"Команда /{cmd['name']}",
@@ -956,7 +939,6 @@ def generate_command_json_files():
         count += 1
 
     print(f"Успешно сгенерировано {count} команд в директории {COMMANDS_DIR}")
-
 
 if __name__ == "__main__":
     generate_command_json_files()

@@ -1,6 +1,3 @@
-"""
-API views для каталога модулей и настроек по гильдиям (SAN-7).
-"""
 
 from rest_framework import status
 from rest_framework.views import APIView
@@ -15,34 +12,19 @@ from backend.apps.modules.serializers import (
     UpdateModuleSettingsSerializer,
 )
 
-
 class ModuleListView(APIView):
-    """
-    Каталог всех доступных модулей платформы:
-    GET /api/v1/modules
-    """
     def get(self, request):
         modules = ModuleRegistry.list_all()
         return Response(modules)
 
-
 class ModuleDetailView(APIView):
-    """
-    Манифест конкретного модуля:
-    GET /api/v1/modules/{slug}
-    """
     def get(self, request, slug):
         manifest = ModuleRegistry.get_by_slug(slug)
         if not manifest:
             raise NotFound(f"Модуль '{slug}' не найден")
         return Response(manifest)
 
-
 class BotModulesView(APIView):
-    """
-    Список модулей и их статус для конкретного бота и гильдии:
-    GET /api/v1/bots/{bot_id}/modules?guild_id={guild_id}
-    """
     def get(self, request, bot_id):
         bot = get_object_or_404(Bot, id=bot_id, deleted_at__isnull=True)
         guild_id = request.query_params.get("guild_id")
@@ -71,12 +53,7 @@ class BotModulesView(APIView):
             "modules": modules_data
         })
 
-
 class BotModuleUpdateView(APIView):
-    """
-    Включение/выключение модуля и сохранение настроек по гильдии:
-    PUT /api/v1/bots/{bot_id}/modules/{slug}
-    """
     def put(self, request, bot_id, slug):
         bot = get_object_or_404(Bot, id=bot_id, deleted_at__isnull=True)
         manifest = ModuleRegistry.get_by_slug(slug)
@@ -93,11 +70,9 @@ class BotModuleUpdateView(APIView):
         bot_highest_role_pos = serializer.validated_data.get("bot_highest_role_pos", 100)
         target_role_pos = serializer.validated_data.get("target_role_pos")
 
-        # 1. Если переданы настройки — валидируем их через JSON Schema (FR-4.7, SAN-7)
         if settings_dict:
             ModuleRegistry.validate_settings(slug, settings_dict)
 
-        # 2. Проверяем нехватку прав и порядок ролей (FR-7.3)
         check_result = ModuleRegistry.check_permissions_and_hierarchy(
             slug=slug,
             bot_permissions_int=bot_perms,
@@ -105,7 +80,6 @@ class BotModuleUpdateView(APIView):
             target_role_pos=target_role_pos
         )
 
-        # 3. Сохраняем в BotGuild
         bot_guild, _ = BotGuild.objects.get_or_create(bot=bot, guild_id=guild_id)
         current_enabled = set(bot_guild.enabled_modules or [])
         

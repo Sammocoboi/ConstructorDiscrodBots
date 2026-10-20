@@ -1,6 +1,3 @@
-"""
-Root URL configuration for ConstructorDiscordBots API.
-"""
 
 from django.contrib import admin
 from django.urls import path, include

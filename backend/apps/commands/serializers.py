@@ -1,9 +1,5 @@
-"""
-Сериализаторы для библиотеки команд и процесса установки команд в бота.
-"""
 
 from rest_framework import serializers
-
 
 class CommandCardSerializer(serializers.Serializer):
     slug = serializers.CharField()
@@ -21,7 +17,6 @@ class CommandCardSerializer(serializers.Serializer):
     preview = serializers.DictField(default=dict)
     flow = serializers.DictField(default=dict)
 
-
 class InstallCommandsRequestSerializer(serializers.Serializer):
     slugs = serializers.ListField(child=serializers.CharField(), required=False, default=list)
     category = serializers.CharField(required=False, allow_blank=True, allow_null=True)
@@ -30,7 +25,6 @@ class InstallCommandsRequestSerializer(serializers.Serializer):
         default="replace"
     )
     guild_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-
 
 class CommandPermissionsUpdateSerializer(serializers.Serializer):
     default_member_permissions = serializers.CharField(allow_null=True, required=False)

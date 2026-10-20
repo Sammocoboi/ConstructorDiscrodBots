@@ -1,11 +1,7 @@
-"""
-DRF-сериализаторы для API управления ботами и гильдиями.
-"""
 
 from rest_framework import serializers
 from backend.apps.bots.models import Bot, BotGuild, BotStatus, DesiredState
 from backend.apps.bots.services import BotService
-
 
 class BotSerializer(serializers.ModelSerializer):
     token_masked = serializers.CharField(read_only=True)
@@ -46,7 +42,6 @@ class BotSerializer(serializers.ModelSerializer):
     def get_guilds_count(self, obj: Bot) -> int:
         return obj.guilds.count()
 
-
 class BotCreateSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100, default="Новый бот")
     token = serializers.CharField(required=False, allow_blank=True, write_only=True)
@@ -56,7 +51,6 @@ class BotCreateSerializer(serializers.Serializer):
         owner_id = validated_data.get("owner_id", "default-user")
         plan_name = validated_data.get("plan_name", "free")
         
-        # Проверяем лимиты тарифа (SAN-1, FR-4.10)
         BotService.check_bot_limit(owner_id=owner_id, plan_name=plan_name)
 
         bot = Bot.objects.create(
@@ -70,20 +64,16 @@ class BotCreateSerializer(serializers.Serializer):
 
         return bot
 
-
 class BotTokenValidateSerializer(serializers.Serializer):
     token = serializers.CharField(write_only=True, required=True)
 
-
 class BotTokenUpdateSerializer(serializers.Serializer):
     token = serializers.CharField(write_only=True, required=True)
-
 
 class BotSyncCommandsSerializer(serializers.Serializer):
     commands = serializers.ListField(child=serializers.DictField(), required=True)
     test_guild_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     force = serializers.BooleanField(default=False)
-
 
 class BotGuildSerializer(serializers.ModelSerializer):
     class Meta:

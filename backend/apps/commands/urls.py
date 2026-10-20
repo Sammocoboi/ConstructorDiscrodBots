@@ -1,4 +1,3 @@
-"""URLs for commands application"""
 
 from django.urls import path
 from backend.apps.commands.views import (

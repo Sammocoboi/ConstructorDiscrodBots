@@ -1,7 +1,3 @@
-"""
-Реестр библиотеки готовых команд, разрешение зависимостей и конфликтов имён.
-Соответствие ТЗ §4.4 (FR-4.1, FR-4.2, FR-4.3, FR-4.4) и задаче SAN-8.
-"""
 
 import json
 from pathlib import Path
@@ -11,11 +7,7 @@ from rest_framework.exceptions import NotFound, ValidationError
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 COMMANDS_DIR = BASE_DIR / "content" / "commands"
 
-
 class CommandLibraryRegistry:
-    """
-    Загрузчик и поисковый сервис для библиотеки 70+ готовых команд.
-    """
     _cache: Optional[Dict[str, Dict[str, Any]]] = None
 
     @classmethod
@@ -67,7 +59,6 @@ class CommandLibraryRegistry:
 
     @classmethod
     def get_categories(cls) -> List[Dict[str, Any]]:
-        """Возвращает категории с количеством команд в каждой."""
         all_cmds = cls.load_commands().values()
         cat_counts: Dict[str, int] = {}
         for c in all_cmds:
@@ -81,10 +72,6 @@ class CommandLibraryRegistry:
 
     @classmethod
     def resolve_dependencies(cls, command_slug: str) -> Dict[str, Any]:
-        """
-        Проверяет и возвращает зависимости команды (FR-4.3):
-        например, команда /warn требует модуль moderation.
-        """
         cmd = cls.get_by_slug(command_slug)
         if not cmd:
             raise NotFound(f"Команда '{command_slug}' не найдена в библиотеке")
@@ -107,10 +94,6 @@ class CommandLibraryRegistry:
         existing_command_names: List[str],
         candidate_name: str
     ) -> Dict[str, Any]:
-        """
-        Проверка конфликтов имён команд при добавлении в проект (FR-4.3).
-        Если имя уже занято, предлагает альтернативное имя и варианты действий.
-        """
         candidate_lower = candidate_name.lower().strip()
         has_conflict = candidate_lower in [n.lower().strip() for n in existing_command_names]
 

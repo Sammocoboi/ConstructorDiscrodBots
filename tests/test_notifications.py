@@ -1,10 +1,6 @@
-"""
-Тесты сервиса уведомлений и email (SAN-11).
-"""
 
 from unittest.mock import patch
 from backend.apps.notifications.services import NotificationService
-
 
 def test_email_verification_delivery():
     with patch("backend.apps.notifications.services.send_mail", return_value=1) as mock_send:
@@ -19,7 +15,6 @@ def test_email_verification_delivery():
         assert "token_abc_123" in call_kwargs["message"]
         assert "test@example.com" in call_kwargs["recipient_list"]
 
-
 def test_password_reset_delivery():
     with patch("backend.apps.notifications.services.send_mail", return_value=1) as mock_send:
         res = NotificationService.send_password_reset(
@@ -31,7 +26,6 @@ def test_password_reset_delivery():
         assert mock_send.called
         call_kwargs = mock_send.call_args[1]
         assert "pwd_token_xyz" in call_kwargs["message"]
-
 
 def test_bot_token_invalid_alert():
     with patch("backend.apps.notifications.services.send_mail", return_value=1) as mock_send:

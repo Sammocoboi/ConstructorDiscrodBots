@@ -1,6 +1,3 @@
-"""
-Сериализаторы для модулей и валидации их настроек.
-"""
 
 from rest_framework import serializers
 
@@ -18,7 +15,6 @@ class ModuleManifestSerializer(serializers.Serializer):
     events = serializers.ListField(child=serializers.CharField())
     dangerous_actions = serializers.BooleanField()
     settings_schema = serializers.DictField()
-
 
 class UpdateModuleSettingsSerializer(serializers.Serializer):
     guild_id = serializers.CharField(required=True)
