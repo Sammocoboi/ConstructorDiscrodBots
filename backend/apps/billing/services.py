@@ -8,10 +8,17 @@ from datetime import UTC, date, datetime
 
 import stripe
 from django.conf import settings
+from django.db import transaction
+from django.utils import timezone
+
+from apps.common.exceptions import LimitExceeded
+from apps.notifications.models import Notification
 
 from .models import Plan, Subscription, UsageCounter
 
 logger = logging.getLogger(__name__)
+
+LIMIT_WARNING_THRESHOLD = 0.8
 
 
 def stripe_configured() -> bool:
@@ -34,9 +41,40 @@ def get_active_plan(user) -> Plan | None:
         .order_by("-created_at")
         .first()
     )
-    if subscription and subscription.plan.is_active:
-        return subscription.plan
+    if subscription is not None:
+        period_end = subscription.current_period_end
+        if period_end is not None and period_end <= timezone.now():
+            # Подписка истекла — деградируем до Free (FR-4.10).
+            subscription.status = Subscription.Status.EXPIRED
+            subscription.save(update_fields=["status", "updated_at"])
+        elif subscription.plan.is_active:
+            return subscription.plan
     return Plan.objects.filter(code=Plan.Code.FREE, is_active=True).first()
+
+
+def plan_limits(plan: Plan | None) -> dict:
+    if plan is None or not isinstance(plan.limits, dict):
+        return {}
+    return plan.limits
+
+
+def _limit_value(limits: dict, name: str) -> int | None:
+    value = limits.get(name)
+    if value is None:
+        return None
+    try:
+        return max(0, int(value))
+    except (TypeError, ValueError):
+        logger.warning("Invalid limit %s=%r, ignoring", name, value)
+        return None
+
+
+def limit_percent(used: int, limit: int | None) -> int:
+    if limit is None:
+        return 0
+    if limit <= 0:
+        return 100
+    return min(100, round(used * 100 / limit))
 
 
 def get_usage(user) -> dict:
@@ -50,6 +88,131 @@ def get_usage(user) -> dict:
         "executions": executions,
         "api_calls": api_calls,
     }
+
+
+def get_usage_summary(user) -> dict:
+    """План, лимиты, использование и проценты для UI и проверок."""
+    plan = get_active_plan(user)
+    limits = plan_limits(plan)
+    usage = get_usage(user)
+    bots_used = user.bots.count()
+    executions_limit = _limit_value(limits, "executions_per_month")
+    bots_limit = _limit_value(limits, "bots")
+
+    warnings = []
+    if (
+        executions_limit is not None
+        and usage["executions"] >= LIMIT_WARNING_THRESHOLD * executions_limit
+    ):
+        warnings.append("executions_per_month")
+    if bots_limit is not None and bots_used >= LIMIT_WARNING_THRESHOLD * bots_limit:
+        warnings.append("bots")
+
+    return {
+        **usage,
+        "plan": plan,
+        "limits": limits,
+        "bots_used": bots_used,
+        "bots_limit": bots_limit,
+        "executions_limit": executions_limit,
+        "bots_percent": limit_percent(bots_used, bots_limit),
+        "executions_percent": limit_percent(usage["executions"], executions_limit),
+        "execution_blocked": (
+            executions_limit is not None and usage["executions"] >= executions_limit
+        ),
+        "warnings": warnings,
+    }
+
+
+def ensure_bot_limit(user) -> None:
+    """Не даёт создать бота сверх лимита тарифа."""
+    plan = get_active_plan(user)
+    limits = plan_limits(plan)
+    limit = _limit_value(limits, "bots")
+    if limit is None:
+        return
+    used = user.bots.count()
+    if used >= limit:
+        plan_name = plan.name if plan else "Free"
+        raise LimitExceeded(
+            "bots",
+            f"На тарифе {plan_name} доступно не больше {limit} ботов",
+        )
+
+
+def check_execution_limit(user) -> dict:
+    """Проверка перед запуском сценария Runtime-ом. 100% — блокировка."""
+    summary = get_usage_summary(user)
+    limit = summary["executions_limit"]
+    if limit is not None and summary["executions"] >= limit:
+        raise LimitExceeded(
+            "executions_per_month",
+            f"Лимит выполнений на текущий месяц исчерпан ({limit})",
+        )
+    return summary
+
+
+def _notify_limit_warning(user, kind: str, used: int, limit: int, period_start: date) -> None:
+    if limit <= 0:
+        return
+    notification_type = f"limit_warning_{kind}"
+    already_sent = Notification.objects.filter(
+        user=user,
+        type=notification_type,
+        created_at__date__gte=period_start,
+    ).exists()
+    if already_sent:
+        return
+    Notification.objects.create(
+        user=user,
+        type=notification_type,
+        payload={
+            "kind": kind,
+            "used": used,
+            "limit": limit,
+            "percent": limit_percent(used, limit),
+        },
+    )
+
+
+def record_usage(
+    user,
+    *,
+    executions: int = 0,
+    api_calls: int = 0,
+    bot=None,
+) -> UsageCounter:
+    """Атомарно увеличивает счётчики и создаёт предупреждение на 80%."""
+    period_start, period_end = current_period()
+    with transaction.atomic():
+        counter, _ = UsageCounter.objects.get_or_create(
+            user=user,
+            bot=bot,
+            period_start=period_start,
+            defaults={"period_end": period_end},
+        )
+        counter = UsageCounter.objects.select_for_update().get(pk=counter.pk)
+        counter.executions += max(0, executions)
+        counter.api_calls += max(0, api_calls)
+        counter.save(update_fields=["executions", "api_calls", "updated_at"])
+
+    totals = get_usage(user)
+    plan = get_active_plan(user)
+    limits = plan_limits(plan)
+
+    if executions:
+        limit = _limit_value(limits, "executions_per_month")
+        if limit is not None and totals["executions"] >= LIMIT_WARNING_THRESHOLD * limit:
+            _notify_limit_warning(
+                user, "executions_per_month", totals["executions"], limit, period_start
+            )
+    if api_calls:
+        limit = _limit_value(limits, "api_calls_per_month")
+        if limit is not None and totals["api_calls"] >= LIMIT_WARNING_THRESHOLD * limit:
+            _notify_limit_warning(
+                user, "api_calls_per_month", totals["api_calls"], limit, period_start
+            )
+    return counter
 
 
 def create_checkout_session(user, plan: Plan, success_url: str, cancel_url: str) -> dict:

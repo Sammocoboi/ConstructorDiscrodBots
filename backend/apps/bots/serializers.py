@@ -57,6 +57,10 @@ class BotCreateSerializer(serializers.ModelSerializer):
         fields = ("name", "discord_application_id", "token", "profile", "intents")
 
     def create(self, validated_data):
+        from apps.billing.services import ensure_bot_limit
+
+        ensure_bot_limit(self.context["request"].user)
+
         token = validated_data.pop("token", "")
         owner = self.context["request"].user
         bot = Bot.objects.create(owner=owner, **validated_data)

@@ -46,7 +46,14 @@ class UsageSerializer(serializers.Serializer):
     executions = serializers.IntegerField()
     api_calls = serializers.IntegerField()
     limits = serializers.DictField()
-    plan = PlanSerializer()
+    plan = PlanSerializer(allow_null=True)
+    bots_used = serializers.IntegerField()
+    bots_limit = serializers.IntegerField(allow_null=True)
+    executions_limit = serializers.IntegerField(allow_null=True)
+    bots_percent = serializers.IntegerField()
+    executions_percent = serializers.IntegerField()
+    execution_blocked = serializers.BooleanField()
+    warnings = serializers.ListField(child=serializers.CharField())
 
 
 class CheckoutSerializer(serializers.Serializer):

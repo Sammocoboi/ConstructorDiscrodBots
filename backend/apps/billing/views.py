@@ -58,15 +58,16 @@ class SubscriptionView(APIView):
 class UsageView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(responses={200: UsageSerializer}, summary="Использование лимитов тарифа")
+    @extend_schema(
+        responses={200: UsageSerializer},
+        summary="Использование лимитов тарифа",
+    )
     def get(self, request):
-        plan = services.get_active_plan(request.user)
-        usage = services.get_usage(request.user)
-        limits = plan.limits if plan else {}
+        summary = services.get_usage_summary(request.user)
+        plan = summary.pop("plan")
         return Response(
             {
-                **usage,
-                "limits": limits,
+                **summary,
                 "plan": PlanSerializer(plan).data if plan else None,
             }
         )

@@ -2,7 +2,24 @@
 
 from __future__ import annotations
 
+from rest_framework.exceptions import APIException
 from rest_framework.views import exception_handler
+
+
+class LimitExceeded(APIException):
+    """Тарифный лимит исчерпан (FR-4.10)."""
+
+    status_code = 403
+    default_code = "limit_exceeded"
+
+    def __init__(self, limit: str, message: str | None = None):
+        self.limit = limit
+        super().__init__(
+            {
+                "detail": message or f"Plan limit exceeded: {limit}",
+                "limit": limit,
+            }
+        )
 
 
 def api_exception_handler(exc, context):
