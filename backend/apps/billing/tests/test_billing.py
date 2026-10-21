@@ -27,12 +27,8 @@ def test_usage_returns_free_plan_limits(auth_client: APIClient, free_plan: Plan)
 
 
 @pytest.mark.django_db
-def test_checkout_falls_back_to_mock_without_stripe(
-    auth_client: APIClient, free_plan: Plan
-):
-    response = auth_client.post(
-        "/api/v1/billing/checkout", {"plan_code": "free"}, format="json"
-    )
+def test_checkout_falls_back_to_mock_without_stripe(auth_client: APIClient, free_plan: Plan):
+    response = auth_client.post("/api/v1/billing/checkout", {"plan_code": "free"}, format="json")
     assert response.status_code == 200, response.data
     assert response.data["mock"] is True
     assert "mock-checkout" in response.data["url"]
@@ -53,13 +49,9 @@ def test_stripe_webhook_creates_subscription_idempotently(
             }
         },
     }
-    first = api_client.post(
-        "/api/v1/billing/webhook/stripe", event, format="json"
-    )
+    first = api_client.post("/api/v1/billing/webhook/stripe", event, format="json")
     assert first.status_code == 200, first.data
-    second = api_client.post(
-        "/api/v1/billing/webhook/stripe", event, format="json"
-    )
+    second = api_client.post("/api/v1/billing/webhook/stripe", event, format="json")
     assert second.status_code == 200, second.data
 
     assert Subscription.objects.filter(user=user, status=Subscription.Status.ACTIVE).count() == 1

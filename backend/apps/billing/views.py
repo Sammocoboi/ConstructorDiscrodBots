@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import cast
 
 import stripe
 from django.conf import settings
@@ -15,6 +16,8 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from apps.accounts.models import User
 
 from . import services
 from .models import Invoice, Plan, Subscription
@@ -72,7 +75,11 @@ class UsageView(APIView):
 class CheckoutView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(request=CheckoutSerializer, responses={200: OpenApiResponse(description="Checkout URL")}, summary="Создать Stripe Checkout")
+    @extend_schema(
+        request=CheckoutSerializer,
+        responses={200: OpenApiResponse(description="Checkout URL")},
+        summary="Создать Stripe Checkout",
+    )
     def post(self, request):
         serializer = CheckoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -95,13 +102,15 @@ class CheckoutView(APIView):
 class PortalView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(request=PortalSerializer, responses={200: OpenApiResponse(description="Portal URL")}, summary="Stripe Billing Portal")
+    @extend_schema(
+        request=PortalSerializer,
+        responses={200: OpenApiResponse(description="Portal URL")},
+        summary="Stripe Billing Portal",
+    )
     def post(self, request):
         serializer = PortalSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return_url = serializer.validated_data.get(
-            "return_url", f"{settings.FRONTEND_URL}/billing"
-        )
+        return_url = serializer.validated_data.get("return_url", f"{settings.FRONTEND_URL}/billing")
         return Response(services.create_portal_session(request.user, return_url))
 
 
@@ -113,7 +122,7 @@ class InvoiceListView(generics.ListAPIView):
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return Invoice.objects.none()
-        return Invoice.objects.filter(user=self.request.user)
+        return Invoice.objects.filter(user=cast(User, self.request.user))
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -121,7 +130,11 @@ class StripeWebhookView(APIView):
     permission_classes = [AllowAny]
     authentication_classes: list = []
 
-    @extend_schema(request=None, responses={200: OpenApiResponse(description="Webhook processed")}, summary="Stripe webhook")
+    @extend_schema(
+        request=None,
+        responses={200: OpenApiResponse(description="Webhook processed")},
+        summary="Stripe webhook",
+    )
     def post(self, request):
         payload = request.body
         signature = request.META.get("HTTP_STRIPE_SIGNATURE", "")

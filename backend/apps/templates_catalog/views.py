@@ -138,7 +138,10 @@ class TemplateViewSet(viewsets.ModelViewSet):
         )
         return Response(TemplateSerializer(template).data, status=status.HTTP_201_CREATED)
 
-    @extend_schema(responses={200: OpenApiResponse(description="Template JSON")}, summary="Экспортировать шаблон")
+    @extend_schema(
+        responses={200: OpenApiResponse(description="Template JSON")},
+        summary="Экспортировать шаблон",
+    )
     @action(detail=True, methods=["get"])
     def export(self, request, pk=None):
         template = self.get_object()
@@ -153,7 +156,9 @@ class TemplateViewSet(viewsets.ModelViewSet):
             }
         )
 
-    @extend_schema(responses={200: OpenApiResponse(description="Share link")}, summary="Ссылка на шаблон")
+    @extend_schema(
+        responses={200: OpenApiResponse(description="Share link")}, summary="Ссылка на шаблон"
+    )
     @action(detail=True, methods=["post"])
     def share_link(self, request, pk=None):
         template = self.get_object()
@@ -164,5 +169,8 @@ class TemplateViewSet(viewsets.ModelViewSet):
         from django.conf import settings
 
         return Response(
-            {"url": f"{settings.FRONTEND_URL}/templates/{template.id}", "visibility": template.visibility}
+            {
+                "url": f"{settings.FRONTEND_URL}/templates/{template.id}",
+                "visibility": template.visibility,
+            }
         )

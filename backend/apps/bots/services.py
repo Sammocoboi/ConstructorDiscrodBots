@@ -49,9 +49,7 @@ def build_invite_url(application_id: str, permissions: int = 0) -> str:
     )
 
 
-def enqueue_runtime_command(
-    bot: Bot, command: str, requested_by=None
-) -> RuntimeCommand:
+def enqueue_runtime_command(bot: Bot, command: str, requested_by=None) -> RuntimeCommand:
     return RuntimeCommand.objects.create(
         bot=bot,
         command=command,

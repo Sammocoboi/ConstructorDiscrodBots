@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from calendar import monthrange
-from datetime import date, datetime, timezone as dt_timezone
+from datetime import UTC, date, datetime
 
 import stripe
 from django.conf import settings
@@ -24,7 +24,7 @@ def current_period() -> tuple[date, date]:
     return date(today.year, today.month, 1), date(today.year, today.month, last_day)
 
 
-def get_active_plan(user) -> Plan:
+def get_active_plan(user) -> Plan | None:
     subscription = (
         Subscription.objects.filter(
             user=user,
@@ -41,9 +41,7 @@ def get_active_plan(user) -> Plan:
 
 def get_usage(user) -> dict:
     period_start, period_end = current_period()
-    counters = UsageCounter.objects.filter(
-        user=user, period_start=period_start
-    )
+    counters = UsageCounter.objects.filter(user=user, period_start=period_start)
     executions = sum(counter.executions for counter in counters)
     api_calls = sum(counter.api_calls for counter in counters)
     return {
@@ -79,9 +77,7 @@ def create_portal_session(user, return_url: str) -> dict:
     if not stripe_configured():
         return {"url": f"{settings.FRONTEND_URL}/billing", "mock": True}
     subscription = (
-        Subscription.objects.filter(user=user, external_id__gt="")
-        .order_by("-created_at")
-        .first()
+        Subscription.objects.filter(user=user, external_id__gt="").order_by("-created_at").first()
     )
     if subscription is None:
         return {"url": f"{settings.FRONTEND_URL}/billing", "mock": True}
@@ -96,7 +92,7 @@ def create_portal_session(user, return_url: str) -> dict:
 def _timestamp(value) -> datetime | None:
     if value is None:
         return None
-    return datetime.fromtimestamp(int(value), tz=dt_timezone.utc)
+    return datetime.fromtimestamp(int(value), tz=UTC)
 
 
 def handle_checkout_completed(session: dict) -> None:
@@ -131,7 +127,7 @@ def handle_checkout_completed(session: dict) -> None:
             "amount": plan.price_monthly,
             "currency": plan.currency,
             "status": Payment.Status.SUCCEEDED,
-            "paid_at": datetime.now(tz=dt_timezone.utc),
+            "paid_at": datetime.now(tz=UTC),
             "payload": session,
         },
     )
@@ -147,9 +143,7 @@ def handle_subscription_deleted(subscription_data: dict) -> None:
 def handle_invoice_paid(invoice_data: dict) -> None:
     from .models import Invoice, Payment
 
-    subscription = Subscription.objects.filter(
-        external_id=invoice_data.get("subscription")
-    ).first()
+    subscription = Subscription.objects.filter(external_id=invoice_data.get("subscription")).first()
     user = subscription.user if subscription else None
     if user is None:
         return
@@ -162,7 +156,7 @@ def handle_invoice_paid(invoice_data: dict) -> None:
             "amount": (invoice_data.get("amount_paid") or 0) / 100,
             "currency": (invoice_data.get("currency") or "usd").lower(),
             "status": Invoice.Status.PAID,
-            "paid_at": datetime.now(tz=dt_timezone.utc),
+            "paid_at": datetime.now(tz=UTC),
             "pdf_url": invoice_data.get("invoice_pdf") or "",
         },
     )
@@ -174,7 +168,7 @@ def handle_invoice_paid(invoice_data: dict) -> None:
             "amount": (invoice_data.get("amount_paid") or 0) / 100,
             "currency": (invoice_data.get("currency") or "usd").lower(),
             "status": Payment.Status.SUCCEEDED,
-            "paid_at": datetime.now(tz=dt_timezone.utc),
+            "paid_at": datetime.now(tz=UTC),
             "payload": invoice_data,
         },
     )

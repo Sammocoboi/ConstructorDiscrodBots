@@ -44,9 +44,10 @@ def test_bot_lifecycle_creates_runtime_commands(auth_client: APIClient):
     assert started.data["bot"]["desired_state"] == "running"
     assert started.data["bot"]["status"] == "starting"
     assert started.data["runtime_command"]["command"] == "start"
-    assert RuntimeCommand.objects.filter(
-        bot_id=bot_id, command=RuntimeCommand.Command.START
-    ).count() == 1
+    assert (
+        RuntimeCommand.objects.filter(bot_id=bot_id, command=RuntimeCommand.Command.START).count()
+        == 1
+    )
 
     status = auth_client.get(f"/api/v1/bots/{bot_id}/status/")
     assert status.status_code == 200

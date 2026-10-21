@@ -34,7 +34,14 @@ class TemplateSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "is_system", "popularity", "author_email", "created_at", "updated_at")
+        read_only_fields = (
+            "id",
+            "is_system",
+            "popularity",
+            "author_email",
+            "created_at",
+            "updated_at",
+        )
 
     def get_latest_version(self, obj: Template) -> dict | None:
         version = obj.versions.first()
@@ -69,9 +76,7 @@ class TemplateCreateSerializer(serializers.ModelSerializer):
         content = validated_data.pop("content", {})
         version = validated_data.pop("version", "1.0.0")
         changelog = validated_data.pop("changelog", "")
-        template = Template.objects.create(
-            author=self.context["request"].user, **validated_data
-        )
+        template = Template.objects.create(author=self.context["request"].user, **validated_data)
         TemplateVersion.objects.create(
             template=template,
             version=version,

@@ -7,6 +7,17 @@ filterwarnings = [
     "ignore::DeprecationWarning",
 ]
 
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main"]
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = false
+exclude = ["migrations"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings.dev"
+
 [tool.coverage.run]
 source = ["apps"]
 omit = [

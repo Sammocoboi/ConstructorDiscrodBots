@@ -46,9 +46,7 @@ class Template(SoftDeleteModel):
 
 
 class TemplateVersion(BaseModel):
-    template = models.ForeignKey(
-        Template, on_delete=models.CASCADE, related_name="versions"
-    )
+    template = models.ForeignKey(Template, on_delete=models.CASCADE, related_name="versions")
     version = models.CharField(max_length=32, default="1.0.0")
     changelog = models.TextField(blank=True, default="")
     content = models.JSONField(default=dict, blank=True)
@@ -58,9 +56,7 @@ class TemplateVersion(BaseModel):
         verbose_name_plural = "Версии шаблонов"
         ordering = ("-created_at",)
         constraints = [
-            models.UniqueConstraint(
-                fields=("template", "version"), name="unique_template_version"
-            )
+            models.UniqueConstraint(fields=("template", "version"), name="unique_template_version")
         ]
 
     def __str__(self) -> str:

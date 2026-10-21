@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -49,7 +49,9 @@ class BotViewSet(viewsets.ModelViewSet):
             return BotUpdateSerializer
         return BotSerializer
 
-    @extend_schema(request=BotCreateSerializer, responses={201: BotSerializer}, summary="Создать бота")
+    @extend_schema(
+        request=BotCreateSerializer, responses={201: BotSerializer}, summary="Создать бота"
+    )
     def create(self, request, *args, **kwargs):
         serializer = BotCreateSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
@@ -65,21 +67,27 @@ class BotViewSet(viewsets.ModelViewSet):
             status=status.HTTP_202_ACCEPTED,
         )
 
-    @extend_schema(request=None, responses={202: RuntimeCommandSerializer}, summary="Запустить бота")
+    @extend_schema(
+        request=None, responses={202: RuntimeCommandSerializer}, summary="Запустить бота"
+    )
     @action(detail=True, methods=["post"])
     def start(self, request, pk=None):
         bot = self.get_object()
         command = request_start(bot, request.user)
         return self._lifecycle_response(bot, command)
 
-    @extend_schema(request=None, responses={202: RuntimeCommandSerializer}, summary="Остановить бота")
+    @extend_schema(
+        request=None, responses={202: RuntimeCommandSerializer}, summary="Остановить бота"
+    )
     @action(detail=True, methods=["post"])
     def stop(self, request, pk=None):
         bot = self.get_object()
         command = request_stop(bot, request.user)
         return self._lifecycle_response(bot, command)
 
-    @extend_schema(request=None, responses={202: RuntimeCommandSerializer}, summary="Перезапустить бота")
+    @extend_schema(
+        request=None, responses={202: RuntimeCommandSerializer}, summary="Перезапустить бота"
+    )
     @action(detail=True, methods=["post"])
     def restart(self, request, pk=None):
         bot = self.get_object()
@@ -99,13 +107,17 @@ class BotViewSet(viewsets.ModelViewSet):
         }
         return Response(data)
 
-    @extend_schema(responses={200: RuntimeCommandSerializer(many=True)}, summary="История команд запуска")
+    @extend_schema(
+        responses={200: RuntimeCommandSerializer(many=True)}, summary="История команд запуска"
+    )
     @action(detail=True, methods=["get"])
     def commands(self, request, pk=None):
         bot = self.get_object()
         return Response(RuntimeCommandSerializer(bot.runtime_commands.all()[:50], many=True).data)
 
-    @extend_schema(responses={200: BotVersionListSerializer(many=True)}, summary="Версии конфигурации")
+    @extend_schema(
+        responses={200: BotVersionListSerializer(many=True)}, summary="Версии конфигурации"
+    )
     @action(detail=True, methods=["get"])
     def versions(self, request, pk=None):
         bot = self.get_object()
@@ -128,9 +140,7 @@ class BotGuildDetailView(generics.RetrieveUpdateAPIView):
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return BotGuild.objects.none()
-        return BotGuild.objects.filter(
-            bot_id=self.kwargs["bot_id"], bot__owner=self.request.user
-        )
+        return BotGuild.objects.filter(bot_id=self.kwargs["bot_id"], bot__owner=self.request.user)
 
 
 class BotVersionDetailView(generics.RetrieveAPIView):

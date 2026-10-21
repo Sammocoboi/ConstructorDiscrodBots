@@ -10,7 +10,7 @@ from django.utils import timezone
 from apps.common.models import AllObjectsManager, SoftDeleteManager, SoftDeleteModel
 
 
-class UserManager(SoftDeleteManager, BaseUserManager):
+class UserManager(SoftDeleteManager, BaseUserManager["User"]):
     use_in_migrations = True
 
     def _create_user(self, email: str, password: str | None, **extra_fields):
@@ -55,11 +55,11 @@ class User(AbstractBaseUser, PermissionsMixin, SoftDeleteModel):
     is_staff = models.BooleanField(default=False)
     email_verified_at = models.DateTimeField(null=True, blank=True)
 
-    objects = UserManager()
-    all_objects = AllObjectsManager()
+    objects = UserManager()  # type: ignore[misc]
+    all_objects = AllObjectsManager()  # type: ignore[misc]
 
-    USERNAME_FIELD = "email"
-    REQUIRED_FIELDS: list[str] = []
+    USERNAME_FIELD = "email"  # type: ignore[misc]
+    REQUIRED_FIELDS: list[str] = []  # type: ignore[misc]
 
     class Meta:
         verbose_name = "Пользователь"
@@ -83,9 +83,7 @@ class OAuthAccount(SoftDeleteModel):
     class Provider(models.TextChoices):
         DISCORD = "discord", "Discord"
 
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="oauth_accounts"
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="oauth_accounts")
     provider = models.CharField(max_length=32, choices=Provider.choices, default=Provider.DISCORD)
     provider_user_id = models.CharField(max_length=64)
     access_token_encrypted = models.TextField(blank=True, default="")
@@ -109,9 +107,7 @@ class OAuthAccount(SoftDeleteModel):
 
 
 class RefreshSession(SoftDeleteModel):
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="refresh_sessions"
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="refresh_sessions")
     jti = models.CharField(max_length=255, unique=True)
     token_hash = models.CharField(max_length=64)
     device_info = models.CharField(max_length=255, blank=True, default="")

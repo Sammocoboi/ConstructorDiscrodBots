@@ -26,4 +26,6 @@ class CommandLibrarySerializer(serializers.ModelSerializer):
 
 class CommandLibraryListSerializer(CommandLibrarySerializer):
     class Meta(CommandLibrarySerializer.Meta):
-        fields = tuple(field for field in CommandLibrarySerializer.Meta.fields if field != "flow")
+        fields = tuple(  # type: ignore[assignment]  # django-stubs: Meta.fields — произвольный tuple
+            field for field in CommandLibrarySerializer.Meta.fields if field != "flow"
+        )

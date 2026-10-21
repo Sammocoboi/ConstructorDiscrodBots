@@ -70,9 +70,7 @@ def test_refresh_without_token_returns_401(api_client: APIClient):
 @pytest.mark.django_db
 def test_email_verification_and_password_reset(api_client: APIClient, user: User, mailoutbox):
     token = services.make_email_verify_token(user)
-    verify = api_client.post(
-        "/api/v1/auth/email/verify", {"token": token}, format="json"
-    )
+    verify = api_client.post("/api/v1/auth/email/verify", {"token": token}, format="json")
     assert verify.status_code == 200, verify.data
     user.refresh_from_db()
     assert user.email_verified_at is not None

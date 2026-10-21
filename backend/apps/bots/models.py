@@ -30,9 +30,7 @@ class Bot(SoftDeleteModel):
     discord_application_id = models.CharField(max_length=32, blank=True, default="")
     discord_bot_user_id = models.CharField(max_length=32, blank=True, default="")
     token_encrypted = models.TextField(blank=True, default="")
-    status = models.CharField(
-        max_length=20, choices=BotStatus.choices, default=BotStatus.STOPPED
-    )
+    status = models.CharField(max_length=20, choices=BotStatus.choices, default=BotStatus.STOPPED)
     desired_state = models.CharField(
         max_length=20, choices=DesiredState.choices, default=DesiredState.STOPPED
     )
@@ -80,9 +78,7 @@ class BotMember(BaseModel):
     class Meta:
         verbose_name = "Участник проекта"
         verbose_name_plural = "Участники проектов"
-        constraints = [
-            models.UniqueConstraint(fields=("bot", "user"), name="unique_bot_member")
-        ]
+        constraints = [models.UniqueConstraint(fields=("bot", "user"), name="unique_bot_member")]
 
 
 class BotGuild(SoftDeleteModel):
@@ -97,9 +93,7 @@ class BotGuild(SoftDeleteModel):
     class Meta:
         verbose_name = "Гильдия бота"
         verbose_name_plural = "Гильдии ботов"
-        constraints = [
-            models.UniqueConstraint(fields=("bot", "guild_id"), name="unique_bot_guild")
-        ]
+        constraints = [models.UniqueConstraint(fields=("bot", "guild_id"), name="unique_bot_guild")]
         ordering = ("guild_name",)
 
     def __str__(self) -> str:
@@ -141,9 +135,7 @@ class BotVersion(BaseModel):
         verbose_name_plural = "Версии ботов"
         ordering = ("-version_number",)
         constraints = [
-            models.UniqueConstraint(
-                fields=("bot", "version_number"), name="unique_bot_version"
-            )
+            models.UniqueConstraint(fields=("bot", "version_number"), name="unique_bot_version")
         ]
 
     def __str__(self) -> str:
@@ -208,13 +200,9 @@ class RuntimeCommand(BaseModel):
 
 
 class BotRuntimeState(BaseModel):
-    bot = models.OneToOneField(
-        Bot, on_delete=models.CASCADE, related_name="runtime_state"
-    )
+    bot = models.OneToOneField(Bot, on_delete=models.CASCADE, related_name="runtime_state")
     worker_id = models.CharField(max_length=100, blank=True, default="")
-    status = models.CharField(
-        max_length=20, choices=BotStatus.choices, default=BotStatus.STOPPED
-    )
+    status = models.CharField(max_length=20, choices=BotStatus.choices, default=BotStatus.STOPPED)
     latency_ms = models.PositiveIntegerField(null=True, blank=True)
     guild_count = models.PositiveIntegerField(default=0)
     uptime_seconds = models.PositiveIntegerField(default=0)

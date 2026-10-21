@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from apps.common.crypto import mask_secret
-
 from .models import (
     Bot,
     BotDraft,

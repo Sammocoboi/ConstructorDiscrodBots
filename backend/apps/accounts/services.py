@@ -5,7 +5,8 @@ from __future__ import annotations
 import hashlib
 import logging
 import secrets
-from datetime import datetime, timedelta, timezone as dt_timezone
+from datetime import UTC, datetime, timedelta
+from typing import cast
 from urllib.parse import urlencode
 
 import requests
@@ -13,7 +14,6 @@ from django.conf import settings
 from django.core import signing
 from django.core.cache import cache
 from django.core.mail import send_mail
-from django.urls import reverse
 from django.utils import timezone
 from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -38,7 +38,7 @@ def hash_token(token: str) -> str:
 
 
 def _session_from_refresh(user: User, refresh: RefreshToken, request=None) -> RefreshSession:
-    expires_at = datetime.fromtimestamp(refresh["exp"], tz=dt_timezone.utc)
+    expires_at = datetime.fromtimestamp(refresh["exp"], tz=UTC)
     return RefreshSession.objects.create(
         user=user,
         jti=refresh["jti"],
@@ -61,13 +61,11 @@ def issue_tokens(user: User, request=None) -> dict:
 
 def rotate_refresh_token(raw_token: str, request=None) -> dict:
     try:
-        token = RefreshToken(raw_token)
+        token = RefreshToken(raw_token)  # type: ignore[arg-type]
     except Exception as exc:
         raise InvalidToken("Invalid or expired refresh token") from exc
 
-    session = RefreshSession.objects.filter(
-        jti=token["jti"], revoked_at__isnull=True
-    ).first()
+    session = RefreshSession.objects.filter(jti=token["jti"], revoked_at__isnull=True).first()
     if session is None:
         raise InvalidToken("Session is revoked")
 
@@ -87,9 +85,9 @@ def rotate_refresh_token(raw_token: str, request=None) -> dict:
 
 
 def revoke_session(user: User, jti: str) -> bool:
-    updated = RefreshSession.objects.filter(
-        user=user, jti=jti, revoked_at__isnull=True
-    ).update(revoked_at=timezone.now())
+    updated = RefreshSession.objects.filter(user=user, jti=jti, revoked_at__isnull=True).update(
+        revoked_at=timezone.now()
+    )
     return bool(updated)
 
 
@@ -100,7 +98,7 @@ def revoke_all_sessions(user: User) -> int:
 
 
 def set_refresh_cookie(response, refresh_token: str) -> None:
-    max_age = int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds())
+    max_age = int(cast(timedelta, settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]).total_seconds())
     response.set_cookie(
         settings.REFRESH_COOKIE_NAME,
         refresh_token,
@@ -143,9 +141,7 @@ def make_password_reset_token(user: User) -> str:
 
 def verify_password_reset_token(token: str) -> User:
     try:
-        user_id = signing.TimestampSigner(salt=PASSWORD_RESET_SALT).unsign(
-            token, max_age=60 * 60
-        )
+        user_id = signing.TimestampSigner(salt=PASSWORD_RESET_SALT).unsign(token, max_age=60 * 60)
     except signing.BadSignature as exc:
         raise ValueError("Invalid or expired password reset token") from exc
     return User.objects.get(id=user_id)
@@ -287,9 +283,7 @@ def get_or_create_discord_user(discord_user: dict, token_data: dict) -> User:
     oauth.refresh_token_encrypted = encrypt_secret(token_data.get("refresh_token", ""))
     oauth.scopes = token_data.get("scope", "").split()
     expires_in = token_data.get("expires_in")
-    oauth.expires_at = (
-        timezone.now() + timedelta(seconds=int(expires_in)) if expires_in else None
-    )
+    oauth.expires_at = timezone.now() + timedelta(seconds=int(expires_in)) if expires_in else None
     oauth.save()
     return user
 
