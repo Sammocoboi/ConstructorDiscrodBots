@@ -1,0 +1,60 @@
+{
+  "id": "00000000-0000-4000-8000-000000000002",
+  "slug": "moderation",
+  "title": "Модерация",
+  "description": "Предупреждения, очистка чата и журнал действий",
+  "category": "moderation",
+  "version": "1.0.0",
+  "author": "system",
+  "is_system": true,
+  "config": {
+    "schema_version": 1,
+    "profile": {
+      "status": "online",
+      "activity": {"type": "watching", "text": "за порядком"}
+    },
+    "modules": [
+      {"id": "moderation", "enabled": true, "settings": {"log_channel_id": ""}}
+    ],
+    "commands": [
+      {"id": "cmd_warn", "name": "warn", "description": "Выдать предупреждение участнику", "flow_id": "flow_warn", "options": [
+        {"name": "user", "type": "user", "required": true, "description": "Участник"},
+        {"name": "reason", "type": "string", "required": false, "description": "Причина"}
+      ]},
+      {"id": "cmd_clear", "name": "clear", "description": "Очистить сообщения в канале", "flow_id": "flow_clear", "options": [
+        {"name": "amount", "type": "integer", "required": true, "description": "Количество сообщений"}
+      ]}
+    ],
+    "flows": [
+      {
+        "id": "flow_warn",
+        "trigger": {"type": "slash_command", "command_id": "cmd_warn"},
+        "nodes": [
+          {"id": "n1", "type": "slash_command", "params": {"command_id": "cmd_warn"}},
+          {"id": "n2", "type": "set_variable", "params": {"name": "last_warn_reason", "value": "{args.reason}"}},
+          {"id": "n3", "type": "send_message", "params": {
+            "content": "Участнику {args.user.name} выдано предупреждение. Причина: {variables.last_warn_reason}",
+            "ephemeral": true
+          }}
+        ],
+        "edges": [{"from": "n1", "to": "n2"}, {"from": "n2", "to": "n3"}]
+      },
+      {
+        "id": "flow_clear",
+        "trigger": {"type": "slash_command", "command_id": "cmd_clear"},
+        "nodes": [
+          {"id": "n1", "type": "slash_command", "params": {"command_id": "cmd_clear"}},
+          {"id": "n2", "type": "send_message", "params": {
+            "content": "Запрошена очистка {args.amount} сообщений. Подтвердите действие в настройках модуля.",
+            "ephemeral": true
+          }}
+        ],
+        "edges": [{"from": "n1", "to": "n2"}]
+      }
+    ],
+    "messages": [],
+    "variables_schema": [
+      {"name": "last_warn_reason", "type": "string"}
+    ]
+  }
+}

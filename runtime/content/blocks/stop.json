@@ -1,0 +1,9 @@
+{
+  "type": "stop",
+  "category": "logic",
+  "title": "Завершить",
+  "description": "Останавливает выполнение сценария",
+  "params": {},
+  "inputs": ["flow"],
+  "outputs": []
+}

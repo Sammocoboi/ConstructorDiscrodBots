@@ -67,6 +67,33 @@ jobs:
       - name: Tests
         run: pytest --maxfail=1
 
+  runtime:
+    name: Runtime checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: runtime
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: runtime/pyproject.toml
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Type check
+        run: mypy runtime
+
+      - name: Test
+        run: pytest -q
+
   frontend:
     name: Frontend (placeholder)
     runs-on: ubuntu-latest

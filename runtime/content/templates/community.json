@@ -1,0 +1,68 @@
+{
+  "id": "00000000-0000-4000-8000-000000000001",
+  "slug": "community-server",
+  "title": "Сервер сообщества",
+  "description": "Приветствие новых участников, правила и справочные команды",
+  "category": "community",
+  "version": "1.0.0",
+  "author": "system",
+  "is_system": true,
+  "config": {
+    "schema_version": 1,
+    "profile": {
+      "status": "online",
+      "activity": {"type": "playing", "text": "/help"}
+    },
+    "modules": [
+      {"id": "welcomes", "enabled": true, "settings": {}},
+      {"id": "utility", "enabled": true, "settings": {}}
+    ],
+    "commands": [
+      {"id": "cmd_help", "name": "help", "description": "Справка по командам сервера", "flow_id": "flow_help", "options": []},
+      {"id": "cmd_rules", "name": "rules", "description": "Правила сервера", "flow_id": "flow_rules", "options": []}
+    ],
+    "flows": [
+      {
+        "id": "flow_help",
+        "trigger": {"type": "slash_command", "command_id": "cmd_help"},
+        "nodes": [
+          {"id": "n1", "type": "slash_command", "params": {"command_id": "cmd_help"}},
+          {"id": "n2", "type": "send_message", "params": {
+            "content": "Доступные команды: /help, /rules. Приятного общения!",
+            "ephemeral": true
+          }}
+        ],
+        "edges": [{"from": "n1", "to": "n2"}]
+      },
+      {
+        "id": "flow_rules",
+        "trigger": {"type": "slash_command", "command_id": "cmd_rules"},
+        "nodes": [
+          {"id": "n1", "type": "slash_command", "params": {"command_id": "cmd_rules"}},
+          {"id": "n2", "type": "send_message", "params": {
+            "embed": {
+              "title": "Правила сервера",
+              "description": "1. Уважайте участников.\n2. Без спама и рекламы.\n3. Слушайте модераторов.",
+              "color": 5793266
+            },
+            "ephemeral": true
+          }}
+        ],
+        "edges": [{"from": "n1", "to": "n2"}]
+      },
+      {
+        "id": "flow_welcome",
+        "trigger": {"type": "join_member"},
+        "nodes": [
+          {"id": "n1", "type": "join_member", "params": {}},
+          {"id": "n2", "type": "send_message", "params": {
+            "content": "Добро пожаловать, {user.mention}! Прочитай правила в /rules."
+          }}
+        ],
+        "edges": [{"from": "n1", "to": "n2"}]
+      }
+    ],
+    "messages": [],
+    "variables_schema": []
+  }
+}

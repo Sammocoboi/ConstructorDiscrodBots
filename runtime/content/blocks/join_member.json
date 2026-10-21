@@ -1,0 +1,10 @@
+{
+  "type": "join_member",
+  "category": "trigger",
+  "title": "Новый участник",
+  "description": "Срабатывает при входе участника на сервер",
+  "params": {},
+  "inputs": [],
+  "outputs": ["flow"],
+  "intents": ["members"]
+}

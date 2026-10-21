@@ -1,0 +1,14 @@
+{
+  "type": "message",
+  "category": "trigger",
+  "title": "Сообщение",
+  "description": "Срабатывает на сообщение в чате",
+  "params": {
+    "prefix": {"type": "string", "required": false, "max_length": 32},
+    "contains": {"type": "string", "required": false, "max_length": 200},
+    "regex": {"type": "string", "required": false, "max_length": 200}
+  },
+  "inputs": [],
+  "outputs": ["flow"],
+  "intents": ["message_content"]
+}

@@ -1,0 +1,66 @@
+{
+  "id": "00000000-0000-4000-8000-000000000007",
+  "slug": "giveaways",
+  "title": "Розыгрыши",
+  "description": "Запуск розыгрыша и подведение итогов",
+  "category": "giveaways",
+  "version": "1.0.0",
+  "author": "system",
+  "is_system": true,
+  "config": {
+    "schema_version": 1,
+    "profile": {
+      "status": "online",
+      "activity": {"type": "playing", "text": "розыгрыши"}
+    },
+    "modules": [
+      {"id": "giveaways", "enabled": true, "settings": {}}
+    ],
+    "commands": [
+      {"id": "cmd_giveaway", "name": "giveaway", "description": "Запустить розыгрыш", "flow_id": "flow_giveaway", "options": [
+        {"name": "prize", "type": "string", "required": true, "description": "Приз"}
+      ]},
+      {"id": "cmd_giveaway_end", "name": "giveaway-end", "description": "Завершить розыгрыш", "flow_id": "flow_giveaway_end", "options": []}
+    ],
+    "flows": [
+      {
+        "id": "flow_giveaway",
+        "trigger": {"type": "slash_command", "command_id": "cmd_giveaway"},
+        "nodes": [
+          {"id": "n1", "type": "slash_command", "params": {"command_id": "cmd_giveaway"}},
+          {"id": "n2", "type": "send_message", "params": {
+            "embed": {
+              "title": "Розыгрыш!",
+              "description": "Приз: {args.prize}\nНажми на реакцию, чтобы участвовать.",
+              "color": 15158332
+            }
+          }},
+          {"id": "n3", "type": "delay", "params": {"seconds": 1}},
+          {"id": "n4", "type": "send_message", "params": {
+            "content": "Розыгрыш «{args.prize}» активен. Удачи!",
+            "ephemeral": true
+          }}
+        ],
+        "edges": [
+          {"from": "n1", "to": "n2"},
+          {"from": "n2", "to": "n3"},
+          {"from": "n3", "to": "n4"}
+        ]
+      },
+      {
+        "id": "flow_giveaway_end",
+        "trigger": {"type": "slash_command", "command_id": "cmd_giveaway_end"},
+        "nodes": [
+          {"id": "n1", "type": "slash_command", "params": {"command_id": "cmd_giveaway_end"}},
+          {"id": "n2", "type": "send_message", "params": {
+            "content": "Розыгрыш завершён. Победитель будет объявлен модератором.",
+            "ephemeral": true
+          }}
+        ],
+        "edges": [{"from": "n1", "to": "n2"}]
+      }
+    ],
+    "messages": [],
+    "variables_schema": []
+  }
+}

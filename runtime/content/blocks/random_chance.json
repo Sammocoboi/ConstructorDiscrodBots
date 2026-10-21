@@ -1,0 +1,12 @@
+{
+  "type": "random_chance",
+  "category": "condition",
+  "title": "Случайный шанс",
+  "description": "Выбирает ветку true с заданной вероятностью в процентах",
+  "params": {
+    "probability": {"type": "number", "required": false, "default": 50, "min": 0, "max": 100}
+  },
+  "inputs": ["flow"],
+  "outputs": ["true", "false"],
+  "branches": ["true", "false"]
+}
