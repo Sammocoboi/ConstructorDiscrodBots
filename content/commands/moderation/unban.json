@@ -1,0 +1,56 @@
+{
+  "slug": "unban",
+  "name": "unban",
+  "title": "Разблокировка участника",
+  "category": "moderation",
+  "description": "Снимает бан с указанного пользователя",
+  "type": "slash",
+  "required_module": "moderation",
+  "required_permissions": 4,
+  "default_member_permissions": "4",
+  "required_intents": [
+    "GUILD_MEMBERS"
+  ],
+  "options": [
+    {
+      "name": "user_id",
+      "description": "Discord ID забаненного пользователя",
+      "type": 3,
+      "required": true
+    },
+    {
+      "name": "reason",
+      "description": "Причина разбана",
+      "type": 3,
+      "required": false
+    }
+  ],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /unban",
+      "description": "Снимает бан с указанного пользователя",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "unban"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /unban.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

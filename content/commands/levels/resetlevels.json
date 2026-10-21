@@ -1,0 +1,41 @@
+{
+  "slug": "resetlevels",
+  "name": "resetlevels",
+  "title": "Сбросить уровни",
+  "category": "levels",
+  "description": "Полный сброс рангов и опыта на сервере",
+  "type": "slash",
+  "required_module": "levels",
+  "required_permissions": 8,
+  "default_member_permissions": "8",
+  "options": [],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /resetlevels",
+      "description": "Полный сброс рангов и опыта на сервере",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "resetlevels"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /resetlevels.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

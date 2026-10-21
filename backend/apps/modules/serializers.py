@@ -18,3 +18,14 @@ class ModuleSerializer(serializers.ModelSerializer):
             "is_active",
         )
         read_only_fields = fields
+
+
+class UpdateModuleSettingsSerializer(serializers.Serializer):
+    guild_id = serializers.CharField(required=True)
+    enabled = serializers.BooleanField(required=True)
+    settings = serializers.DictField(required=False, default=dict)
+    bot_permissions = serializers.IntegerField(required=False, default=0)
+    bot_highest_role_pos = serializers.IntegerField(required=False, default=100)
+    target_role_pos = serializers.IntegerField(
+        required=False, allow_null=True, default=None
+    )

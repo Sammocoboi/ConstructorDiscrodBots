@@ -1,0 +1,48 @@
+{
+  "slug": "rank",
+  "name": "rank",
+  "title": "Ранг и уровень",
+  "category": "levels",
+  "description": "Показывает ваш текущий уровень и прогресс до следующего",
+  "type": "slash",
+  "required_module": "levels",
+  "options": [
+    {
+      "name": "user",
+      "description": "Участник",
+      "type": 6,
+      "required": false
+    }
+  ],
+  "required_permissions": 0,
+  "required_intents": [],
+  "default_member_permissions": null,
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /rank",
+      "description": "Показывает ваш текущий уровень и прогресс до следующего",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "rank"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /rank.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

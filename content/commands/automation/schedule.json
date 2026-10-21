@@ -1,0 +1,60 @@
+{
+  "slug": "schedule",
+  "name": "schedule",
+  "title": "Запланировать сообщение",
+  "category": "automation",
+  "description": "Регулярная отправка объявления по расписанию (cron)",
+  "type": "slash",
+  "required_module": "automation",
+  "required_permissions": 32,
+  "default_member_permissions": "32",
+  "options": [
+    {
+      "name": "channel",
+      "description": "Куда отправить",
+      "type": 7,
+      "required": true
+    },
+    {
+      "name": "text",
+      "description": "Текст сообщения",
+      "type": 3,
+      "required": true
+    },
+    {
+      "name": "cron",
+      "description": "Cron-выражение (например '0 12 * * *')",
+      "type": 3,
+      "required": true
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /schedule",
+      "description": "Регулярная отправка объявления по расписанию (cron)",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "schedule"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /schedule.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

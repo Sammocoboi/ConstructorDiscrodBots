@@ -1,0 +1,54 @@
+{
+  "slug": "nick",
+  "name": "nick",
+  "title": "Сменить никнейм",
+  "category": "moderation",
+  "description": "Изменяет никнейм указанного участника на сервере",
+  "type": "slash",
+  "required_module": "moderation",
+  "required_permissions": 134217728,
+  "default_member_permissions": "134217728",
+  "options": [
+    {
+      "name": "user",
+      "description": "Участник",
+      "type": 6,
+      "required": true
+    },
+    {
+      "name": "nickname",
+      "description": "Новый никнейм (оставьте пустым для сброса)",
+      "type": 3,
+      "required": false
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /nick",
+      "description": "Изменяет никнейм указанного участника на сервере",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "nick"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /nick.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

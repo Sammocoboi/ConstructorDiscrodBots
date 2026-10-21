@@ -1,0 +1,41 @@
+{
+  "slug": "modlog",
+  "name": "modlog",
+  "title": "Журнал модерации",
+  "category": "moderation",
+  "description": "Просмотр последних действий модераторов на сервере",
+  "type": "slash",
+  "required_module": "moderation",
+  "required_permissions": 128,
+  "default_member_permissions": "128",
+  "options": [],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /modlog",
+      "description": "Просмотр последних действий модераторов на сервере",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "modlog"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /modlog.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

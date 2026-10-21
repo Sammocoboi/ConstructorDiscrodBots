@@ -1,0 +1,41 @@
+{
+  "slug": "reactionroles",
+  "name": "reactionroles",
+  "title": "Создать реакции-роли",
+  "category": "roles",
+  "description": "Прикрепляет выдачу ролей по реакциям к сообщению",
+  "type": "slash",
+  "required_module": "roles",
+  "required_permissions": 268435456,
+  "default_member_permissions": "268435456",
+  "options": [],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /reactionroles",
+      "description": "Прикрепляет выдачу ролей по реакциям к сообщению",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "reactionroles"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /reactionroles.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "slug": "welcome",
+  "name": "welcome",
+  "title": "Настроить приветствие",
+  "category": "automation",
+  "description": "Задает канал и текст приветствия новых участников",
+  "type": "slash",
+  "required_module": "welcomes",
+  "required_permissions": 32,
+  "default_member_permissions": "32",
+  "options": [
+    {
+      "name": "channel",
+      "description": "Канал приветствий",
+      "type": 7,
+      "required": true
+    },
+    {
+      "name": "message",
+      "description": "Текст приветствия",
+      "type": 3,
+      "required": false
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /welcome",
+      "description": "Задает канал и текст приветствия новых участников",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "welcome"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /welcome.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}
