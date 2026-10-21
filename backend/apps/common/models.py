@@ -90,3 +90,31 @@ class IdempotencyKey(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.user_id}:{self.key}"
+
+
+class PlatformSettings(models.Model):
+    """Singleton с настройками платформы для Django Admin (FR-4.11)."""
+
+    singleton_id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    site_name = models.CharField(max_length=100, default="Constructor Discord Bots")
+    support_email = models.EmailField(default="support@constructor.local")
+    maintenance_mode = models.BooleanField(default=False)
+    registration_enabled = models.BooleanField(default=True)
+    trial_days = models.PositiveSmallIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Настройки платформы"
+        verbose_name_plural = "Настройки платформы"
+
+    def __str__(self) -> str:
+        return self.site_name
+
+    def save(self, *args, **kwargs):
+        self.singleton_id = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls) -> PlatformSettings:
+        obj, _ = cls.objects.get_or_create(singleton_id=1)
+        return obj

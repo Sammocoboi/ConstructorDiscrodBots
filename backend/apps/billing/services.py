@@ -11,6 +11,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from apps.audit.models import AuditLog
 from apps.common.exceptions import LimitExceeded
 from apps.notifications.models import Notification
 
@@ -19,6 +20,13 @@ from .models import Plan, Subscription, UsageCounter
 logger = logging.getLogger(__name__)
 
 LIMIT_WARNING_THRESHOLD = 0.8
+
+
+def _audit(action: str, *, actor=None, obj=None, diff: dict | None = None) -> None:
+    try:
+        AuditLog.record(actor=actor, action=action, obj=obj, diff=diff or {})
+    except Exception:  # pragma: no cover - аудит не должен ломать биллинг
+        logger.exception("Could not write audit log: %s", action)
 
 
 def stripe_configured() -> bool:
@@ -282,7 +290,7 @@ def handle_checkout_completed(session: dict) -> None:
     )
     from .models import Payment
 
-    Payment.objects.get_or_create(
+    payment, payment_created = Payment.objects.get_or_create(
         external_id=session.get("id"),
         defaults={
             "user": user,
@@ -294,6 +302,13 @@ def handle_checkout_completed(session: dict) -> None:
             "payload": session,
         },
     )
+    if payment_created:
+        _audit(
+            "billing.payment_succeeded",
+            actor=user,
+            obj=payment,
+            diff={"plan": plan.code, "amount": str(plan.price_monthly)},
+        )
 
 
 def handle_subscription_deleted(subscription_data: dict) -> None:
@@ -301,6 +316,12 @@ def handle_subscription_deleted(subscription_data: dict) -> None:
     if subscription:
         subscription.status = Subscription.Status.CANCELED
         subscription.save(update_fields=["status", "updated_at"])
+        _audit(
+            "billing.subscription_canceled",
+            actor=subscription.user,
+            obj=subscription,
+            diff={"external_id": subscription.external_id},
+        )
 
 
 def handle_invoice_paid(invoice_data: dict) -> None:
@@ -310,7 +331,7 @@ def handle_invoice_paid(invoice_data: dict) -> None:
     user = subscription.user if subscription else None
     if user is None:
         return
-    Invoice.objects.get_or_create(
+    invoice, invoice_created = Invoice.objects.get_or_create(
         external_id=invoice_data.get("id", ""),
         defaults={
             "user": user,
@@ -323,6 +344,13 @@ def handle_invoice_paid(invoice_data: dict) -> None:
             "pdf_url": invoice_data.get("invoice_pdf") or "",
         },
     )
+    if invoice_created:
+        _audit(
+            "billing.invoice_paid",
+            actor=user,
+            obj=invoice,
+            diff={"number": invoice.number, "amount": str(invoice.amount)},
+        )
     Payment.objects.get_or_create(
         external_id=invoice_data.get("payment_intent") or invoice_data.get("id"),
         defaults={

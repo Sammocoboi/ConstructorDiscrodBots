@@ -23,6 +23,8 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import InvalidToken
 
+from apps.audit.models import AuditLog
+
 from . import services
 from .models import RefreshSession, User
 from .serializers import (
@@ -44,6 +46,14 @@ def _refresh_token_from_request(request) -> str | None:
     return request.COOKIES.get(settings.REFRESH_COOKIE_NAME) or request.data.get("refresh")
 
 
+def _audit(action: str, *, user, request, diff: dict | None = None) -> None:
+    """Пишет действие в журнал, не ломая основной сценарий при сбое."""
+    try:
+        AuditLog.record(actor=user, action=action, request=request, diff=diff or {})
+    except Exception:  # pragma: no cover - аудит не должен блокировать вход
+        logger.exception("Could not write audit log: %s", action)
+
+
 class RegisterView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
@@ -58,6 +68,7 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        _audit("auth.register", user=user, request=request)
         try:
             services.send_email_verification(user)
         except Exception:  # pragma: no cover - email provider failure should not break signup
@@ -88,6 +99,7 @@ class LoginView(APIView):
         user.last_login = timezone.now()
         user.save(update_fields=["last_login", "updated_at"])
         tokens = services.issue_tokens(user, request)
+        _audit("auth.login", user=user, request=request, diff={"method": "password"})
         response = Response(
             {"access": tokens["access"], "user": UserSerializer(user).data},
             status=status.HTTP_200_OK,
@@ -141,6 +153,7 @@ class LogoutView(APIView):
                 logger.info("Could not blacklist token on logout", exc_info=True)
         response = Response(status=status.HTTP_204_NO_CONTENT)
         services.clear_refresh_cookie(response)
+        _audit("auth.logout", user=request.user, request=request)
         return response
 
 
@@ -156,6 +169,7 @@ class LogoutAllView(APIView):
         count = services.revoke_all_sessions(request.user)
         response = Response({"revoked_sessions": count}, status=status.HTTP_200_OK)
         services.clear_refresh_cookie(response)
+        _audit("auth.logout_all", user=request.user, request=request, diff={"revoked": count})
         return response
 
 
@@ -272,6 +286,7 @@ class DiscordExchangeView(APIView):
         if user is None:
             raise ValidationError({"code": "Login code is invalid or expired"})
         tokens = services.issue_tokens(user, request)
+        _audit("auth.login", user=user, request=request, diff={"method": "discord"})
         response = Response(
             {"access": tokens["access"], "user": UserSerializer(user).data},
             status=status.HTTP_200_OK,
@@ -296,6 +311,7 @@ class EmailVerifyView(APIView):
         except (ValueError, User.DoesNotExist) as exc:
             raise ValidationError({"token": "Verification token is invalid or expired"}) from exc
         user.mark_email_verified()
+        _audit("auth.email_verified", user=user, request=request)
         return Response(UserSerializer(user).data)
 
 
@@ -339,6 +355,7 @@ class PasswordResetConfirmView(APIView):
         user.set_password(serializer.validated_data["new_password"])
         user.save(update_fields=["password", "updated_at"])
         services.revoke_all_sessions(user)
+        _audit("auth.password_reset", user=user, request=request)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
