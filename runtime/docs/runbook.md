@@ -3,7 +3,7 @@
 ## Быстрая диагностика
 
 ```bash
-cd proect/infra
+cd runtime/infra
 docker compose ps
 docker compose logs --tail=200 runtime
 curl -s localhost:8080/health

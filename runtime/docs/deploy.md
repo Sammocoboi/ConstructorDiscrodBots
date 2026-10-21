@@ -22,7 +22,7 @@ PostgreSQL; объединённый compose собирается после м�
 ## Первый деплой
 
 ```bash
-cd proect/infra
+cd runtime/infra
 cp .env.example .env
 # отредактировать .env: пароль PostgreSQL, ключ, worker id
 docker compose up -d --build
@@ -73,7 +73,7 @@ python -c "import base64,os;print(base64.b64encode(os.urandom(32)).decode())"
 ## Обновление
 
 ```bash
-cd proect/infra
+cd runtime/infra
 docker compose pull
 docker compose build runtime
 docker compose up -d
@@ -85,7 +85,7 @@ advisory locks. `stop_grace_period: 20s` даёт запас на drain.
 
 ## CI
 
-`.github/workflows/ci.yml` запускается на изменения в `proect/`:
+`.github/workflows/ci.yml` запускается на изменения в `runtime/`:
 
 1. Python 3.12;
 2. `pip install -e ".[dev]"`;
@@ -99,7 +99,7 @@ CI не поднимает PostgreSQL: unit-тесты используют in-m
 ## Бэкапы
 
 ```bash
-cd proect/infra
+cd runtime/infra
 ./backup.sh
 ```
 

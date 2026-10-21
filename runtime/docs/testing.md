@@ -3,7 +3,7 @@
 ## Команды
 
 ```bash
-cd proect
+cd runtime
 .venv/Scripts/python -m pytest -q     # Windows
 python -m pytest -q                    # Linux/macOS
 ruff check .
