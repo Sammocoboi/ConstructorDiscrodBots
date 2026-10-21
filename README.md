@@ -24,11 +24,13 @@
 - профиль пользователя;
 - базовые модели данных: боты, версии, гильдии, шаблоны, модули, библиотека команд, биллинг, уведомления, аудит;
 - базовый CRUD ботов и управление запуском (создание `runtime_commands`);
-- тарифы, лимиты и тестовый Stripe-сценарий;
+- тарифы, лимиты (80% — предупреждение, 100% — блокировка) и тестовый Stripe-сценарий;
+- идемпотентность изменяющих запросов (`Idempotency-Key`);
+- журнал действий и настройки платформы в Django Admin;
 - Django Admin;
 - единый формат ошибок, `request_id`, курсорная пагинация, throttling;
-- OpenAPI-документация;
-- Docker Compose, CI, pre-commit, тесты.
+- OpenAPI-документация и экспорт `docs/openapi.yaml`;
+- Docker Compose, CI (ruff, mypy, pytest, миграции), pre-commit, тесты.
 
 ## Быстрый старт (локально)
 
@@ -44,6 +46,7 @@ copy .env.example .env           # Windows
 
 cd backend
 python manage.py migrate
+python manage.py seed_plans
 python manage.py createsuperuser
 python manage.py runserver
 ```
@@ -72,7 +75,22 @@ cd backend
 pytest
 ruff check .
 ruff format --check .
+mypy apps config
 python manage.py makemigrations --check --dry-run
+```
+
+Хуки перед коммитом:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Экспорт OpenAPI после изменения API:
+
+```bash
+cd backend
+python manage.py export_openapi
 ```
 
 ## Переменные окружения
@@ -97,6 +115,10 @@ backend/
 docs/
   team-plan.md       # распределение задач
   api-contract.md    # контракт API
+  architecture.md    # компоненты и потоки
+  data-model.md      # модель данных
+  deployment.md      # деплой, бэкапы, мониторинг
+  openapi.yaml       # экспорт OpenAPI
   adr/               # архитектурные решения
 ```
 

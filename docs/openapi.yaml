@@ -673,23 +673,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Bot'
           description: ''
-    delete:
-      operationId: bots_destroy
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this Бот.
-        required: true
-      tags:
-      - bots
-      security:
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
     put:
       operationId: bots_update
       parameters:
@@ -723,6 +706,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/BotUpdate'
           description: ''
+    delete:
+      operationId: bots_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Бот.
+        required: true
+      tags:
+      - bots
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
     patch:
       operationId: bots_partial_update
       parameters:
@@ -1199,23 +1199,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Template'
           description: ''
-    delete:
-      operationId: templates_destroy
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this Шаблон.
-        required: true
-      tags:
-      - templates
-      security:
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
     put:
       operationId: templates_update
       parameters:
@@ -1249,6 +1232,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/TemplateUpdate'
           description: ''
+    delete:
+      operationId: templates_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Шаблон.
+        required: true
+      tags:
+      - templates
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
     patch:
       operationId: templates_partial_update
       parameters:
@@ -3135,14 +3135,41 @@ components:
           type: object
           additionalProperties: {}
         plan:
-          $ref: '#/components/schemas/Plan'
+          allOf:
+          - $ref: '#/components/schemas/Plan'
+          nullable: true
+        bots_used:
+          type: integer
+        bots_limit:
+          type: integer
+          nullable: true
+        executions_limit:
+          type: integer
+          nullable: true
+        bots_percent:
+          type: integer
+        executions_percent:
+          type: integer
+        execution_blocked:
+          type: boolean
+        warnings:
+          type: array
+          items:
+            type: string
       required:
       - api_calls
+      - bots_limit
+      - bots_percent
+      - bots_used
+      - execution_blocked
       - executions
+      - executions_limit
+      - executions_percent
       - limits
       - period_end
       - period_start
       - plan
+      - warnings
     User:
       type: object
       properties:
