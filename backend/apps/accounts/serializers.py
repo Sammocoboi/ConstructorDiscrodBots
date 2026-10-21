@@ -6,6 +6,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
 
 from .models import OAuthAccount, RefreshSession, User
 
@@ -69,9 +70,9 @@ class LoginSerializer(serializers.Serializer):
             password=attrs["password"],
         )
         if user is None:
-            raise serializers.ValidationError("Неверный email или пароль")
+            raise AuthenticationFailed("Неверный email или пароль")
         if not user.is_active:
-            raise serializers.ValidationError("Аккаунт отключён")
+            raise AuthenticationFailed("Аккаунт отключён")
         attrs["user"] = user
         return attrs
 
