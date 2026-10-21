@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-constructor}
+      POSTGRES_USER: ${POSTGRES_USER:-constructor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-constructor}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-constructor}"]
+      interval: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.backend
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ..:/app
+
+  runtime:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.runtime
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ..:/app
+    command: python -m runtime.main
+
+  frontend:
+    image: node:20
+    working_dir: /app
+    volumes:
+      - ../frontend:/app
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev -- --host"
+
+volumes:
+  pgdata:
