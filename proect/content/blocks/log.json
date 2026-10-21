@@ -1,0 +1,12 @@
+{
+  "type": "log",
+  "category": "logic",
+  "title": "Записать в лог",
+  "description": "Пишет сообщение в лог Runtime",
+  "params": {
+    "message": {"type": "string", "required": true, "max_length": 1000},
+    "level": {"type": "string", "default": "info", "enum": ["debug", "info", "warning", "error"]}
+  },
+  "inputs": ["flow"],
+  "outputs": ["flow"]
+}

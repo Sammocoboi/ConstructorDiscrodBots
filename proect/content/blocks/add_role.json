@@ -1,0 +1,13 @@
+{
+  "type": "add_role",
+  "category": "action",
+  "title": "Выдать роль",
+  "description": "Добавляет роль участнику сервера",
+  "params": {
+    "user_id": {"type": "user", "required": false},
+    "role_id": {"type": "role", "required": true}
+  },
+  "inputs": ["flow"],
+  "outputs": ["flow"],
+  "permissions": ["manage_roles"]
+}

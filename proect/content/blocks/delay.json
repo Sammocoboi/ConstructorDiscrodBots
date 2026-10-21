@@ -1,0 +1,11 @@
+{
+  "type": "delay",
+  "category": "logic",
+  "title": "Пауза",
+  "description": "Ждёт указанное количество секунд, не более 30",
+  "params": {
+    "seconds": {"type": "number", "required": false, "default": 1, "min": 0, "max": 30}
+  },
+  "inputs": ["flow"],
+  "outputs": ["flow"]
+}

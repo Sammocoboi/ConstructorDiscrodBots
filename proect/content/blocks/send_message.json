@@ -2,11 +2,14 @@
   "type": "send_message",
   "category": "action",
   "title": "Отправить сообщение",
+  "description": "Отправляет текст или эмбед в канал",
   "params": {
-    "channel_id": {"type": "channel", "required": true},
-    "content": {"type": "string", "required": true, "max_length": 2000},
+    "channel_id": {"type": "channel", "required": false},
+    "content": {"type": "string", "required": false, "max_length": 2000},
+    "embed": {"type": "embed", "required": false},
     "ephemeral": {"type": "boolean", "default": false}
   },
   "inputs": ["flow"],
-  "outputs": ["flow"]
+  "outputs": ["flow"],
+  "limits": {"max_per_flow": 200}
 }

@@ -1,0 +1,12 @@
+{
+  "type": "if",
+  "category": "condition",
+  "title": "Если",
+  "description": "Выбирает ветку true или false по условию",
+  "params": {
+    "condition": {"type": "condition", "required": true}
+  },
+  "inputs": ["flow"],
+  "outputs": ["true", "false"],
+  "branches": ["true", "false"]
+}

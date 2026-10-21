@@ -1,52 +1,69 @@
+name: discord-constructor-runtime
+
 services:
   db:
-    image: postgres:16
+    image: postgres:16-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-constructor}
       POSTGRES_USER: ${POSTGRES_USER:-constructor}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-constructor}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-constructor}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
-      retries: 5
+      timeout: 3s
+      retries: 10
 
-  backend:
-    build:
-      context: ..
-      dockerfile: infra/Dockerfile.backend
-    env_file: .env
+  migrate:
+    image: postgres:16-alpine
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "8000:8000"
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-constructor}
     volumes:
-      - ..:/app
+      - ./migrations:/migrations:ro
+    command:
+      - psql
+      - -h
+      - db
+      - -U
+      - ${POSTGRES_USER:-constructor}
+      - -d
+      - ${POSTGRES_DB:-constructor}
+      - -v
+      - ON_ERROR_STOP=1
+      - -f
+      - /migrations/001_runtime.sql
+    restart: "no"
 
   runtime:
     build:
       context: ..
       dockerfile: infra/Dockerfile.runtime
-    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://constructor:constructor@db:5432/constructor}
+      WORKER_ID: ${WORKER_ID:-runtime-1}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      MAX_BOTS_PER_WORKER: ${MAX_BOTS_PER_WORKER:-25}
+      HEARTBEAT_INTERVAL: ${HEARTBEAT_INTERVAL:-15}
+      RECONCILE_INTERVAL: ${RECONCILE_INTERVAL:-10}
+      COMMAND_POLL_INTERVAL: ${COMMAND_POLL_INTERVAL:-30}
+      RESTART_LIMIT: ${RESTART_LIMIT:-5}
+      HEALTH_HOST: 0.0.0.0
+      HEALTH_PORT: 8080
+      BOT_TOKEN_ENCRYPTION_KEY: ${BOT_TOKEN_ENCRYPTION_KEY:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
     depends_on:
-      db:
-        condition: service_healthy
-    volumes:
-      - ..:/app
-    command: python -m runtime.main
-
-  frontend:
-    image: node:20
-    working_dir: /app
-    volumes:
-      - ../frontend:/app
+      migrate:
+        condition: service_completed_successfully
     ports:
-      - "5173:5173"
-    command: sh -c "npm install && npm run dev -- --host"
+      - "${RUNTIME_PORT:-8080}:8080"
+    restart: unless-stopped
+    stop_grace_period: 20s
 
 volumes:
   pgdata:

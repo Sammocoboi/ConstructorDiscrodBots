@@ -1,0 +1,54 @@
+{
+  "id": "00000000-0000-4000-8000-000000000004",
+  "slug": "roles-and-selfroles",
+  "title": "Роли и самореализация",
+  "description": "Автороль новичкам и выдача ролей по команде",
+  "category": "roles",
+  "version": "1.0.0",
+  "author": "system",
+  "is_system": true,
+  "config": {
+    "schema_version": 1,
+    "profile": {
+      "status": "online",
+      "activity": {"type": "watching", "text": "за ролями"}
+    },
+    "modules": [
+      {"id": "roles", "enabled": true, "settings": {}}
+    ],
+    "commands": [
+      {"id": "cmd_role", "name": "role", "description": "Выдать себе роль", "flow_id": "flow_role", "options": [
+        {"name": "role", "type": "role", "required": true, "description": "Роль"}
+      ]}
+    ],
+    "flows": [
+      {
+        "id": "flow_autorole",
+        "trigger": {"type": "join_member"},
+        "nodes": [
+          {"id": "n1", "type": "join_member", "params": {}},
+          {"id": "n2", "type": "add_role", "params": {"role_id": "000000000000000000"}},
+          {"id": "n3", "type": "send_message", "params": {
+            "content": "Роль новичка выдана. Добро пожаловать!"
+          }}
+        ],
+        "edges": [{"from": "n1", "to": "n2"}, {"from": "n2", "to": "n3"}]
+      },
+      {
+        "id": "flow_role",
+        "trigger": {"type": "slash_command", "command_id": "cmd_role"},
+        "nodes": [
+          {"id": "n1", "type": "slash_command", "params": {"command_id": "cmd_role"}},
+          {"id": "n2", "type": "add_role", "params": {"role_id": "{args.role.id}"}},
+          {"id": "n3", "type": "send_message", "params": {
+            "content": "Роль {args.role.name} выдана.",
+            "ephemeral": true
+          }}
+        ],
+        "edges": [{"from": "n1", "to": "n2"}, {"from": "n2", "to": "n3"}]
+      }
+    ],
+    "messages": [],
+    "variables_schema": []
+  }
+}

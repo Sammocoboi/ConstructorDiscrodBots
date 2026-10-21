@@ -1,0 +1,14 @@
+{
+  "type": "send_dm",
+  "category": "action",
+  "title": "Отправить в личные сообщения",
+  "description": "Отправляет сообщение пользователю в DM",
+  "params": {
+    "user_id": {"type": "user", "required": false},
+    "content": {"type": "string", "required": false, "max_length": 2000},
+    "embed": {"type": "embed", "required": false}
+  },
+  "inputs": ["flow"],
+  "outputs": ["flow"],
+  "permissions": ["send_messages"]
+}
