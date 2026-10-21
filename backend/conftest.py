@@ -1,10 +1,19 @@
 from __future__ import annotations
 
 import pytest
+from django.core.cache import cache
 from rest_framework.test import APIClient
 
 from apps.accounts.models import User
 from apps.billing.models import Plan
+
+
+@pytest.fixture(autouse=True)
+def _clear_cache():
+    """Изолирует throttling и одноразовые коды между тестами."""
+    cache.clear()
+    yield
+    cache.clear()
 
 
 @pytest.fixture

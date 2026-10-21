@@ -64,6 +64,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     "apps.common.middleware.RequestIDMiddleware",
+    "apps.common.idempotency.IdempotencyMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -211,6 +212,10 @@ REFRESH_COOKIE_NAME = "refresh_token"
 REFRESH_COOKIE_PATH = "/api/v1/auth/"
 REFRESH_COOKIE_SECURE = env_bool("DJANGO_REFRESH_COOKIE_SECURE", not DEBUG)
 REFRESH_COOKIE_SAMESITE = "Lax"
+
+# Идемпотентность изменяющих запросов (см. docs/api-contract.md, ADR-0006).
+IDEMPOTENCY_HEADER = "Idempotency-Key"
+IDEMPOTENCY_TTL_HOURS = int(os.getenv("IDEMPOTENCY_TTL_HOURS", "24"))
 
 # ---------------------------------------------------------------------------
 # Discord OAuth2
