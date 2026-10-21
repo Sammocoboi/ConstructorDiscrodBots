@@ -1,5 +1,11 @@
-import '@testing-library/jest-dom'
-import { vi } from 'vitest'
+import '@testing-library/jest-dom/vitest'
+import { afterEach, vi } from 'vitest'
+import { cleanup } from '@testing-library/react'
+
+afterEach(() => {
+  cleanup()
+  localStorage.clear()
+})
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -15,10 +21,15 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 })
 
-class ResizeObserverMock {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+if (!window.ResizeObserver) {
+  class ResizeObserverStub {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  window.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver
 }
 
-globalThis.ResizeObserver = ResizeObserverMock
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = vi.fn()
+}

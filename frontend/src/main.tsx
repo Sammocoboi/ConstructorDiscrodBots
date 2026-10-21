@@ -1,21 +1,21 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { MantineProvider } from '@mantine/core'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
+import { QueryClientProvider } from '@tanstack/react-query'
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
-import { App } from './App'
-import './index.css'
+import '@xyflow/react/dist/style.css'
+import './theme/global.css'
+import './shared/i18n'
+import App from './App'
+import { queryClient } from './shared/api/queryClient'
 
-const container = document.getElementById('root')
-
-if (!container) {
-  throw new Error('Root element #root was not found')
-}
-
-createRoot(container).render(
-  <StrictMode>
-    <MantineProvider defaultColorScheme="dark">
-      <App />
-    </MantineProvider>
-  </StrictMode>,
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </QueryClientProvider>
+  </React.StrictMode>,
 )
