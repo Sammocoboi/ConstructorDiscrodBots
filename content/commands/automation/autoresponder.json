@@ -1,0 +1,54 @@
+{
+  "slug": "autoresponder",
+  "name": "autoresponder",
+  "title": "Настроить авто-ответ",
+  "category": "automation",
+  "description": "Добавляет автоматический ответ на ключевое слово",
+  "type": "slash",
+  "required_module": "automation",
+  "required_permissions": 8192,
+  "default_member_permissions": "8192",
+  "options": [
+    {
+      "name": "trigger",
+      "description": "Слово или фраза триггера",
+      "type": 3,
+      "required": true
+    },
+    {
+      "name": "response",
+      "description": "Ответ бота",
+      "type": 3,
+      "required": true
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /autoresponder",
+      "description": "Добавляет автоматический ответ на ключевое слово",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "autoresponder"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /autoresponder.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

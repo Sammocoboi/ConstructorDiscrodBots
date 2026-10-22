@@ -1,0 +1,62 @@
+{
+  "slug": "ban",
+  "name": "ban",
+  "title": "Блокировка участника",
+  "category": "moderation",
+  "description": "Навсегда блокирует пользователя на сервере",
+  "type": "slash",
+  "required_module": "moderation",
+  "required_permissions": 4,
+  "default_member_permissions": "4",
+  "required_intents": [
+    "GUILD_MEMBERS"
+  ],
+  "cooldown": {
+    "type": "user",
+    "seconds": 5
+  },
+  "options": [
+    {
+      "name": "user",
+      "description": "Кого забанить",
+      "type": 6,
+      "required": true
+    },
+    {
+      "name": "reason",
+      "description": "Причина бана",
+      "type": 3,
+      "required": false
+    },
+    {
+      "name": "delete_days",
+      "description": "Удалить сообщения за N дней",
+      "type": 4,
+      "required": false
+    }
+  ],
+  "preview": {
+    "embed": {
+      "title": "Команда /ban",
+      "description": "Навсегда блокирует пользователя на сервере",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "ban"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /ban.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

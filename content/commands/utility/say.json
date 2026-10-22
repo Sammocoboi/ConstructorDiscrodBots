@@ -1,0 +1,47 @@
+{
+  "slug": "say",
+  "name": "say",
+  "title": "Сказать от имени бота",
+  "category": "utility",
+  "description": "Отправляет введенный текст от имени бота",
+  "type": "slash",
+  "required_permissions": 8192,
+  "default_member_permissions": "8192",
+  "options": [
+    {
+      "name": "text",
+      "description": "Сообщение для отправки",
+      "type": 3,
+      "required": true
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /say",
+      "description": "Отправляет введенный текст от имени бота",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "say"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /say.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

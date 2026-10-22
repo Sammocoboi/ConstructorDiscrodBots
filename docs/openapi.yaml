@@ -1,0 +1,3238 @@
+openapi: 3.0.3
+info:
+  title: Constructor Discord Bots API
+  version: 1.0.0
+  description: 'API платформы для визуального создания, настройки и хостинга Discord-ботов.
+    Префикс: /api/v1/. Аутентификация: Authorization: Bearer <access_token>.'
+paths:
+  /api/v1/auth/register:
+    post:
+      operationId: auth_register_create
+      summary: Регистрация по email и паролю
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          description: Validation error
+  /api/v1/auth/login:
+    post:
+      operationId: auth_login_create
+      summary: Вход по email и паролю
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '401':
+          description: Invalid credentials
+  /api/v1/auth/refresh:
+    post:
+      operationId: auth_refresh_create
+      summary: Обновить access-токен по refresh-cookie
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: New access token
+        '401':
+          description: Invalid refresh token
+  /api/v1/auth/logout:
+    post:
+      operationId: auth_logout_create
+      summary: Выйти из текущей сессии
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/logout-all:
+    post:
+      operationId: auth_logout_all_create
+      summary: Выйти на всех устройствах
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Sessions revoked
+  /api/v1/auth/csrf:
+    get:
+      operationId: auth_csrf_retrieve
+      summary: Получить CSRF-cookie
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/health:
+    get:
+      operationId: auth_health_retrieve
+      summary: Health check
+      tags:
+      - auth
+      security:
+      - {}
+      responses:
+        '200':
+          description: Service is alive
+  /api/v1/auth/me:
+    get:
+      operationId: auth_me_retrieve
+      summary: Текущий профиль
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: auth_me_partial_update
+      summary: Обновить профиль
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: auth_me_destroy
+      summary: Мягко удалить аккаунт
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/me/sessions:
+    get:
+      operationId: auth_me_sessions_list
+      summary: Активные сессии
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RefreshSession'
+          description: ''
+  /api/v1/auth/me/sessions/{session_id}:
+    delete:
+      operationId: auth_me_sessions_destroy
+      summary: Отозвать сессию
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/discord/login:
+    get:
+      operationId: auth_discord_login_retrieve
+      summary: Начать вход через Discord
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '302':
+          description: Redirect to Discord
+  /api/v1/auth/discord/callback:
+    get:
+      operationId: auth_discord_callback_retrieve
+      summary: Callback Discord OAuth2
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '302':
+          description: Redirect to frontend
+  /api/v1/auth/discord/exchange:
+    post:
+      operationId: auth_discord_exchange_create
+      summary: Обменять одноразовый код на JWT
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiscordExchangeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DiscordExchangeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DiscordExchangeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          description: Invalid code
+  /api/v1/auth/email/verify:
+    post:
+      operationId: auth_email_verify_create
+      summary: Подтвердить email
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerifyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmailVerifyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmailVerifyRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/auth/password/reset/request:
+    post:
+      operationId: auth_password_reset_request_create
+      summary: Запросить сброс пароля
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '202':
+          description: No response body
+  /api/v1/auth/password/reset/confirm:
+    post:
+      operationId: auth_password_reset_confirm_create
+      summary: Сбросить пароль
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/me:
+    get:
+      operationId: me_retrieve
+      summary: Текущий профиль
+      tags:
+      - me
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: me_partial_update
+      summary: Обновить профиль
+      tags:
+      - me
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: me_destroy
+      summary: Мягко удалить аккаунт
+      tags:
+      - me
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/me/sessions:
+    get:
+      operationId: me_sessions_list
+      summary: Активные сессии
+      tags:
+      - me
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RefreshSession'
+          description: ''
+  /api/v1/me/sessions/{session_id}:
+    delete:
+      operationId: me_sessions_destroy
+      summary: Отозвать сессию
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - me
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/health:
+    get:
+      operationId: health_retrieve
+      summary: Health check
+      tags:
+      - health
+      security:
+      - {}
+      responses:
+        '200':
+          description: Service is alive
+  /api/v1/bots/{bot_id}/guilds/{guild_id}:
+    get:
+      operationId: bots_guilds_retrieve
+      parameters:
+      - in: path
+        name: bot_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: guild_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - bots
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotGuild'
+          description: ''
+    put:
+      operationId: bots_guilds_update
+      parameters:
+      - in: path
+        name: bot_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: guild_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - bots
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BotGuildRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BotGuildRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BotGuildRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotGuild'
+          description: ''
+    patch:
+      operationId: bots_guilds_partial_update
+      parameters:
+      - in: path
+        name: bot_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: guild_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - bots
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBotGuildRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBotGuildRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBotGuildRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotGuild'
+          description: ''
+  /api/v1/bots/{bot_id}/versions/{version_id}:
+    get:
+      operationId: bots_versions_retrieve
+      parameters:
+      - in: path
+        name: bot_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: version_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - bots
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotVersion'
+          description: ''
+  /api/v1/bots/:
+    get:
+      operationId: bots_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: desired_state
+        schema:
+          type: string
+          enum:
+          - running
+          - stopped
+        description: |-
+          * `running` - Должен работать
+          * `stopped` - Должен быть остановлен
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - error
+          - online
+          - starting
+          - stopped
+          - suspended
+        description: |-
+          * `stopped` - Остановлен
+          * `starting` - Запускается
+          * `online` - Онлайн
+          * `error` - Ошибка
+          * `suspended` - Приостановлен
+      tags:
+      - bots
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBotList'
+          description: ''
+    post:
+      operationId: bots_create
+      summary: Создать бота
+      tags:
+      - bots
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BotCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BotCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BotCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bot'
+          description: ''
+  /api/v1/bots/{id}/:
+    get:
+      operationId: bots_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Бот.
+        required: true
+      tags:
+      - bots
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bot'
+          description: ''
+    put:
+      operationId: bots_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Бот.
+        required: true
+      tags:
+      - bots
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BotUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BotUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BotUpdateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotUpdate'
+          description: ''
+    delete:
+      operationId: bots_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Бот.
+        required: true
+      tags:
+      - bots
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+    patch:
+      operationId: bots_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Бот.
+        required: true
+      tags:
+      - bots
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBotUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBotUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBotUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotUpdate'
+          description: ''
+  /api/v1/bots/{id}/commands/:
+    get:
+      operationId: bots_commands_list
+      summary: История команд запуска
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: desired_state
+        schema:
+          type: string
+          enum:
+          - running
+          - stopped
+        description: |-
+          * `running` - Должен работать
+          * `stopped` - Должен быть остановлен
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Бот.
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - error
+          - online
+          - starting
+          - stopped
+          - suspended
+        description: |-
+          * `stopped` - Остановлен
+          * `starting` - Запускается
+          * `online` - Онлайн
+          * `error` - Ошибка
+          * `suspended` - Приостановлен
+      tags:
+      - bots
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRuntimeCommandList'
+          description: ''
+  /api/v1/bots/{id}/guilds/:
+    get:
+      operationId: bots_guilds_list
+      summary: Гильдии бота
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: desired_state
+        schema:
+          type: string
+          enum:
+          - running
+          - stopped
+        description: |-
+          * `running` - Должен работать
+          * `stopped` - Должен быть остановлен
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Бот.
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - error
+          - online
+          - starting
+          - stopped
+          - suspended
+        description: |-
+          * `stopped` - Остановлен
+          * `starting` - Запускается
+          * `online` - Онлайн
+          * `error` - Ошибка
+          * `suspended` - Приостановлен
+      tags:
+      - bots
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBotGuildList'
+          description: ''
+  /api/v1/bots/{id}/restart/:
+    post:
+      operationId: bots_restart_create
+      summary: Перезапустить бота
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Бот.
+        required: true
+      tags:
+      - bots
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeCommand'
+          description: ''
+  /api/v1/bots/{id}/start/:
+    post:
+      operationId: bots_start_create
+      summary: Запустить бота
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Бот.
+        required: true
+      tags:
+      - bots
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeCommand'
+          description: ''
+  /api/v1/bots/{id}/status/:
+    get:
+      operationId: bots_status_retrieve
+      summary: Статус и runtime-состояние
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Бот.
+        required: true
+      tags:
+      - bots
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotStatus'
+          description: ''
+  /api/v1/bots/{id}/stop/:
+    post:
+      operationId: bots_stop_create
+      summary: Остановить бота
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Бот.
+        required: true
+      tags:
+      - bots
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeCommand'
+          description: ''
+  /api/v1/bots/{id}/versions/:
+    get:
+      operationId: bots_versions_list
+      summary: Версии конфигурации
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: desired_state
+        schema:
+          type: string
+          enum:
+          - running
+          - stopped
+        description: |-
+          * `running` - Должен работать
+          * `stopped` - Должен быть остановлен
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Бот.
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - error
+          - online
+          - starting
+          - stopped
+          - suspended
+        description: |-
+          * `stopped` - Остановлен
+          * `starting` - Запускается
+          * `online` - Онлайн
+          * `error` - Ошибка
+          * `suspended` - Приостановлен
+      tags:
+      - bots
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBotVersionListList'
+          description: ''
+  /api/v1/templates/:
+    get:
+      operationId: templates_list
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: is_system
+        schema:
+          type: boolean
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: visibility
+        schema:
+          type: string
+          enum:
+          - private
+          - public
+          - unlisted
+        description: |-
+          * `private` - Приватный
+          * `unlisted` - По ссылке
+          * `public` - Публичный
+      tags:
+      - templates
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTemplateList'
+          description: ''
+    post:
+      operationId: templates_create
+      tags:
+      - templates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TemplateCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TemplateCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateCreate'
+          description: ''
+  /api/v1/templates/import/:
+    post:
+      operationId: templates_import_create
+      summary: Импортировать шаблон из JSON
+      tags:
+      - templates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateImportRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TemplateImportRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TemplateImportRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+          description: ''
+  /api/v1/templates/{id}/:
+    get:
+      operationId: templates_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Шаблон.
+        required: true
+      tags:
+      - templates
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+          description: ''
+    put:
+      operationId: templates_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Шаблон.
+        required: true
+      tags:
+      - templates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TemplateUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TemplateUpdateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateUpdate'
+          description: ''
+    delete:
+      operationId: templates_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Шаблон.
+        required: true
+      tags:
+      - templates
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+    patch:
+      operationId: templates_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Шаблон.
+        required: true
+      tags:
+      - templates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTemplateUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTemplateUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTemplateUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateUpdate'
+          description: ''
+  /api/v1/templates/{id}/export/:
+    get:
+      operationId: templates_export_retrieve
+      summary: Экспортировать шаблон
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Шаблон.
+        required: true
+      tags:
+      - templates
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Template JSON
+  /api/v1/templates/{id}/instantiate/:
+    post:
+      operationId: templates_instantiate_create
+      summary: Создать бота из шаблона
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Шаблон.
+        required: true
+      tags:
+      - templates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstantiateTemplateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InstantiateTemplateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InstantiateTemplateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          description: Bot created from template
+  /api/v1/templates/{id}/share_link/:
+    post:
+      operationId: templates_share_link_create
+      summary: Ссылка на шаблон
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Шаблон.
+        required: true
+      tags:
+      - templates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TemplateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TemplateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Share link
+  /api/v1/templates/{id}/versions/:
+    get:
+      operationId: templates_versions_list
+      summary: Версии шаблона
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Шаблон.
+        required: true
+      - in: query
+        name: is_system
+        schema:
+          type: boolean
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: visibility
+        schema:
+          type: string
+          enum:
+          - private
+          - public
+          - unlisted
+        description: |-
+          * `private` - Приватный
+          * `unlisted` - По ссылке
+          * `public` - Публичный
+      tags:
+      - templates
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTemplateVersionList'
+          description: ''
+  /api/v1/modules/:
+    get:
+      operationId: modules_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: is_premium
+        schema:
+          type: boolean
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: min_plan
+        schema:
+          type: string
+          enum:
+          - business
+          - free
+          - pro
+        description: |-
+          * `free` - Free
+          * `pro` - Pro
+          * `business` - Business
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - modules
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedModuleList'
+          description: ''
+  /api/v1/modules/{id}/:
+    get:
+      operationId: modules_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Модуль.
+        required: true
+      tags:
+      - modules
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Module'
+          description: ''
+  /api/v1/commands-library/:
+    get:
+      operationId: commands_library_list
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: type
+        schema:
+          type: string
+          enum:
+          - context_menu
+          - prefix
+          - slash
+        description: |-
+          * `slash` - Slash-команда
+          * `prefix` - Префиксная команда
+          * `context_menu` - Контекстное меню
+      tags:
+      - commands-library
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCommandLibraryListList'
+          description: ''
+  /api/v1/commands-library/{id}/:
+    get:
+      operationId: commands_library_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Команда библиотеки.
+        required: true
+      tags:
+      - commands-library
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandLibrary'
+          description: ''
+  /api/v1/plans:
+    get:
+      operationId: plans_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - plans
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Plan'
+          description: ''
+  /api/v1/me/subscription:
+    get:
+      operationId: me_subscription_retrieve
+      summary: Текущая подписка
+      tags:
+      - me
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+          description: ''
+  /api/v1/me/usage:
+    get:
+      operationId: me_usage_retrieve
+      summary: Использование лимитов тарифа
+      tags:
+      - me
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usage'
+          description: ''
+  /api/v1/billing/checkout:
+    post:
+      operationId: billing_checkout_create
+      summary: Создать Stripe Checkout
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Checkout URL
+  /api/v1/billing/portal:
+    post:
+      operationId: billing_portal_create
+      summary: Stripe Billing Portal
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PortalRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PortalRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PortalRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Portal URL
+  /api/v1/billing/invoices:
+    get:
+      operationId: billing_invoices_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInvoiceList'
+          description: ''
+  /api/v1/billing/webhook/stripe:
+    post:
+      operationId: billing_webhook_stripe_create
+      summary: Stripe webhook
+      tags:
+      - billing
+      security:
+      - {}
+      responses:
+        '200':
+          description: Webhook processed
+  /api/v1/notifications/:
+    get:
+      operationId: notifications_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: read_at
+        schema:
+          type: string
+          format: date-time
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: type
+        schema:
+          type: string
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotificationList'
+          description: ''
+  /api/v1/notifications/read_all/:
+    post:
+      operationId: notifications_read_all_create
+      summary: Прочитать все
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: All notifications marked as read
+  /api/v1/notifications/{id}/:
+    get:
+      operationId: notifications_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Уведомление.
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/v1/notifications/{id}/read/:
+    post:
+      operationId: notifications_read_create
+      summary: Отметить уведомление прочитанным
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Уведомление.
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+components:
+  schemas:
+    Bot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        discord_application_id:
+          type: string
+          readOnly: true
+        discord_bot_user_id:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status0aaEnum'
+          readOnly: true
+        desired_state:
+          allOf:
+          - $ref: '#/components/schemas/DesiredStateEnum'
+          readOnly: true
+        active_version_number:
+          type: integer
+          readOnly: true
+        profile:
+          readOnly: true
+        intents:
+          readOnly: true
+        has_token:
+          type: boolean
+          readOnly: true
+        token_masked:
+          type: string
+          readOnly: true
+        last_error:
+          type: string
+          readOnly: true
+        last_error_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - active_version_number
+      - created_at
+      - desired_state
+      - discord_application_id
+      - discord_bot_user_id
+      - has_token
+      - id
+      - intents
+      - last_error
+      - last_error_at
+      - name
+      - profile
+      - status
+      - token_masked
+      - updated_at
+    BotCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        discord_application_id:
+          type: string
+          maxLength: 32
+        token:
+          type: string
+          writeOnly: true
+        profile: {}
+        intents: {}
+      required:
+      - name
+    BotGuild:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        guild_id:
+          type: string
+          readOnly: true
+        guild_name:
+          type: string
+          maxLength: 100
+        joined_at:
+          type: string
+          format: date-time
+          readOnly: true
+        left_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        settings: {}
+        enabled_modules: {}
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - guild_id
+      - id
+      - joined_at
+      - left_at
+      - updated_at
+    BotGuildRequest:
+      type: object
+      properties:
+        guild_name:
+          type: string
+          maxLength: 100
+        settings: {}
+        enabled_modules: {}
+    BotRuntimeState:
+      type: object
+      properties:
+        worker_id:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status0aaEnum'
+          readOnly: true
+        latency_ms:
+          type: integer
+          readOnly: true
+          nullable: true
+        guild_count:
+          type: integer
+          readOnly: true
+        uptime_seconds:
+          type: integer
+          readOnly: true
+        version_number:
+          type: integer
+          readOnly: true
+          nullable: true
+        heartbeat_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        is_alive:
+          type: boolean
+          readOnly: true
+      required:
+      - guild_count
+      - heartbeat_at
+      - is_alive
+      - latency_ms
+      - status
+      - uptime_seconds
+      - version_number
+      - worker_id
+    BotStatus:
+      type: object
+      properties:
+        bot_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        desired_state:
+          type: string
+        runtime:
+          allOf:
+          - $ref: '#/components/schemas/BotRuntimeState'
+          nullable: true
+      required:
+      - bot_id
+      - desired_state
+      - runtime
+      - status
+    BotUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        discord_application_id:
+          type: string
+          maxLength: 32
+        profile: {}
+        intents: {}
+      required:
+      - name
+    BotUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        discord_application_id:
+          type: string
+          maxLength: 32
+        profile: {}
+        intents: {}
+      required:
+      - name
+    BotVersion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        version_number:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        content: {}
+        comment:
+          type: string
+          maxLength: 255
+        published_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - version_number
+    BotVersionList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        version_number:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        comment:
+          type: string
+          maxLength: 255
+        published_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - version_number
+    CheckoutRequest:
+      type: object
+      properties:
+        plan_code:
+          $ref: '#/components/schemas/CodeEnum'
+        success_url:
+          type: string
+          format: uri
+          minLength: 1
+        cancel_url:
+          type: string
+          format: uri
+          minLength: 1
+      required:
+      - plan_code
+    CodeEnum:
+      enum:
+      - free
+      - pro
+      - business
+      type: string
+      description: |-
+        * `free` - Free
+        * `pro` - Pro
+        * `business` - Business
+    CommandEnum:
+      enum:
+      - start
+      - stop
+      - restart
+      - reload
+      type: string
+      description: |-
+        * `start` - Запуск
+        * `stop` - Остановка
+        * `restart` - Перезапуск
+        * `reload` - Горячая замена конфигурации
+    CommandLibrary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        category:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        type:
+          allOf:
+          - $ref: '#/components/schemas/TypeEnum'
+          readOnly: true
+        options:
+          readOnly: true
+        flow:
+          readOnly: true
+        required_permissions:
+          readOnly: true
+        required_intents:
+          readOnly: true
+        dependencies:
+          readOnly: true
+        popularity:
+          type: integer
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - category
+      - dependencies
+      - description
+      - flow
+      - id
+      - is_active
+      - options
+      - popularity
+      - required_intents
+      - required_permissions
+      - slug
+      - title
+      - type
+    CommandLibraryList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        category:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        type:
+          allOf:
+          - $ref: '#/components/schemas/TypeEnum'
+          readOnly: true
+        options:
+          readOnly: true
+        required_permissions:
+          readOnly: true
+        required_intents:
+          readOnly: true
+        dependencies:
+          readOnly: true
+        popularity:
+          type: integer
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - category
+      - dependencies
+      - description
+      - id
+      - is_active
+      - options
+      - popularity
+      - required_intents
+      - required_permissions
+      - slug
+      - title
+      - type
+    DesiredStateEnum:
+      enum:
+      - running
+      - stopped
+      type: string
+      description: |-
+        * `running` - Должен работать
+        * `stopped` - Должен быть остановлен
+    DiscordExchangeRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+      required:
+      - code
+    EmailVerifyRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+      required:
+      - token
+    InstantiateTemplateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        version_id:
+          type: string
+          format: uuid
+          nullable: true
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        currency:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/InvoiceStatusEnum'
+          readOnly: true
+        issued_at:
+          type: string
+          format: date-time
+          readOnly: true
+        paid_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        pdf_url:
+          type: string
+          format: uri
+          readOnly: true
+      required:
+      - amount
+      - currency
+      - id
+      - issued_at
+      - number
+      - paid_at
+      - pdf_url
+      - status
+    InvoiceStatusEnum:
+      enum:
+      - draft
+      - open
+      - paid
+      - void
+      type: string
+      description: |-
+        * `draft` - Черновик
+        * `open` - Открыт
+        * `paid` - Оплачен
+        * `void` - Аннулирован
+    LocaleEnum:
+      enum:
+      - ru
+      - en
+      type: string
+      description: |-
+        * `ru` - Русский
+        * `en` - English
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    Module:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        manifest:
+          readOnly: true
+          description: Команды, события, права, intents модуля
+        settings_schema:
+          readOnly: true
+          description: JSON Schema настроек, из которого генерируется UI
+        is_premium:
+          type: boolean
+          readOnly: true
+        min_plan:
+          allOf:
+          - $ref: '#/components/schemas/CodeEnum'
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - description
+      - id
+      - is_active
+      - is_premium
+      - manifest
+      - min_plan
+      - settings_schema
+      - slug
+      - title
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        type:
+          type: string
+          readOnly: true
+        payload:
+          readOnly: true
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - payload
+      - type
+    PaginatedBotGuildList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BotGuild'
+    PaginatedBotList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Bot'
+    PaginatedBotVersionListList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BotVersionList'
+    PaginatedCommandLibraryListList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommandLibraryList'
+    PaginatedInvoiceList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Invoice'
+    PaginatedModuleList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Module'
+    PaginatedNotificationList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+    PaginatedRuntimeCommandList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuntimeCommand'
+    PaginatedTemplateList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Template'
+    PaginatedTemplateVersionList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateVersion'
+    PasswordResetConfirmRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 8
+      required:
+      - new_password
+      - token
+    PasswordResetRequestRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
+    PatchedBotGuildRequest:
+      type: object
+      properties:
+        guild_name:
+          type: string
+          maxLength: 100
+        settings: {}
+        enabled_modules: {}
+    PatchedBotUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        discord_application_id:
+          type: string
+          maxLength: 32
+        profile: {}
+        intents: {}
+    PatchedProfileUpdateRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        avatar_url:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        locale:
+          $ref: '#/components/schemas/LocaleEnum'
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+    PatchedTemplateUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 150
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 64
+        visibility:
+          $ref: '#/components/schemas/VisibilityEnum'
+        tags: {}
+    Plan:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          allOf:
+          - $ref: '#/components/schemas/CodeEnum'
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        price_monthly:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        currency:
+          type: string
+          readOnly: true
+        limits:
+          readOnly: true
+        sort_order:
+          type: integer
+          readOnly: true
+      required:
+      - code
+      - currency
+      - id
+      - limits
+      - name
+      - price_monthly
+      - sort_order
+    PortalRequest:
+      type: object
+      properties:
+        return_url:
+          type: string
+          format: uri
+          minLength: 1
+    RefreshSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        device_info:
+          type: string
+          readOnly: true
+        ip:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+        revoked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - created_at
+      - device_info
+      - expires_at
+      - id
+      - ip
+      - is_active
+      - revoked_at
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        display_name:
+          type: string
+          maxLength: 150
+      required:
+      - email
+      - password
+    RuntimeCommand:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        command:
+          allOf:
+          - $ref: '#/components/schemas/CommandEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/RuntimeCommandStatusEnum'
+          readOnly: true
+        processed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        error:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - command
+      - created_at
+      - error
+      - id
+      - processed_at
+      - status
+    RuntimeCommandStatusEnum:
+      enum:
+      - pending
+      - acknowledged
+      - failed
+      type: string
+      description: |-
+        * `pending` - Ожидает
+        * `acknowledged` - Подтверждена
+        * `failed` - Ошибка
+    Status0aaEnum:
+      enum:
+      - stopped
+      - starting
+      - online
+      - error
+      - suspended
+      type: string
+      description: |-
+        * `stopped` - Остановлен
+        * `starting` - Запускается
+        * `online` - Онлайн
+        * `error` - Ошибка
+        * `suspended` - Приостановлен
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        plan:
+          allOf:
+          - $ref: '#/components/schemas/Plan'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/SubscriptionStatusEnum'
+          readOnly: true
+        current_period_start:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        current_period_end:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        cancel_at_period_end:
+          type: boolean
+          readOnly: true
+        trial_end:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - cancel_at_period_end
+      - created_at
+      - current_period_end
+      - current_period_start
+      - id
+      - plan
+      - status
+      - trial_end
+    SubscriptionStatusEnum:
+      enum:
+      - trialing
+      - active
+      - past_due
+      - canceled
+      - expired
+      type: string
+      description: |-
+        * `trialing` - Пробный период
+        * `active` - Активна
+        * `past_due` - Просрочена
+        * `canceled` - Отменена
+        * `expired` - Истекла
+    Template:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 150
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 64
+        visibility:
+          $ref: '#/components/schemas/VisibilityEnum'
+        tags: {}
+        is_system:
+          type: boolean
+          readOnly: true
+        popularity:
+          type: integer
+          readOnly: true
+        author_email:
+          type: string
+          format: email
+          readOnly: true
+        latest_version:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - author_email
+      - created_at
+      - id
+      - is_system
+      - latest_version
+      - popularity
+      - title
+      - updated_at
+    TemplateCreate:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 150
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 64
+        visibility:
+          $ref: '#/components/schemas/VisibilityEnum'
+        tags: {}
+      required:
+      - title
+    TemplateCreateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 150
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 64
+        visibility:
+          $ref: '#/components/schemas/VisibilityEnum'
+        tags: {}
+        content:
+          writeOnly: true
+        version:
+          type: string
+          writeOnly: true
+          minLength: 1
+          default: 1.0.0
+        changelog:
+          type: string
+          writeOnly: true
+          default: ''
+      required:
+      - title
+    TemplateImportRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 150
+        description:
+          type: string
+          default: ''
+        category:
+          type: string
+          default: ''
+        version:
+          type: string
+          minLength: 1
+          default: 1.0.0
+        content: {}
+      required:
+      - content
+      - title
+    TemplateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 150
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 64
+        visibility:
+          $ref: '#/components/schemas/VisibilityEnum'
+        tags: {}
+      required:
+      - title
+    TemplateUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 150
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 64
+        visibility:
+          $ref: '#/components/schemas/VisibilityEnum'
+        tags: {}
+      required:
+      - title
+    TemplateUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 150
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 64
+        visibility:
+          $ref: '#/components/schemas/VisibilityEnum'
+        tags: {}
+      required:
+      - title
+    TemplateVersion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        version:
+          type: string
+          maxLength: 32
+        changelog:
+          type: string
+        content: {}
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+    TypeEnum:
+      enum:
+      - slash
+      - prefix
+      - context_menu
+      type: string
+      description: |-
+        * `slash` - Slash-команда
+        * `prefix` - Префиксная команда
+        * `context_menu` - Контекстное меню
+    Usage:
+      type: object
+      properties:
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        executions:
+          type: integer
+        api_calls:
+          type: integer
+        limits:
+          type: object
+          additionalProperties: {}
+        plan:
+          allOf:
+          - $ref: '#/components/schemas/Plan'
+          nullable: true
+        bots_used:
+          type: integer
+        bots_limit:
+          type: integer
+          nullable: true
+        executions_limit:
+          type: integer
+          nullable: true
+        bots_percent:
+          type: integer
+        executions_percent:
+          type: integer
+        execution_blocked:
+          type: boolean
+        warnings:
+          type: array
+          items:
+            type: string
+      required:
+      - api_calls
+      - bots_limit
+      - bots_percent
+      - bots_used
+      - execution_blocked
+      - executions
+      - executions_limit
+      - executions_percent
+      - limits
+      - period_end
+      - period_start
+      - plan
+      - warnings
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        display_name:
+          type: string
+          readOnly: true
+        avatar_url:
+          type: string
+          format: uri
+          readOnly: true
+        locale:
+          allOf:
+          - $ref: '#/components/schemas/LocaleEnum'
+          readOnly: true
+        timezone:
+          type: string
+          readOnly: true
+        is_staff:
+          type: boolean
+          readOnly: true
+        is_email_verified:
+          type: boolean
+          readOnly: true
+        email_verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - avatar_url
+      - created_at
+      - display_name
+      - email
+      - email_verified_at
+      - id
+      - is_email_verified
+      - is_staff
+      - locale
+      - timezone
+    VisibilityEnum:
+      enum:
+      - private
+      - unlisted
+      - public
+      type: string
+      description: |-
+        * `private` - Приватный
+        * `unlisted` - По ссылке
+        * `public` - Публичный
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

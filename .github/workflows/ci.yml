@@ -2,25 +2,41 @@ name: CI
 
 on:
   push:
-    paths:
-      - "proect/**"
-      - ".github/workflows/ci.yml"
+    branches: [main, Samoilov, sanya, shuhrat, danil]
   pull_request:
-    paths:
-      - "proect/**"
-      - ".github/workflows/ci.yml"
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  runtime:
+  backend:
+    name: Backend checks
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: constructor
+          POSTGRES_USER: constructor
+          POSTGRES_PASSWORD: constructor
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U constructor -d constructor"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DJANGO_SECRET_KEY: ci-only-secret-key-not-for-production
+      DJANGO_DEBUG: "false"
+      DATABASE_URL: postgres://constructor:constructor@localhost:5432/constructor
+      STRIPE_SECRET_KEY: ""
+      STRIPE_WEBHOOK_SECRET: ""
     defaults:
       run:
-        working-directory: proect
-
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
 
@@ -28,7 +44,43 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: proect/pyproject.toml
+          cache-dependency-path: backend/requirements/*.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements/dev.txt
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Ruff format
+        run: ruff format --check .
+
+      - name: Mypy
+        run: mypy apps config
+
+      - name: Check migrations
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Django system checks
+        run: python manage.py check
+
+      - name: Tests
+        run: pytest --maxfail=1
+
+  runtime:
+    name: Runtime checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: runtime
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: runtime/pyproject.toml
 
       - name: Install
         run: pip install -e ".[dev]"
@@ -41,3 +93,22 @@ jobs:
 
       - name: Test
         run: pytest -q
+
+  frontend:
+    name: Frontend (placeholder)
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('frontend/package.json') != '' && hashFiles('frontend/src/**') != '' }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm run test --if-present
+      - run: npm run build --if-present

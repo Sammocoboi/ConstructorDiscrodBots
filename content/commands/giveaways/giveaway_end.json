@@ -1,0 +1,48 @@
+{
+  "slug": "giveaway_end",
+  "name": "giveaway_end",
+  "title": "Досрочно завершить розыгрыш",
+  "category": "giveaways",
+  "description": "Немедленно останавливает розыгрыш и выбирает победителя",
+  "type": "slash",
+  "required_module": "giveaways",
+  "required_permissions": 16,
+  "default_member_permissions": "16",
+  "options": [
+    {
+      "name": "message_id",
+      "description": "ID сообщения розыгрыша",
+      "type": 3,
+      "required": true
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /giveaway_end",
+      "description": "Немедленно останавливает розыгрыш и выбирает победителя",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "giveaway_end"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /giveaway_end.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

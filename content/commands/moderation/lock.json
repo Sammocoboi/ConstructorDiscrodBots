@@ -1,0 +1,41 @@
+{
+  "slug": "lock",
+  "name": "lock",
+  "title": "Заблокировать канал",
+  "category": "moderation",
+  "description": "Запрещает отправку сообщений в канале для @everyone",
+  "type": "slash",
+  "required_module": "moderation",
+  "required_permissions": 16,
+  "default_member_permissions": "16",
+  "options": [],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /lock",
+      "description": "Запрещает отправку сообщений в канале для @everyone",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "lock"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /lock.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

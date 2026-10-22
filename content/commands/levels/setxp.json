@@ -1,0 +1,54 @@
+{
+  "slug": "setxp",
+  "name": "setxp",
+  "title": "Установить опыт",
+  "category": "levels",
+  "description": "Изменяет количество опыта участника (для администрации)",
+  "type": "slash",
+  "required_module": "levels",
+  "required_permissions": 8,
+  "default_member_permissions": "8",
+  "options": [
+    {
+      "name": "user",
+      "description": "Участник",
+      "type": 6,
+      "required": true
+    },
+    {
+      "name": "amount",
+      "description": "Новое значение опыта",
+      "type": 4,
+      "required": true
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /setxp",
+      "description": "Изменяет количество опыта участника (для администрации)",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "setxp"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /setxp.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "slug": "marry",
+  "name": "marry",
+  "title": "Заключить брак",
+  "category": "social",
+  "description": "Сделать предложение руки и сердца другому участнику",
+  "type": "slash",
+  "options": [
+    {
+      "name": "user",
+      "description": "Избранник",
+      "type": 6,
+      "required": true
+    }
+  ],
+  "required_permissions": 0,
+  "required_intents": [],
+  "default_member_permissions": null,
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /marry",
+      "description": "Сделать предложение руки и сердца другому участнику",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "marry"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /marry.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

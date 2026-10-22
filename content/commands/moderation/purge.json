@@ -1,0 +1,48 @@
+{
+  "slug": "purge",
+  "name": "purge",
+  "title": "Массовое удаление сообщений",
+  "category": "moderation",
+  "description": "Удаляет последние N сообщений в канале",
+  "type": "slash",
+  "required_module": "moderation",
+  "required_permissions": 8192,
+  "default_member_permissions": "8192",
+  "options": [
+    {
+      "name": "amount",
+      "description": "Количество сообщений (от 1 до 100)",
+      "type": 4,
+      "required": true
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /purge",
+      "description": "Удаляет последние N сообщений в канале",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "purge"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /purge.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

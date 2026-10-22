@@ -1,21 +1,44 @@
+# Python
+.venv/
+venv/
 __pycache__/
 *.py[cod]
 *.egg-info/
-.venv/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .coverage
+coverage.xml
 htmlcov/
+build/
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+*.sqlite3
+/backend/staticfiles/
+/backend/media/
+
+# Environment
 .env
 .env.*
 !.env.example
-db.sqlite3
-*.sqlite3
+
+# Node / frontend (если появится)
 node_modules/
 dist/
-build/
-.DS_Store
+.vite/
+
+# IDE / OS
 .idea/
-proect/ConstructorDiscrodBots/
-proect/infra/backups/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Office temp files
+~$*.docx
+~$*.xlsx
+
+# Runtime service
+/runtime/infra/backups/
+/runtime/ConstructorDiscrodBots/

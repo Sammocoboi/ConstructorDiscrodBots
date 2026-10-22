@@ -1,0 +1,60 @@
+{
+  "slug": "timeout",
+  "name": "timeout",
+  "title": "Тайм-аут (мьют)",
+  "category": "moderation",
+  "description": "Временно запрещает участнику писать и говорить",
+  "type": "slash",
+  "required_module": "moderation",
+  "required_permissions": 1099511627776,
+  "default_member_permissions": "1099511627776",
+  "options": [
+    {
+      "name": "user",
+      "description": "Участник",
+      "type": 6,
+      "required": true
+    },
+    {
+      "name": "duration_minutes",
+      "description": "Длительность в минутах",
+      "type": 4,
+      "required": true
+    },
+    {
+      "name": "reason",
+      "description": "Причина",
+      "type": 3,
+      "required": false
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /timeout",
+      "description": "Временно запрещает участнику писать и говорить",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "timeout"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /timeout.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

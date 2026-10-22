@@ -1,0 +1,54 @@
+{
+  "slug": "role_remove",
+  "name": "role_remove",
+  "title": "Снять роль",
+  "category": "roles",
+  "description": "Забирает роль у участника",
+  "type": "slash",
+  "required_module": "roles",
+  "required_permissions": 268435456,
+  "default_member_permissions": "268435456",
+  "options": [
+    {
+      "name": "user",
+      "description": "Участник",
+      "type": 6,
+      "required": true
+    },
+    {
+      "name": "role",
+      "description": "Роль",
+      "type": 8,
+      "required": true
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /role_remove",
+      "description": "Забирает роль у участника",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "role_remove"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /role_remove.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

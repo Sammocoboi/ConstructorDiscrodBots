@@ -1,0 +1,48 @@
+{
+  "slug": "clearwarns",
+  "name": "clearwarns",
+  "title": "Очистить варны",
+  "category": "moderation",
+  "description": "Сбрасывает все предупреждения пользователя",
+  "type": "slash",
+  "required_module": "moderation",
+  "required_permissions": 8192,
+  "default_member_permissions": "8192",
+  "options": [
+    {
+      "name": "user",
+      "description": "Участник",
+      "type": 6,
+      "required": true
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /clearwarns",
+      "description": "Сбрасывает все предупреждения пользователя",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "clearwarns"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /clearwarns.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

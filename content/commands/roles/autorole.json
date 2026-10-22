@@ -1,0 +1,48 @@
+{
+  "slug": "autorole",
+  "name": "autorole",
+  "title": "Настроить авто-роль",
+  "category": "roles",
+  "description": "Задает роль, выдаваемую при входе на сервер",
+  "type": "slash",
+  "required_module": "welcomes",
+  "required_permissions": 268435456,
+  "default_member_permissions": "268435456",
+  "options": [
+    {
+      "name": "role",
+      "description": "Роль для новичков",
+      "type": 8,
+      "required": true
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /autorole",
+      "description": "Задает роль, выдаваемую при входе на сервер",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "autorole"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /autorole.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

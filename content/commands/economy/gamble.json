@@ -1,0 +1,48 @@
+{
+  "slug": "gamble",
+  "name": "gamble",
+  "title": "Сыграть на монеты",
+  "category": "economy",
+  "description": "Ставка в азартную игру с шансом удвоить баланс",
+  "type": "slash",
+  "required_module": "economy",
+  "options": [
+    {
+      "name": "bet",
+      "description": "Размер ставки",
+      "type": 4,
+      "required": true
+    }
+  ],
+  "required_permissions": 0,
+  "required_intents": [],
+  "default_member_permissions": null,
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /gamble",
+      "description": "Ставка в азартную игру с шансом удвоить баланс",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "gamble"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /gamble.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}
