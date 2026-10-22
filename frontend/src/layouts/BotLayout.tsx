@@ -35,6 +35,7 @@ import { ErrorState, LoadingState } from '../shared/components/states'
 import { ConfirmModal } from '../shared/components/ConfirmModal'
 import { AppIcon } from '../shared/components/icons'
 import { formatDuration } from '../shared/lib/format'
+import { getBotSection } from '../shared/lib/navigation'
 
 const tabs = [
   { value: 'overview', labelKey: 'nav.overview', icon: 'dashboard' },
@@ -90,9 +91,11 @@ export function BotLayout() {
     )
   }
 
-  const segment = location.pathname.split('/')[5] ?? 'overview'
+  const segment = getBotSection(location.pathname)
   const activeTab = tabs.some((tab) => tab.value === segment) ? segment : 'overview'
   const isRunning = bot.status === 'online' || bot.status === 'starting'
+  const isBotOverview = activeTab === 'overview'
+  const backTo = isBotOverview ? '/app' : `/app/bots/${bot.id}/overview`
   const copyInvite = async () => {
     try {
       await navigator.clipboard.writeText(bot.inviteUrl)
@@ -106,9 +109,19 @@ export function BotLayout() {
     <Stack gap="lg">
       <Group justify="space-between" align="flex-start" wrap="wrap" gap="md">
         <Group align="flex-start" gap="md" wrap="nowrap">
-          <ActionIcon variant="subtle" color="gray" size="lg" component={Link} to="/app" mt={2}>
-            <IconArrowLeft size={20} />
-          </ActionIcon>
+          <Tooltip label={isBotOverview ? t('bot.backToDashboard') : t('bot.overview')}>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="lg"
+              component={Link}
+              to={backTo}
+              mt={2}
+              aria-label={isBotOverview ? t('bot.backToDashboard') : t('bot.overview')}
+            >
+              <IconArrowLeft size={20} />
+            </ActionIcon>
+          </Tooltip>
           <BotAvatar name={bot.name} color={bot.avatarColor} size={58} radius={17} />
           <Stack gap={4}>
             <Group gap="sm" wrap="wrap">
@@ -204,14 +217,15 @@ export function BotLayout() {
       )}
 
       <Card withBorder radius="lg" p={0}>
-        <Tabs value={activeTab} variant="outline" keepMounted={false}>
-          <Tabs.List px="sm" pt="xs" style={{ flexWrap: 'nowrap', overflowX: 'auto' }}>
+        <Tabs value={activeTab} variant="pills" color="brand" keepMounted={false}>
+          <Tabs.List px="sm" py="xs" style={{ flexWrap: 'nowrap', overflowX: 'auto' }}>
             {tabs.map((tab) => (
               <Tabs.Tab
                 key={tab.value}
                 value={tab.value}
                 onClick={() => navigate(`/app/bots/${bot.id}/${tab.value}`)}
                 leftSection={<AppIcon name={tab.icon} size={15} />}
+                fw={activeTab === tab.value ? 700 : 500}
                 style={{ whiteSpace: 'nowrap' }}
               >
                 {t(tab.labelKey)}
