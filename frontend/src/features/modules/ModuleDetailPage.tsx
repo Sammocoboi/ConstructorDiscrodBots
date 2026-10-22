@@ -290,14 +290,23 @@ export default function ModuleDetailPage() {
 
   return (
     <Stack gap="lg">
-      <Group gap="sm">
+      <Group gap="xs">
+        <Button
+          component={Link}
+          to={`/app/bots/${bot.id}/overview`}
+          variant="subtle"
+          color="gray"
+          size="compact-sm"
+          leftSection={<IconArrowLeft size={15} />}
+        >
+          {t('bot.overview')}
+        </Button>
         <Button
           component={Link}
           to={`/app/bots/${bot.id}/modules`}
           variant="subtle"
           color="gray"
           size="compact-sm"
-          leftSection={<IconArrowLeft size={15} />}
         >
           {t('nav.modules')}
         </Button>
