@@ -18,7 +18,7 @@ from django.utils import timezone
 from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.common.crypto import encrypt_secret
+from apps.common.crypto import decrypt_secret, encrypt_secret
 from apps.common.utils import get_client_ip
 
 from .models import OAuthAccount, RefreshSession, User
@@ -285,6 +285,7 @@ def get_or_create_discord_user(discord_user: dict, token_data: dict) -> User:
     expires_in = token_data.get("expires_in")
     oauth.expires_at = timezone.now() + timedelta(seconds=int(expires_in)) if expires_in else None
     oauth.save()
+    invalidate_user_guilds_cache(user.id)
     return user
 
 
@@ -320,3 +321,108 @@ def discord_callback_redirect(code: str | None = None, error: str | None = None)
     if error:
         return f"{frontend}?{urlencode({'error': error})}"
     return f"{frontend}?{urlencode({'code': code or ''})}"
+
+
+DISCORD_GUILDS_CACHE_TTL = 60
+GUILD_COLOR_PALETTE = ["#5865f2", "#00a8fc", "#3ba55d", "#faa81a", "#ed4245", "#9b59b6"]
+
+
+def invalidate_user_guilds_cache(user_id: str | int) -> None:
+    cache.delete(f"discord:guilds:{user_id}")
+
+
+def fetch_user_manageable_guilds(user: User) -> list[dict]:
+    cache_key = f"discord:guilds:{user.id}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    oauth = user.oauth_accounts.filter(
+        provider=OAuthAccount.Provider.DISCORD,
+        deleted_at__isnull=True,
+    ).first()
+    if not oauth or not oauth.access_token_encrypted:
+        return []
+
+    try:
+        access_token = decrypt_secret(oauth.access_token_encrypted)
+    except Exception:
+        logger.exception("Failed to decrypt Discord OAuth token for user %s", user.id)
+        return []
+
+    from apps.bots.models import BotGuild
+    from integrations.discord.client import DiscordAPIError, DiscordRestClient
+    from integrations.discord.permissions import DiscordPermissions
+
+    client = DiscordRestClient()
+    try:
+        raw_guilds = client.get_user_guilds(access_token)
+    except DiscordAPIError as exc:
+        logger.warning("Discord API error fetching guilds for user %s: %s", user.id, exc)
+        return []
+    except Exception as exc:
+        logger.exception("Failed to fetch guilds from Discord for user %s: %s", user.id, exc)
+        return []
+
+    if not isinstance(raw_guilds, list):
+        return []
+
+    active_bot_guilds = {
+        bg.guild_id: bg
+        for bg in BotGuild.objects.filter(bot__owner=user, left_at__isnull=True).select_related("bot")
+    }
+
+    result = []
+    for g in raw_guilds:
+        if not isinstance(g, dict):
+            continue
+        guild_id = str(g.get("id") or "")
+        if not guild_id:
+            continue
+
+        owner = bool(g.get("owner", False))
+        try:
+            permissions = int(g.get("permissions") or 0)
+        except (ValueError, TypeError):
+            permissions = 0
+
+        # CF-05: owner === true or permissions & MANAGE_GUILD (0x20) or ADMINISTRATOR (0x8)
+        can_manage = owner or bool(
+            permissions & (DiscordPermissions.ADMINISTRATOR | DiscordPermissions.MANAGE_GUILD)
+        )
+        if not can_manage:
+            continue
+
+        color_idx = (
+            int(guild_id) % len(GUILD_COLOR_PALETTE)
+            if guild_id.isdigit()
+            else hash(guild_id) % len(GUILD_COLOR_PALETTE)
+        )
+        icon_color = GUILD_COLOR_PALETTE[color_idx]
+
+        bot_guild = active_bot_guilds.get(guild_id)
+        bot_added = bot_guild is not None
+
+        channels = []
+        roles = []
+        if bot_added and isinstance(bot_guild.settings, dict):
+            channels = bot_guild.settings.get("channels", [])
+            roles = bot_guild.settings.get("roles", [])
+
+        result.append(
+            {
+                "id": guild_id,
+                "name": str(g.get("name", "Discord Server")),
+                "iconColor": icon_color,
+                "memberCount": int(g.get("approximate_member_count") or g.get("member_count") or 0),
+                "botAdded": bot_added,
+                "owner": owner,
+                "canManage": True,
+                "channels": channels,
+                "roles": roles,
+            }
+        )
+
+    cache.set(cache_key, result, timeout=DISCORD_GUILDS_CACHE_TTL)
+    return result
+

@@ -231,6 +231,9 @@ export const ru = {
     saveAsTemplate: 'Сохранить как шаблон',
     templateCreated: 'Личный шаблон создан',
     unsaved: 'Есть несохранённые изменения',
+    noManageableGuildsTitle: 'Нет доступных серверов',
+    noManageableGuildsDescription:
+      'Показываются только серверы, где у вас есть права администратора или «Управление сервером».',
   },
   modules: {
     title: 'Модули',

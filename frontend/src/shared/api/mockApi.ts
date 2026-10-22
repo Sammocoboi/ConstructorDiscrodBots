@@ -397,7 +397,7 @@ export const mockApi = {
     },
     async availableGuilds(): Promise<Guild[]> {
       await randomDelay(180, 380)
-      return clone(getDb().guilds)
+      return clone(getDb().guilds.filter((guild) => guild.canManage || guild.owner))
     },
     async guilds(botId: string): Promise<Guild[]> {
       await randomDelay(120, 260)

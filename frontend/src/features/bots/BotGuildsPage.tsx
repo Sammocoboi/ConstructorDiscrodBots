@@ -59,7 +59,9 @@ export default function BotGuildsPage() {
   const missingGuilds = useMemo(() => {
     if (!bot || !available.data) return []
     const added = new Set(bot.guilds.map((guild) => guild.id))
-    return available.data.filter((guild) => !added.has(guild.id))
+    return available.data.filter(
+      (guild) => !added.has(guild.id) && (guild.canManage || guild.owner),
+    )
   }, [available.data, bot])
 
   if (!bot) return <LoadingState minHeight={280} />
@@ -163,6 +165,7 @@ export default function BotGuildsPage() {
                   size="compact-xs"
                   leftSection={<IconCopy size={13} />}
                   onClick={() => void copyInvite(bot.inviteUrl)}
+                  disabled={!guild.canManage && !guild.owner}
                 >
                   {t('common.copy')}
                 </Button>
@@ -171,6 +174,7 @@ export default function BotGuildsPage() {
                   size="compact-sm"
                   leftSection={<IconExternalLink size={14} />}
                   onClick={() => openInvite(bot.inviteUrl)}
+                  disabled={!guild.canManage && !guild.owner}
                 >
                   {t('common.open')}
                 </Button>
