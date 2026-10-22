@@ -1,0 +1,55 @@
+{
+  "id": "00000000-0000-4000-8000-000000000006",
+  "slug": "mini-games",
+  "title": "Мини-игры",
+  "description": "Монетка, кубик и случайные события для развлечения",
+  "category": "games",
+  "version": "1.0.0",
+  "author": "system",
+  "is_system": true,
+  "config": {
+    "schema_version": 1,
+    "profile": {
+      "status": "online",
+      "activity": {"type": "playing", "text": "в мини-игры"}
+    },
+    "modules": [
+      {"id": "games", "enabled": true, "settings": {}}
+    ],
+    "commands": [
+      {"id": "cmd_coinflip", "name": "coinflip", "description": "Подбросить монетку", "flow_id": "flow_coinflip", "options": []},
+      {"id": "cmd_dice", "name": "dice", "description": "Бросить кубик", "flow_id": "flow_dice", "options": []}
+    ],
+    "flows": [
+      {
+        "id": "flow_coinflip",
+        "trigger": {"type": "slash_command", "command_id": "cmd_coinflip"},
+        "nodes": [
+          {"id": "n1", "type": "slash_command", "params": {"command_id": "cmd_coinflip"}},
+          {"id": "n2", "type": "random_chance", "params": {"probability": 50}},
+          {"id": "n3", "type": "send_message", "params": {"content": "Орёл!", "ephemeral": true}},
+          {"id": "n4", "type": "send_message", "params": {"content": "Решка!", "ephemeral": true}}
+        ],
+        "edges": [
+          {"from": "n1", "to": "n2"},
+          {"from": "n2", "to": "n3", "branch": "true"},
+          {"from": "n2", "to": "n4", "branch": "false"}
+        ]
+      },
+      {
+        "id": "flow_dice",
+        "trigger": {"type": "slash_command", "command_id": "cmd_dice"},
+        "nodes": [
+          {"id": "n1", "type": "slash_command", "params": {"command_id": "cmd_dice"}},
+          {"id": "n2", "type": "send_message", "params": {
+            "content": "Кубик брошен. Проверь свою удачу!",
+            "ephemeral": true
+          }}
+        ],
+        "edges": [{"from": "n1", "to": "n2"}]
+      }
+    ],
+    "messages": [],
+    "variables_schema": []
+  }
+}

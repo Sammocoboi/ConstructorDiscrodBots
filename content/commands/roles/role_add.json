@@ -1,0 +1,54 @@
+{
+  "slug": "role_add",
+  "name": "role_add",
+  "title": "Выдать роль",
+  "category": "roles",
+  "description": "Выдает указанную роль участнику",
+  "type": "slash",
+  "required_module": "roles",
+  "required_permissions": 268435456,
+  "default_member_permissions": "268435456",
+  "options": [
+    {
+      "name": "user",
+      "description": "Участник",
+      "type": 6,
+      "required": true
+    },
+    {
+      "name": "role",
+      "description": "Роль",
+      "type": 8,
+      "required": true
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /role_add",
+      "description": "Выдает указанную роль участнику",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "role_add"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /role_add.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

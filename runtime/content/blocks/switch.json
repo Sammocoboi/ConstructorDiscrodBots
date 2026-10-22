@@ -1,0 +1,14 @@
+{
+  "type": "switch",
+  "category": "condition",
+  "title": "Переключатель",
+  "description": "Сравнивает значение со списком вариантов",
+  "params": {
+    "value": {"type": "string", "required": true},
+    "cases": {"type": "array", "required": true},
+    "default_branch": {"type": "string", "default": "default"}
+  },
+  "inputs": ["flow"],
+  "outputs": ["default"],
+  "branches": ["default"]
+}

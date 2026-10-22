@@ -1,0 +1,54 @@
+{
+  "slug": "goodbye",
+  "name": "goodbye",
+  "title": "Настроить прощание",
+  "category": "automation",
+  "description": "Задает канал для сообщений об уходе участников",
+  "type": "slash",
+  "required_module": "welcomes",
+  "required_permissions": 32,
+  "default_member_permissions": "32",
+  "options": [
+    {
+      "name": "channel",
+      "description": "Канал прощаний",
+      "type": 7,
+      "required": true
+    },
+    {
+      "name": "message",
+      "description": "Текст прощания",
+      "type": 3,
+      "required": false
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /goodbye",
+      "description": "Задает канал для сообщений об уходе участников",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "goodbye"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /goodbye.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

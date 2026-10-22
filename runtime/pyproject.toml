@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "discord-constructor"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "discord.py>=2.4",
+  "asyncpg>=0.29",
+  "cryptography>=42",
+  "pydantic>=2.7",
+  "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.4", "mypy>=1.10"]
+observability = ["sentry-sdk>=2.0"]
+
+[tool.setuptools]
+packages = ["runtime", "runtime.interpreter"]
+
+[tool.setuptools.package-dir]
+"" = "."
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = [".venv", "ConstructorDiscrodBots", "discord_constructor.egg-info"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["asyncpg", "asyncpg.*", "sentry_sdk", "sentry_sdk.*"]
+ignore_missing_imports = true

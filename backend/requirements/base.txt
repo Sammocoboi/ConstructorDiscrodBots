@@ -11,4 +11,5 @@ stripe>=11,<17
 argon2-cffi>=23.1,<26
 cryptography>=43,<47
 python-dotenv>=1.0,<2
+jsonschema>=4.20,<5
 gunicorn>=23,<24

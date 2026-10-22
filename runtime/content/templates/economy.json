@@ -1,0 +1,59 @@
+{
+  "id": "00000000-0000-4000-8000-000000000005",
+  "slug": "economy",
+  "title": "Экономика",
+  "description": "Баланс, ежедневный бонус и переводы между участниками",
+  "category": "economy",
+  "version": "1.0.0",
+  "author": "system",
+  "is_system": true,
+  "config": {
+    "schema_version": 1,
+    "profile": {
+      "status": "online",
+      "activity": {"type": "playing", "text": "экономику"}
+    },
+    "modules": [
+      {"id": "economy", "enabled": true, "settings": {"currency": "монеты"}}
+    ],
+    "commands": [
+      {"id": "cmd_balance", "name": "balance", "description": "Показать баланс", "flow_id": "flow_balance", "options": []},
+      {"id": "cmd_daily", "name": "daily", "description": "Получить ежедневный бонус", "flow_id": "flow_daily", "options": []}
+    ],
+    "flows": [
+      {
+        "id": "flow_balance",
+        "trigger": {"type": "slash_command", "command_id": "cmd_balance"},
+        "nodes": [
+          {"id": "n1", "type": "slash_command", "params": {"command_id": "cmd_balance"}},
+          {"id": "n2", "type": "send_message", "params": {
+            "content": "Баланс {user.name}: {variables.balance} монет.",
+            "ephemeral": true
+          }}
+        ],
+        "edges": [{"from": "n1", "to": "n2"}]
+      },
+      {
+        "id": "flow_daily",
+        "trigger": {"type": "slash_command", "command_id": "cmd_daily"},
+        "nodes": [
+          {"id": "n1", "type": "slash_command", "params": {"command_id": "cmd_daily"}},
+          {"id": "n2", "type": "set_variable", "params": {
+            "name": "balance",
+            "value": 100,
+            "operation": "increment"
+          }},
+          {"id": "n3", "type": "send_message", "params": {
+            "content": "{user.mention} получил ежедневный бонус: 100 монет!",
+            "ephemeral": true
+          }}
+        ],
+        "edges": [{"from": "n1", "to": "n2"}, {"from": "n2", "to": "n3"}]
+      }
+    ],
+    "messages": [],
+    "variables_schema": [
+      {"name": "balance", "type": "number", "default": 0}
+    ]
+  }
+}

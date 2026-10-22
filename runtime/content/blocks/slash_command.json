@@ -1,0 +1,11 @@
+{
+  "type": "slash_command",
+  "category": "trigger",
+  "title": "Slash-команда",
+  "description": "Точка входа для slash-команды",
+  "params": {
+    "command_id": {"type": "string", "required": true, "max_length": 64}
+  },
+  "inputs": [],
+  "outputs": ["flow"]
+}

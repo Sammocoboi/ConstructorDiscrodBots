@@ -1,0 +1,41 @@
+{
+  "slug": "trivia",
+  "name": "trivia",
+  "title": "Интеллектуальная викторина",
+  "category": "fun",
+  "description": "Случайный вопрос с вариантами ответов на кнопках",
+  "type": "slash",
+  "required_module": "fun",
+  "options": [],
+  "required_permissions": 0,
+  "required_intents": [],
+  "default_member_permissions": null,
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /trivia",
+      "description": "Случайный вопрос с вариантами ответов на кнопках",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "trivia"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /trivia.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

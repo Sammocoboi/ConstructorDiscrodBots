@@ -10,10 +10,12 @@ __pycache__/
 .coverage
 coverage.xml
 htmlcov/
+build/
 
 # Django
 db.sqlite3
 db.sqlite3-journal
+*.sqlite3
 /backend/staticfiles/
 /backend/media/
 
@@ -36,3 +38,7 @@ Thumbs.db
 # Office temp files
 ~$*.docx
 ~$*.xlsx
+
+# Runtime service
+/runtime/infra/backups/
+/runtime/ConstructorDiscrodBots/

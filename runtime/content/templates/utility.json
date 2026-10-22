@@ -1,0 +1,69 @@
+{
+  "id": "00000000-0000-4000-8000-000000000008",
+  "slug": "utility",
+  "title": "Утилиты",
+  "description": "Ping, информация о сервере и пользователе",
+  "category": "utility",
+  "version": "1.0.0",
+  "author": "system",
+  "is_system": true,
+  "config": {
+    "schema_version": 1,
+    "profile": {
+      "status": "online",
+      "activity": {"type": "playing", "text": "/ping"}
+    },
+    "modules": [
+      {"id": "utility", "enabled": true, "settings": {}}
+    ],
+    "commands": [
+      {"id": "cmd_ping", "name": "ping", "description": "Проверить задержку бота", "flow_id": "flow_ping", "options": []},
+      {"id": "cmd_serverinfo", "name": "serverinfo", "description": "Информация о сервере", "flow_id": "flow_serverinfo", "options": []},
+      {"id": "cmd_userinfo", "name": "userinfo", "description": "Информация о пользователе", "flow_id": "flow_userinfo", "options": []}
+    ],
+    "flows": [
+      {
+        "id": "flow_ping",
+        "trigger": {"type": "slash_command", "command_id": "cmd_ping"},
+        "nodes": [
+          {"id": "n1", "type": "slash_command", "params": {"command_id": "cmd_ping"}},
+          {"id": "n2", "type": "send_message", "params": {
+            "content": "Pong! {bot.latency} ms",
+            "ephemeral": true
+          }}
+        ],
+        "edges": [{"from": "n1", "to": "n2"}]
+      },
+      {
+        "id": "flow_serverinfo",
+        "trigger": {"type": "slash_command", "command_id": "cmd_serverinfo"},
+        "nodes": [
+          {"id": "n1", "type": "slash_command", "params": {"command_id": "cmd_serverinfo"}},
+          {"id": "n2", "type": "send_message", "params": {
+            "embed": {
+              "title": "Сервер: {guild.name}",
+              "description": "ID: {guild.id}\nУчастников: {guild.member_count}",
+              "color": 3066993
+            },
+            "ephemeral": true
+          }}
+        ],
+        "edges": [{"from": "n1", "to": "n2"}]
+      },
+      {
+        "id": "flow_userinfo",
+        "trigger": {"type": "slash_command", "command_id": "cmd_userinfo"},
+        "nodes": [
+          {"id": "n1", "type": "slash_command", "params": {"command_id": "cmd_userinfo"}},
+          {"id": "n2", "type": "send_message", "params": {
+            "content": "Пользователь: {user.name}\nID: {user.id}",
+            "ephemeral": true
+          }}
+        ],
+        "edges": [{"from": "n1", "to": "n2"}]
+      }
+    ],
+    "messages": [],
+    "variables_schema": []
+  }
+}

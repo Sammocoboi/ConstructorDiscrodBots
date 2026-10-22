@@ -1,0 +1,58 @@
+{
+  "id": "00000000-0000-4000-8000-000000000003",
+  "slug": "support-tickets",
+  "title": "Поддержка и тикеты",
+  "description": "Панель обращения в поддержку и закрытие тикета",
+  "category": "support",
+  "version": "1.0.0",
+  "author": "system",
+  "is_system": true,
+  "config": {
+    "schema_version": 1,
+    "profile": {
+      "status": "online",
+      "activity": {"type": "listening", "text": "заявкам поддержки"}
+    },
+    "modules": [
+      {"id": "tickets", "enabled": true, "settings": {"category_id": ""}}
+    ],
+    "commands": [
+      {"id": "cmd_ticket", "name": "ticket", "description": "Открыть обращение в поддержку", "flow_id": "flow_ticket", "options": [
+        {"name": "topic", "type": "string", "required": false, "description": "Тема обращения"}
+      ]},
+      {"id": "cmd_ticket_close", "name": "ticket-close", "description": "Закрыть текущее обращение", "flow_id": "flow_close", "options": []}
+    ],
+    "flows": [
+      {
+        "id": "flow_ticket",
+        "trigger": {"type": "slash_command", "command_id": "cmd_ticket"},
+        "nodes": [
+          {"id": "n1", "type": "slash_command", "params": {"command_id": "cmd_ticket"}},
+          {"id": "n2", "type": "send_message", "params": {
+            "embed": {
+              "title": "Обращение создано",
+              "description": "Тема: {args.topic}\nМодератор скоро ответит.",
+              "color": 3447003
+            },
+            "ephemeral": true
+          }}
+        ],
+        "edges": [{"from": "n1", "to": "n2"}]
+      },
+      {
+        "id": "flow_close",
+        "trigger": {"type": "slash_command", "command_id": "cmd_ticket_close"},
+        "nodes": [
+          {"id": "n1", "type": "slash_command", "params": {"command_id": "cmd_ticket_close"}},
+          {"id": "n2", "type": "send_message", "params": {
+            "content": "Обращение закрыто. Спасибо за обратную связь!",
+            "ephemeral": true
+          }}
+        ],
+        "edges": [{"from": "n1", "to": "n2"}]
+      }
+    ],
+    "messages": [],
+    "variables_schema": []
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "slug": "autodelete",
+  "name": "autodelete",
+  "title": "Автоудаление сообщений",
+  "category": "automation",
+  "description": "Автоматически удаляет сообщения в канале через заданное время",
+  "type": "slash",
+  "required_module": "automation",
+  "required_permissions": 16,
+  "default_member_permissions": "16",
+  "options": [
+    {
+      "name": "seconds",
+      "description": "Время жизни сообщений в секундах",
+      "type": 4,
+      "required": true
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /autodelete",
+      "description": "Автоматически удаляет сообщения в канале через заданное время",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "autodelete"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /autodelete.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

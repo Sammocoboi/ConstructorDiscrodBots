@@ -1,0 +1,12 @@
+{
+  "type": "run_flow",
+  "category": "logic",
+  "title": "Вызвать подflow",
+  "description": "Запускает другой сценарий с общей областью переменных",
+  "params": {
+    "flow_id": {"type": "string", "required": true, "max_length": 64}
+  },
+  "inputs": ["flow"],
+  "outputs": ["flow"],
+  "limits": {"max_depth": 5}
+}

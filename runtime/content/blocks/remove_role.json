@@ -1,0 +1,13 @@
+{
+  "type": "remove_role",
+  "category": "action",
+  "title": "Забрать роль",
+  "description": "Удаляет роль у участника сервера",
+  "params": {
+    "user_id": {"type": "user", "required": false},
+    "role_id": {"type": "role", "required": true}
+  },
+  "inputs": ["flow"],
+  "outputs": ["flow"],
+  "permissions": ["manage_roles"]
+}

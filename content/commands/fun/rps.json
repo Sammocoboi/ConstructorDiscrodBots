@@ -1,0 +1,62 @@
+{
+  "slug": "rps",
+  "name": "rps",
+  "title": "Камень, Ножницы, Бумага",
+  "category": "fun",
+  "description": "Сыграть в классическую игру против бота",
+  "type": "slash",
+  "required_module": "fun",
+  "options": [
+    {
+      "name": "choice",
+      "description": "Ваш выбор",
+      "type": 3,
+      "required": true,
+      "choices": [
+        {
+          "name": "Камень 🪨",
+          "value": "rock"
+        },
+        {
+          "name": "Ножницы ✂️",
+          "value": "scissors"
+        },
+        {
+          "name": "Бумага 📄",
+          "value": "paper"
+        }
+      ]
+    }
+  ],
+  "required_permissions": 0,
+  "required_intents": [],
+  "default_member_permissions": null,
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /rps",
+      "description": "Сыграть в классическую игру против бота",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "rps"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /rps.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "slug": "giveaway_start",
+  "name": "giveaway_start",
+  "title": "Запустить розыгрыш",
+  "category": "giveaways",
+  "description": "Создает розыгрыш призов с таймером и реакцией 🎉",
+  "type": "slash",
+  "required_module": "giveaways",
+  "required_permissions": 16,
+  "default_member_permissions": "16",
+  "options": [
+    {
+      "name": "prize",
+      "description": "Что разыгрывается",
+      "type": 3,
+      "required": true
+    },
+    {
+      "name": "duration_minutes",
+      "description": "Длительность в минутах",
+      "type": 4,
+      "required": true
+    },
+    {
+      "name": "winners_count",
+      "description": "Количество победителей (по умолчанию 1)",
+      "type": 4,
+      "required": false
+    }
+  ],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /giveaway_start",
+      "description": "Создает розыгрыш призов с таймером и реакцией 🎉",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "giveaway_start"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /giveaway_start.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

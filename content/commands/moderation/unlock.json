@@ -1,0 +1,41 @@
+{
+  "slug": "unlock",
+  "name": "unlock",
+  "title": "Разблокировать канал",
+  "category": "moderation",
+  "description": "Возвращает право писать в канал для @everyone",
+  "type": "slash",
+  "required_module": "moderation",
+  "required_permissions": 16,
+  "default_member_permissions": "16",
+  "options": [],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /unlock",
+      "description": "Возвращает право писать в канал для @everyone",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "unlock"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /unlock.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "type": "set_variable",
+  "category": "data",
+  "title": "Записать переменную",
+  "description": "Сохраняет значение в области переменных сценария",
+  "params": {
+    "name": {"type": "string", "required": true, "max_length": 64},
+    "value": {"type": "any", "required": false},
+    "operation": {"type": "string", "default": "set", "enum": ["set", "increment", "append"]}
+  },
+  "inputs": ["flow"],
+  "outputs": ["flow"]
+}

@@ -1,0 +1,41 @@
+{
+  "slug": "rolemenu",
+  "name": "rolemenu",
+  "title": "Панель ролей с кнопками",
+  "category": "roles",
+  "description": "Отправляет интерактивную панель с кнопками для выдачи ролей",
+  "type": "slash",
+  "required_module": "roles",
+  "required_permissions": 268435456,
+  "default_member_permissions": "268435456",
+  "options": [],
+  "required_intents": [],
+  "cooldown": {
+    "type": "user",
+    "seconds": 3
+  },
+  "preview": {
+    "embed": {
+      "title": "Команда /rolemenu",
+      "description": "Отправляет интерактивную панель с кнопками для выдачи ролей",
+      "color": 5793266
+    }
+  },
+  "flow": {
+    "trigger": {
+      "type": "slash_command",
+      "name": "rolemenu"
+    },
+    "nodes": [
+      {
+        "id": "node_reply",
+        "type": "send_message",
+        "params": {
+          "content": "Выполнена команда /rolemenu.",
+          "ephemeral": true
+        }
+      }
+    ],
+    "edges": []
+  }
+}
