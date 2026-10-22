@@ -27,6 +27,7 @@ from apps.audit.models import AuditLog
 
 from . import services
 from .models import RefreshSession, User
+from .permissions import EmailAuthMixin
 from .serializers import (
     DiscordExchangeSerializer,
     EmailVerifySerializer,
@@ -54,14 +55,18 @@ def _audit(action: str, *, user, request, diff: dict | None = None) -> None:
         logger.exception("Could not write audit log: %s", action)
 
 
-class RegisterView(APIView):
+class RegisterView(EmailAuthMixin, APIView):
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "auth"
 
     @extend_schema(
         request=RegisterSerializer,
-        responses={201: UserSerializer, 400: OpenApiResponse(description="Validation error")},
+        responses={
+            201: UserSerializer,
+            400: OpenApiResponse(description="Validation error"),
+            403: OpenApiResponse(description="Email auth disabled (auth_method_disabled)"),
+        },
         summary="Регистрация по email и паролю",
     )
     def post(self, request):
@@ -82,14 +87,18 @@ class RegisterView(APIView):
         )
 
 
-class LoginView(APIView):
+class LoginView(EmailAuthMixin, APIView):
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "auth"
 
     @extend_schema(
         request=LoginSerializer,
-        responses={200: UserSerializer, 401: OpenApiResponse(description="Invalid credentials")},
+        responses={
+            200: UserSerializer,
+            401: OpenApiResponse(description="Invalid credentials"),
+            403: OpenApiResponse(description="Email auth disabled (auth_method_disabled)"),
+        },
         summary="Вход по email и паролю",
     )
     def post(self, request):
@@ -315,14 +324,17 @@ class EmailVerifyView(APIView):
         return Response(UserSerializer(user).data)
 
 
-class PasswordResetRequestView(APIView):
+class PasswordResetRequestView(EmailAuthMixin, APIView):
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "password_reset"
 
     @extend_schema(
         request=PasswordResetRequestSerializer,
-        responses={202: None},
+        responses={
+            202: None,
+            403: OpenApiResponse(description="Email auth disabled (auth_method_disabled)"),
+        },
         summary="Запросить сброс пароля",
     )
     def post(self, request):
@@ -337,13 +349,18 @@ class PasswordResetRequestView(APIView):
         return Response(status=status.HTTP_202_ACCEPTED)
 
 
-class PasswordResetConfirmView(APIView):
+class PasswordResetConfirmView(EmailAuthMixin, APIView):
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "password_reset"
 
     @extend_schema(
-        request=PasswordResetConfirmSerializer, responses={204: None}, summary="Сбросить пароль"
+        request=PasswordResetConfirmSerializer,
+        responses={
+            204: None,
+            403: OpenApiResponse(description="Email auth disabled (auth_method_disabled)"),
+        },
+        summary="Сбросить пароль",
     )
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
