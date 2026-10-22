@@ -68,6 +68,7 @@ pytest
 | `DATABASE_URL` | PostgreSQL на staging/prod |
 | `DISCORD_CLIENT_ID/SECRET` | OAuth2 |
 | `DISCORD_REDIRECT_URI` | должен совпадать с Discord Developer Portal |
+| `AUTH_METHODS` | включённые способы входа: `email,discord` (по умолчанию) или `discord` |
 | `STRIPE_SECRET_KEY/WEBHOOK_SECRET` | биллинг; без них работает mock |
 | `EMAIL_*` | SMTP; в dev — console backend |
 | `DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS` | домены frontend/backend |

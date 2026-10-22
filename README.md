@@ -19,6 +19,7 @@
 - кастомная модель пользователя с UUIDv7 и мягким удалением;
 - регистрация по email, подтверждение почты, сброс пароля;
 - вход по email/паролю и Discord OAuth2;
+- способы входа настраиваются через `AUTH_METHODS`: значение `discord` отключает email-эндпоинты (`403 auth_method_disabled`), не удаляя аккаунты и админку;
 - JWT (access 15 минут, refresh 30 дней) с ротацией и httpOnly-cookie;
 - список активных сессий и принудительный logout;
 - профиль пользователя;
@@ -96,6 +97,8 @@ python manage.py export_openapi
 ## Переменные окружения
 
 Основные переменные — в [`.env.example`](.env.example). Секреты (Discord client secret, Stripe keys, JWT secret) в репозиторий не коммитятся.
+
+`AUTH_METHODS` — список включённых способов входа через запятую (`email,discord` по умолчанию). Для сценария «вход только через Discord» задайте `AUTH_METHODS=discord`: эндпоинты `/auth/register`, `/auth/login` и `/auth/password/*` начнут отвечать `403 auth_method_disabled`, при этом пользователи, сессии и Django Admin продолжают работать.
 
 ## Структура
 

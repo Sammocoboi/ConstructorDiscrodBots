@@ -107,6 +107,73 @@ def test_password_reset_does_not_leak_unknown_email(api_client: APIClient, mailo
 
 
 @pytest.mark.django_db
+def test_email_auth_disabled_returns_403(api_client: APIClient, user: User, mailoutbox, settings):
+    """При AUTH_METHODS=discord email-поток выключен и не создаёт сессий (CF-03)."""
+    settings.AUTH_METHODS = ["discord"]
+
+    attempts = [
+        (
+            "/api/v1/auth/register",
+            {"email": "blocked@example.com", "password": "StrongPass123!", "display_name": "Блок"},
+        ),
+        ("/api/v1/auth/login", {"email": user.email, "password": "StrongPass123!"}),
+        ("/api/v1/auth/password/reset/request", {"email": user.email}),
+        (
+            "/api/v1/auth/password/reset/confirm",
+            {"token": "irrelevant", "new_password": "AnotherStrongPass456!"},
+        ),
+    ]
+
+    for path, payload in attempts:
+        response = api_client.post(path, payload, format="json")
+        assert response.status_code == 403, (path, response.data)
+        assert response.data["code"] == "auth_method_disabled"
+        assert response.data["details"]["method"] == "email"
+
+    assert not User.objects.filter(email="blocked@example.com").exists()
+    assert not RefreshSession.objects.filter(user=user).exists()
+    assert len(mailoutbox) == 0
+
+
+@pytest.mark.django_db
+def test_disabled_email_auth_is_still_throttled(api_client: APIClient, settings):
+    """Флаг AUTH_METHODS не отключает throttling email-эндпоинтов."""
+    settings.AUTH_METHODS = ["discord"]
+    payload = {"email": "nobody@example.com", "password": "StrongPass123!"}
+
+    statuses = [
+        api_client.post("/api/v1/auth/login", payload, format="json").status_code
+        for _ in range(11)
+    ]
+
+    assert statuses[:10] == [403] * 10
+    assert statuses[-1] == 429
+
+
+@pytest.mark.django_db
+def test_discord_login_still_works_when_email_auth_disabled(api_client: APIClient, settings):
+    settings.AUTH_METHODS = ["discord"]
+
+    response = api_client.get("/api/v1/auth/discord/login")
+
+    assert response.status_code == 302
+    assert response["Location"].startswith("https://discord.com/oauth2/authorize")
+
+
+@pytest.mark.django_db
+def test_email_verify_stays_available_when_email_auth_disabled(
+    api_client: APIClient, user: User, settings
+):
+    """Ссылки из уже отправленных писем продолжают работать."""
+    settings.AUTH_METHODS = ["discord"]
+    token = services.make_email_verify_token(user)
+
+    response = api_client.post("/api/v1/auth/email/verify", {"token": token}, format="json")
+
+    assert response.status_code == 200, response.data
+
+
+@pytest.mark.django_db
 def test_me_update_and_sessions(api_client: APIClient, auth_client: APIClient, user: User):
     update = auth_client.patch(
         "/api/v1/me",
