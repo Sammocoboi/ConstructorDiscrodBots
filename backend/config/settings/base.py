@@ -110,6 +110,10 @@ DATABASES = {
 # ---------------------------------------------------------------------------
 AUTH_USER_MODEL = "accounts.User"
 
+# Способы входа: email и/или discord (CF-03). При AUTH_METHODS=discord
+# email-эндпоинты отвечают 403 auth_method_disabled, но модели и админка остаются.
+AUTH_METHODS = env_list("AUTH_METHODS", "email,discord")
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {

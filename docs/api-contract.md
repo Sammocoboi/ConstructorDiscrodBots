@@ -19,7 +19,8 @@
 - Refresh-токен: JWT, 30 дней, httpOnly-cookie `refresh_token` с `Path=/api/v1/auth/`, ротация при каждом обновлении.
 - Для refresh/logout обязателен CSRF: frontend получает cookie через `GET /api/v1/auth/csrf` и отправляет `X-CSRFToken`.
 - Discord OAuth2: `GET /api/v1/auth/discord/login` → redirect → callback → одноразовый `code` → `POST /api/v1/auth/discord/exchange`.
-- Публичные эндпоинты: регистрация, вход, сброс пароля, подтверждение email, тарифы, webhook Stripe, health.
+- Способы входа задаются `AUTH_METHODS` (`email,discord` по умолчанию). При `AUTH_METHODS=discord` эндпоинты `/auth/register`, `/auth/login`, `/auth/password/*` отвечают `403 auth_method_disabled` и не создают сессий; `/auth/email/verify` продолжает работать.
+- Публичные эндпоинты: регистрация, вход, сброс пароля, подтверждение email, тарифы, webhook Stripe, health (с учётом `AUTH_METHODS`).
 
 ## 3. Ошибки
 
@@ -34,7 +35,7 @@
 }
 ```
 
-- `code` — машиночитаемый код (`not_authenticated`, `permission_denied`, `not_found`, `validation_error`, `throttled`, `idempotency_conflict`, ...).
+- `code` — машиночитаемый код (`not_authenticated`, `permission_denied`, `not_found`, `validation_error`, `throttled`, `idempotency_conflict`, `auth_method_disabled`, ...).
 - `details` — объект или список; для не-полевых ошибок `{}`.
 - `request_id` — совпадает с заголовком `X-Request-ID`; клиент передаёт свой `X-Request-ID`, иначе сервер генерирует UUID.
 
