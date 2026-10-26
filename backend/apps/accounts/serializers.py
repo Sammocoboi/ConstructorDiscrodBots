@@ -133,3 +133,30 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 class EmptySerializer(serializers.Serializer):
     pass
+
+
+class DiscordUserGuildChannelSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    name = serializers.CharField()
+    type = serializers.CharField(default="text")
+
+
+class DiscordUserGuildRoleSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    name = serializers.CharField()
+    color = serializers.CharField(default="#99aab5")
+    position = serializers.IntegerField(default=0)
+    managed = serializers.BooleanField(default=False)
+
+
+class DiscordUserGuildSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    name = serializers.CharField()
+    iconColor = serializers.CharField()
+    memberCount = serializers.IntegerField()
+    botAdded = serializers.BooleanField()
+    owner = serializers.BooleanField()
+    canManage = serializers.BooleanField()
+    channels = DiscordUserGuildChannelSerializer(many=True, default=list)
+    roles = DiscordUserGuildRoleSerializer(many=True, default=list)
+

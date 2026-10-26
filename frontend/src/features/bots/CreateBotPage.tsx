@@ -70,6 +70,10 @@ export default function CreateBotPage() {
 
   const guilds = useAvailableGuilds()
   const templates = useTemplates()
+  const manageableGuilds = useMemo(
+    () => guilds.data?.filter((guild) => guild.canManage || guild.owner) ?? [],
+    [guilds.data],
+  )
 
   const {
     register,
@@ -338,23 +342,39 @@ export default function CreateBotPage() {
                 minHeight={160}
               />
             )}
+            {!guilds.isLoading && !guilds.isError && manageableGuilds.length === 0 && (
+              <EmptyState
+                icon="server"
+                title={t('bot.noManageableGuildsTitle', 'Нет доступных серверов')}
+                description={t(
+                  'bot.noManageableGuildsDescription',
+                  'Показываются только серверы, где у вас есть права администратора или «Управление сервером».',
+                )}
+                minHeight={160}
+              />
+            )}
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-              {guilds.data?.map((guild) => {
+              {manageableGuilds.map((guild) => {
                 const checked = guildIds.includes(guild.id)
+                const canManage = guild.canManage || guild.owner
                 return (
                   <Paper
                     key={guild.id}
                     withBorder
                     radius="md"
                     p="sm"
-                    onClick={() =>
+                    onClick={() => {
+                      if (!canManage) return
                       setGuildIds((current) =>
                         checked
                           ? current.filter((id) => id !== guild.id)
                           : [...current, guild.id],
                       )
-                    }
-                    style={{ cursor: 'pointer' }}
+                    }}
+                    style={{
+                      cursor: canManage ? 'pointer' : 'not-allowed',
+                      opacity: canManage ? 1 : 0.6,
+                    }}
                   >
                     <Group wrap="nowrap" justify="space-between">
                       <Group wrap="nowrap" gap="sm">
@@ -369,7 +389,7 @@ export default function CreateBotPage() {
                           </Text>
                         </Stack>
                       </Group>
-                      <Checkbox checked={checked} readOnly tabIndex={-1} />
+                      <Checkbox checked={checked} readOnly tabIndex={-1} disabled={!canManage} />
                     </Group>
                   </Paper>
                 )

@@ -30,6 +30,7 @@ from .models import RefreshSession, User
 from .permissions import EmailAuthMixin
 from .serializers import (
     DiscordExchangeSerializer,
+    DiscordUserGuildSerializer,
     EmailVerifySerializer,
     LoginSerializer,
     PasswordResetConfirmSerializer,
@@ -208,6 +209,18 @@ class MeView(APIView):
         response = Response(status=status.HTTP_204_NO_CONTENT)
         services.clear_refresh_cookie(response)
         return response
+
+
+class UserDiscordGuildsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: DiscordUserGuildSerializer(many=True)},
+        summary="Серверы пользователя из Discord OAuth (только с правами управления)",
+    )
+    def get(self, request):
+        guilds = services.fetch_user_manageable_guilds(request.user)
+        return Response(DiscordUserGuildSerializer(guilds, many=True).data)
 
 
 class SessionListView(APIView):

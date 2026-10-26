@@ -432,6 +432,23 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/me/discord-guilds:
+    get:
+      operationId: me_discord_guilds_list
+      summary: Список серверов пользователя из Discord OAuth (только с правами управления)
+      tags:
+      - me
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DiscordUserGuild'
+          description: ''
   /api/v1/health:
     get:
       operationId: health_retrieve
@@ -3229,6 +3246,72 @@ components:
       - is_staff
       - locale
       - timezone
+    DiscordUserGuild:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        iconColor:
+          type: string
+        memberCount:
+          type: integer
+        botAdded:
+          type: boolean
+        owner:
+          type: boolean
+        canManage:
+          type: boolean
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiscordGuildChannel'
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiscordGuildRole'
+      required:
+      - id
+      - name
+      - iconColor
+      - memberCount
+      - botAdded
+      - owner
+      - canManage
+      - channels
+      - roles
+    DiscordGuildChannel:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - name
+      - type
+    DiscordGuildRole:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        color:
+          type: string
+        position:
+          type: integer
+        managed:
+          type: boolean
+      required:
+      - id
+      - name
+      - color
+      - position
     VisibilityEnum:
       enum:
       - private

@@ -101,7 +101,19 @@ const guild5: Guild = {
   roles,
 }
 
-const guilds = [guild1, guild2, guild3, guild4, guild5]
+const guild6: Guild = {
+  id: 'guild_public_hangout',
+  name: 'Public Community (участник)',
+  iconColor: '#9b59b6',
+  memberCount: 28_400,
+  botAdded: false,
+  owner: false,
+  canManage: false,
+  channels: [],
+  roles: [],
+}
+
+const guilds = [guild1, guild2, guild3, guild4, guild5, guild6]
 
 const findChannel = (guild: Guild, name: string) =>
   guild.channels.find((channel) => channel.name === name)?.id ?? ''

@@ -229,6 +229,9 @@ export const en = {
     saveAsTemplate: 'Save as template',
     templateCreated: 'Personal template created',
     unsaved: 'Unsaved changes',
+    noManageableGuildsTitle: 'No manageable servers',
+    noManageableGuildsDescription:
+      'Only servers where you have Administrator or Manage Server permissions are displayed.',
   },
   modules: {
     title: 'Modules',

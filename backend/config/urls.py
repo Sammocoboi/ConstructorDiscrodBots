@@ -23,6 +23,11 @@ urlpatterns = [
         account_views.SessionDetailView.as_view(),
         name="session-detail",
     ),
+    path(
+        "api/v1/me/discord-guilds",
+        account_views.UserDiscordGuildsView.as_view(),
+        name="me-discord-guilds",
+    ),
     path("api/v1/health", account_views.HealthView.as_view(), name="health"),
     path("api/v1/", include("apps.bots.urls")),
     path("api/v1/", include("apps.templates_catalog.urls")),
