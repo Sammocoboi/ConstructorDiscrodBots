@@ -317,7 +317,7 @@ def consume_discord_state(state: str) -> bool:
 
 
 def discord_callback_redirect(code: str | None = None, error: str | None = None) -> str:
-    frontend = f"{settings.FRONTEND_URL}/auth/callback"
+    frontend = f"{settings.FRONTEND_URL}/auth/callback/discord"
     if error:
         return f"{frontend}?{urlencode({'error': error})}"
     return f"{frontend}?{urlencode({'code': code or ''})}"

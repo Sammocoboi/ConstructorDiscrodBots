@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
-from rest_framework import generics, status, viewsets
+from rest_framework import generics, serializers as drf_serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.common.permissions import IsOwner
+from integrations.discord.permissions import calculate_permissions_integer, generate_invite_url
 
 from .models import Bot, BotGuild, BotRuntimeState, BotVersion, RuntimeCommand
 from .serializers import (
@@ -23,7 +24,14 @@ from .serializers import (
     BotVersionSerializer,
     RuntimeCommandSerializer,
 )
-from .services import request_restart, request_start, request_stop
+from .services import (
+    DiscordAPIError,
+    encrypt_bot_token,
+    request_restart,
+    request_start,
+    request_stop,
+    validate_bot_token,
+)
 
 
 class BotViewSet(viewsets.ModelViewSet):
@@ -128,6 +136,108 @@ class BotViewSet(viewsets.ModelViewSet):
     def guilds(self, request, pk=None):
         bot = self.get_object()
         return Response(BotGuildSerializer(bot.guilds.all(), many=True).data)
+
+    @extend_schema(
+        request=None,
+        responses={200: None},
+        summary="Сгенерировать invite-ссылку для бота",
+    )
+    @action(detail=True, methods=["get"], url_path="invite-url")
+    def invite_url(self, request, pk=None):
+        bot = self.get_object()
+        if not bot.discord_application_id:
+            return Response(
+                {"detail": "discord_application_id is required for invite URL"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        guild_id = request.query_params.get("guild_id")
+        disable_guild_select = request.query_params.get("disable_guild_select") == "true"
+        enabled_modules = list(
+            BotGuild.objects.filter(bot=bot, left_at__isnull=True)
+            .values_list("enabled_modules", flat=True)
+            .first()
+            or []
+        )
+        permissions = calculate_permissions_integer(enabled_modules)
+        url = generate_invite_url(
+            bot.discord_application_id,
+            permissions,
+            guild_id=guild_id,
+            disable_guild_select=disable_guild_select,
+        )
+        return Response({"url": url, "permissions": permissions})
+
+    @extend_schema(
+        request=None,
+        responses={200: None},
+        summary="Обновить токен бота",
+    )
+    @action(detail=True, methods=["post"])
+    def token(self, request, pk=None):
+        bot = self.get_object()
+        token = request.data.get("token", "")
+        if not token:
+            return Response(
+                {"detail": "Token is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            discord_user = validate_bot_token(token)
+        except DiscordAPIError as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        bot.token_encrypted = encrypt_bot_token(token)
+        bot.discord_bot_user_id = str(discord_user.get("id", ""))
+        bot.discord_application_id = str(discord_user.get("id", ""))
+        bot.last_error = ""
+        bot.save(update_fields=[
+            "token_encrypted", "discord_bot_user_id",
+            "discord_application_id", "last_error", "updated_at",
+        ])
+        return Response(BotSerializer(bot).data)
+
+
+class ValidateTokenView(generics.GenericAPIView):
+    """Validate a Discord bot token without creating a bot."""
+
+    permission_classes = [IsAuthenticated]
+
+    class InputSerializer(drf_serializers.Serializer):
+        token = drf_serializers.CharField()
+
+    @extend_schema(
+        request=InputSerializer,
+        responses={200: None},
+        summary="Проверить Discord-токен бота",
+    )
+    def post(self, request):
+        serializer = self.InputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        token = serializer.validated_data["token"]
+        try:
+            discord_user = validate_bot_token(token)
+        except DiscordAPIError as exc:
+            return Response(
+                {"valid": False, "error": str(exc)},
+                status=status.HTTP_200_OK,
+            )
+        avatar = discord_user.get("avatar", "")
+        user_id = discord_user.get("id", "")
+        avatar_color = "#5865F2"
+        if avatar:
+            avatar_color = f"https://cdn.discordapp.com/avatars/{user_id}/{avatar}.png"
+        return Response(
+            {
+                "valid": True,
+                "username": discord_user.get("username", ""),
+                "applicationId": user_id,
+                "avatarColor": avatar_color,
+                "guildsCount": 0,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class BotGuildDetailView(generics.RetrieveUpdateAPIView):
