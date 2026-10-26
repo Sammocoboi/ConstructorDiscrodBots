@@ -57,6 +57,12 @@ Runtime ожидает колонки и таблицы, которых нет �
 Пока это не сведено, Runtime не сможет прочитать бота из Django-БД, а значит не
 запустит ни одного реального бота.
 
+**Статус backend (26.10.2026):** в Django добавлены `runtime_commands.payload`,
+`acked_at`, `finished_at` и статусы `acked`/`done`, а также
+`bot_runtime_state.started_at`/`last_error`. Остальные пункты (имена таблиц,
+`bot_versions`, `bots.config`, timestamps/id при INSERT) описаны в
+`docs/runtime-protocol.md` и ждут правок Runtime.
+
 ### 2.2. Шифрование токенов
 
 - Backend: `TOKEN_ENCRYPTION_KEY` (urlsafe base64, 32 байта), формат
@@ -68,6 +74,10 @@ Runtime ожидает колонки и таблицы, которых нет �
 Даже если положить один и тот же ключ, префикс `v1:` сломает расшифровку.
 Нужен единый формат и единое имя переменной.
 
+**Статус backend (26.10.2026):** `TOKEN_ENCRYPTION_KEY` добавлен в
+`.env.example`, формат `v1:` зафиксирован в `docs/runtime-protocol.md`.
+Runtime всё ещё нужно перевести на то же имя, urlsafe base64 и `v1:`.
+
 ### 2.3. OAuth
 
 - Frontend открывает `/api/v1/auth/discord`, backend отдаёт только
@@ -76,6 +86,12 @@ Runtime ожидает колонки и таблицы, которых нет �
   `/auth/callback/discord`.
 - Страница callback не обменивает `code` через `/auth/discord/exchange`, а
   сразу вызывает `/auth/me`.
+
+**Статус backend (26.10.2026):** исправлено. Backend принимает
+`/auth/discord` и `/auth/discord/login`, редиректит на
+`/auth/callback/discord?code=...`, поддерживает safe `next`, возвращает
+`access_token` и вызывает exchange-контракт. Осталось доделать страницу
+callback на frontend (Данила).
 
 ### 2.4. Недостающие API frontend
 
@@ -90,6 +106,9 @@ Runtime ожидает колонки и таблицы, которых нет �
 
 В backend этих маршрутов нет. Нужно либо реализовать их, либо явно урезать MVP
 и скрыть соответствующие экраны.
+
+**Статус backend (26.10.2026):** `validate-token` и `token` реализованы.
+Flows/events/messages/templates остаются следующим этапом.
 
 ### 2.5. Инфраструктура
 
