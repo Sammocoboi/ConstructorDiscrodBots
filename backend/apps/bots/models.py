@@ -2,11 +2,22 @@
 
 from __future__ import annotations
 
+import uuid
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.utils.text import slugify
 
 from apps.common.models import BaseModel, SoftDeleteModel
+
+
+def bot_avatar_path(instance: Bot, filename: str) -> str:
+    return f"bots/{instance.id}/avatar-{uuid.uuid4().hex}.png"
+
+
+def bot_banner_path(instance: Bot, filename: str) -> str:
+    return f"bots/{instance.id}/banner-{uuid.uuid4().hex}.png"
 
 
 class BotStatus(models.TextChoices):
@@ -23,10 +34,20 @@ class DesiredState(models.TextChoices):
 
 
 class Bot(SoftDeleteModel):
+    class Visibility(models.TextChoices):
+        PRIVATE = "private", "Приватный"
+        PUBLIC = "public", "Публичный"
+
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bots"
     )
     name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=140, unique=True, null=True, blank=True)
+    visibility = models.CharField(
+        max_length=20, choices=Visibility.choices, default=Visibility.PRIVATE
+    )
+    avatar = models.ImageField(upload_to=bot_avatar_path, blank=True)
+    banner = models.ImageField(upload_to=bot_banner_path, blank=True)
     discord_application_id = models.CharField(max_length=32, blank=True, default="")
     discord_bot_user_id = models.CharField(max_length=32, blank=True, default="")
     token_encrypted = models.TextField(blank=True, default="")
@@ -58,9 +79,22 @@ class Bot(SoftDeleteModel):
     def __str__(self) -> str:
         return self.name
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.name, allow_unicode=True)[:100] or "bot"
+            self.slug = f"{base}-{self.id.hex[:8]}" if self.id else f"{base}-{uuid.uuid4().hex[:8]}"
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                kwargs["update_fields"] = [*update_fields, "slug"]
+        return super().save(*args, **kwargs)
+
     @property
     def has_token(self) -> bool:
         return bool(self.token_encrypted)
+
+    @property
+    def is_public(self) -> bool:
+        return self.visibility == self.Visibility.PUBLIC
 
 
 class BotMember(BaseModel):
