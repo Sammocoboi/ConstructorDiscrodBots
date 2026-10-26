@@ -79,13 +79,18 @@ class RegisterView(EmailAuthMixin, APIView):
             services.send_email_verification(user)
         except Exception:  # pragma: no cover - email provider failure should not break signup
             logger.exception("Could not send verification email")
-        return Response(
+        tokens = services.issue_tokens(user, request)
+        response = Response(
             {
+                "access": tokens["access"],
+                "access_token": tokens["access"],
                 "user": UserSerializer(user).data,
                 "message": "Регистрация успешна. Проверьте почту для подтверждения email.",
             },
             status=status.HTTP_201_CREATED,
         )
+        services.set_refresh_cookie(response, tokens["refresh"])
+        return response
 
 
 class LoginView(EmailAuthMixin, APIView):
@@ -111,7 +116,11 @@ class LoginView(EmailAuthMixin, APIView):
         tokens = services.issue_tokens(user, request)
         _audit("auth.login", user=user, request=request, diff={"method": "password"})
         response = Response(
-            {"access": tokens["access"], "user": UserSerializer(user).data},
+            {
+                "access": tokens["access"],
+                "access_token": tokens["access"],
+                "user": UserSerializer(user).data,
+            },
             status=status.HTTP_200_OK,
         )
         services.set_refresh_cookie(response, tokens["refresh"])
@@ -140,7 +149,13 @@ class RefreshView(APIView):
             tokens = services.rotate_refresh_token(raw_token, request)
         except InvalidToken as exc:
             raise AuthenticationFailed("Refresh token is invalid or revoked") from exc
-        response = Response({"access": tokens["access"]}, status=status.HTTP_200_OK)
+        response = Response(
+            {
+                "access": tokens["access"],
+                "access_token": tokens["access"],
+            },
+            status=status.HTTP_200_OK,
+        )
         services.set_refresh_cookie(response, tokens["refresh"])
         return response
 
@@ -257,7 +272,8 @@ class DiscordLoginView(APIView):
         summary="Начать вход через Discord",
     )
     def get(self, request):
-        state = services.build_discord_state()
+        next_path = request.query_params.get("next", "")
+        state = services.build_discord_state(next_path)
         return HttpResponseRedirect(services.build_discord_authorize_url(state))
 
 
@@ -270,14 +286,20 @@ class DiscordCallbackView(APIView):
     )
     def get(self, request):
         state = request.query_params.get("state", "")
-        if not services.consume_discord_state(state):
+        state_payload = services.consume_discord_state(state)
+        if state_payload is None:
             return HttpResponseRedirect(services.discord_callback_redirect(error="invalid_state"))
+        next_path = state_payload.get("next", "")
         error = request.query_params.get("error")
         if error:
-            return HttpResponseRedirect(services.discord_callback_redirect(error=error))
+            return HttpResponseRedirect(
+                services.discord_callback_redirect(error=error, next_path=next_path)
+            )
         code = request.query_params.get("code", "")
         if not code:
-            return HttpResponseRedirect(services.discord_callback_redirect(error="missing_code"))
+            return HttpResponseRedirect(
+                services.discord_callback_redirect(error="missing_code", next_path=next_path)
+            )
         try:
             token_data = services.exchange_discord_code(code)
             discord_user = services.fetch_discord_user(token_data["access_token"])
@@ -285,10 +307,15 @@ class DiscordCallbackView(APIView):
         except services.DiscordOAuthError:
             logger.exception("Discord OAuth callback failed")
             return HttpResponseRedirect(
-                services.discord_callback_redirect(error="discord_oauth_failed")
+                services.discord_callback_redirect(
+                    error="discord_oauth_failed",
+                    next_path=next_path,
+                )
             )
         login_code = services.create_discord_login_code(user)
-        return HttpResponseRedirect(services.discord_callback_redirect(code=login_code))
+        return HttpResponseRedirect(
+            services.discord_callback_redirect(code=login_code, next_path=next_path)
+        )
 
 
 class DiscordExchangeView(APIView):
@@ -310,7 +337,11 @@ class DiscordExchangeView(APIView):
         tokens = services.issue_tokens(user, request)
         _audit("auth.login", user=user, request=request, diff={"method": "discord"})
         response = Response(
-            {"access": tokens["access"], "user": UserSerializer(user).data},
+            {
+                "access": tokens["access"],
+                "access_token": tokens["access"],
+                "user": UserSerializer(user).data,
+            },
             status=status.HTTP_200_OK,
         )
         services.set_refresh_cookie(response, tokens["refresh"])

@@ -8,6 +8,11 @@ router.register("bots", views.BotViewSet, basename="bot")
 
 urlpatterns = [
     path(
+        "bots/<uuid:bot_id>/guilds/sync",
+        views.BotGuildSyncView.as_view(),
+        name="bot-guild-sync",
+    ),
+    path(
         "bots/<uuid:bot_id>/guilds/<str:guild_id>",
         views.BotGuildDetailView.as_view(),
         name="bot-guild-detail",

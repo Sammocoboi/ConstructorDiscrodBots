@@ -176,12 +176,15 @@ class RuntimeCommand(BaseModel):
 
     class Status(models.TextChoices):
         PENDING = "pending", "Ожидает"
+        ACKED = "acked", "Принята Runtime"
         ACKNOWLEDGED = "acknowledged", "Подтверждена"
+        DONE = "done", "Выполнена"
         FAILED = "failed", "Ошибка"
 
     bot = models.ForeignKey(Bot, on_delete=models.CASCADE, related_name="runtime_commands")
     command = models.CharField(max_length=20, choices=Command.choices)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    payload = models.JSONField(default=dict, blank=True)
     requested_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -189,6 +192,8 @@ class RuntimeCommand(BaseModel):
         on_delete=models.SET_NULL,
         related_name="+",
     )
+    acked_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
     processed_at = models.DateTimeField(null=True, blank=True)
     error = models.TextField(blank=True, default="")
 
@@ -208,6 +213,8 @@ class BotRuntimeState(BaseModel):
     uptime_seconds = models.PositiveIntegerField(default=0)
     version_number = models.PositiveIntegerField(null=True, blank=True)
     heartbeat_at = models.DateTimeField(null=True, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True, default="")
 
     class Meta:
         verbose_name = "Состояние бота"

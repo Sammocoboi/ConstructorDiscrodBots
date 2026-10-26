@@ -303,24 +303,68 @@ def consume_discord_login_code(code: str) -> User | None:
     return User.objects.filter(id=user_id).first()
 
 
-def build_discord_state() -> str:
+def safe_next_path(value: str | None) -> str:
+    """Return a safe relative frontend path or an empty string.
+
+    ``next`` приходит из query string, поэтому редирект наружу нужно исключить:
+    разрешаем только пути внутри приложения (``/app``), но не ``//evil`` и не
+    абсолютные URL.
+    """
+    if not value:
+        return ""
+    candidate = value.strip()
+    if not candidate.startswith("/") or candidate.startswith("//"):
+        return ""
+    if (
+        len(candidate) > 500
+        or "\\" in candidate
+        or "\r" in candidate
+        or "\n" in candidate
+        or any(ord(char) < 32 for char in candidate)
+    ):
+        return ""
+    return candidate
+
+
+def build_discord_state(next_path: str = "") -> str:
     state = secrets.token_urlsafe(32)
-    cache.set(f"discord:state:{state}", True, timeout=settings.DISCORD_OAUTH_STATE_TTL)
+    cache.set(
+        f"discord:state:{state}",
+        {"next": safe_next_path(next_path)},
+        timeout=settings.DISCORD_OAUTH_STATE_TTL,
+    )
     return state
 
 
-def consume_discord_state(state: str) -> bool:
-    if not state or not cache.get(f"discord:state:{state}"):
-        return False
+def consume_discord_state(state: str) -> dict | None:
+    """Consume a one-time OAuth state and return its payload (or ``None``)."""
+    if not state:
+        return None
+    payload = cache.get(f"discord:state:{state}")
+    if payload is None:
+        return None
     cache.delete(f"discord:state:{state}")
-    return True
+    if isinstance(payload, dict):
+        return payload
+    # Обратная совместимость со state, сохранённым старой версией (True).
+    return {"next": ""}
 
 
-def discord_callback_redirect(code: str | None = None, error: str | None = None) -> str:
-    frontend = f"{settings.FRONTEND_URL}/auth/callback"
+def discord_callback_redirect(
+    code: str | None = None,
+    error: str | None = None,
+    next_path: str = "",
+) -> str:
+    frontend = f"{settings.FRONTEND_URL}/auth/callback/discord"
+    params: dict[str, str] = {}
     if error:
-        return f"{frontend}?{urlencode({'error': error})}"
-    return f"{frontend}?{urlencode({'code': code or ''})}"
+        params["error"] = error
+    else:
+        params["code"] = code or ""
+    safe_next = safe_next_path(next_path)
+    if safe_next:
+        params["next"] = safe_next
+    return f"{frontend}?{urlencode(params)}"
 
 
 DISCORD_GUILDS_CACHE_TTL = 60

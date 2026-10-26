@@ -27,6 +27,17 @@ def test_register_login_me_refresh_logout(api_client: APIClient, mailoutbox):
     assert user.email_verified_at is None
     assert user.check_password("StrongPass123!")
 
+    # Регистрация сразу выдаёт сессию (фронтенд ожидает access_token).
+    assert register.data["access"] == register.data["access_token"]
+    assert register.cookies["refresh_token"].value
+    assert RefreshSession.objects.filter(user=user, revoked_at__isnull=True).count() == 1
+
+    # Завершаем регистрационную сессию, чтобы проверить обычный login-flow.
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {register.data['access']}")
+    api_client.post("/api/v1/auth/logout", {}, format="json")
+    api_client.credentials()
+    assert RefreshSession.objects.filter(user=user, revoked_at__isnull=True).count() == 0
+
     login = api_client.post(
         "/api/v1/auth/login",
         {"email": "new.user@example.com", "password": "StrongPass123!"},

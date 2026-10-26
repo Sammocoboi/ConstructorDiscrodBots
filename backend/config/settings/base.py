@@ -235,6 +235,9 @@ DISCORD_OAUTH_SCOPES = ("identify", "email", "guilds")
 DISCORD_OAUTH_STATE_TTL = 600
 DISCORD_LOGIN_CODE_TTL = 120
 
+# Internal shared secret for Runtime -> backend service calls (guild sync, etc.).
+RUNTIME_SERVICE_TOKEN = os.getenv("RUNTIME_SERVICE_TOKEN", "")
+
 # ---------------------------------------------------------------------------
 # Billing / Stripe
 # ---------------------------------------------------------------------------

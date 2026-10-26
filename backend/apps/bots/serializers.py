@@ -99,6 +99,15 @@ class BotGuildSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "guild_id", "joined_at", "left_at", "created_at", "updated_at")
 
 
+class BotGuildSyncItemSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    name = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class BotGuildSyncSerializer(serializers.Serializer):
+    guilds = BotGuildSyncItemSerializer(many=True)
+
+
 class BotVersionListSerializer(serializers.ModelSerializer):
     class Meta:
         model = BotVersion
@@ -141,7 +150,17 @@ class BotVariableSerializer(serializers.ModelSerializer):
 class RuntimeCommandSerializer(serializers.ModelSerializer):
     class Meta:
         model = RuntimeCommand
-        fields = ("id", "command", "status", "processed_at", "error", "created_at")
+        fields = (
+            "id",
+            "command",
+            "status",
+            "payload",
+            "acked_at",
+            "finished_at",
+            "processed_at",
+            "error",
+            "created_at",
+        )
         read_only_fields = fields
 
 
@@ -158,6 +177,8 @@ class BotRuntimeStateSerializer(serializers.ModelSerializer):
             "uptime_seconds",
             "version_number",
             "heartbeat_at",
+            "started_at",
+            "last_error",
             "is_alive",
         )
         read_only_fields = fields
@@ -179,3 +200,15 @@ class BotStatusSerializer(serializers.Serializer):
 
 class BotTokenMaskSerializer(serializers.Serializer):
     token_masked = serializers.CharField()
+
+
+class BotTokenInputSerializer(serializers.Serializer):
+    token = serializers.CharField(write_only=True, trim_whitespace=True)
+
+
+class BotTokenValidationSerializer(serializers.Serializer):
+    valid = serializers.BooleanField()
+    username = serializers.CharField()
+    applicationId = serializers.CharField(allow_blank=True)
+    avatarColor = serializers.CharField()
+    guildsCount = serializers.IntegerField()

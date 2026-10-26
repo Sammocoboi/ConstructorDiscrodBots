@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from hmac import compare_digest
+
+from django.conf import settings
 from rest_framework import permissions
 
 
@@ -30,3 +33,14 @@ class IsAuthorOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
         return getattr(obj, self.author_field, None) == request.user
+
+
+class IsRuntimeService(permissions.BasePermission):
+    """Authenticate internal Runtime -> backend calls with a shared secret."""
+
+    def has_permission(self, request, view):
+        expected = getattr(settings, "RUNTIME_SERVICE_TOKEN", "")
+        supplied = request.headers.get("X-Runtime-Token", "")
+        if not expected or not supplied:
+            return False
+        return compare_digest(expected, supplied)

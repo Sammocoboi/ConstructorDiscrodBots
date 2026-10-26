@@ -20,6 +20,7 @@ urlpatterns = [
         name="session-detail",
     ),
     path("me/discord-guilds", views.UserDiscordGuildsView.as_view(), name="discord-guilds"),
+    path("discord", views.DiscordLoginView.as_view(), name="discord-login-alias"),
     path("discord/login", views.DiscordLoginView.as_view(), name="discord-login"),
     path("discord/callback", views.DiscordCallbackView.as_view(), name="discord-callback"),
     path("discord/exchange", views.DiscordExchangeView.as_view(), name="discord-exchange"),
