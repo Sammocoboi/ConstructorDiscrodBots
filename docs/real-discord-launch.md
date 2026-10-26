@@ -190,10 +190,22 @@ frontend могли с ним работать.
 
 #### Задачи
 
+**Статус на 26.10.2026 (Артём):** backend-slice готов и покрыт тестами:
+OAuth-алиас/callback/exchange, `access_token`, `validate-token`, замена токена,
+внутренний guild-sync, поля `runtime_commands`/`bot_runtime_state`, env и
+`docs/runtime-protocol.md`. Полный запуск всё ещё ждёт правок Runtime
+(Шухрат) и frontend (Данила).
+
 - [ ] Провести созвон с Шухратом и Саней, зафиксировать контракт БД v2 и
       записать его в `docs/runtime-protocol.md`.
+      > Черновик контракта уже создан: `docs/runtime-protocol.md`. Нужно
+      > подтверждение Шухрата по таблицам/колонкам.
 - [ ] Свести схему БД к одному виду. Рекомендуемый вариант: Django-схема —
       главная, Runtime подстраивается.
+      > В backend добавлены `runtime_commands.payload`, `acked_at`,
+      > `finished_at`, статусы `acked`/`done`, а также
+      > `bot_runtime_state.started_at`/`last_error`. Остальное (имена таблиц,
+      > `bot_versions`, `bots.config`, timestamps) — за Runtime.
       - `bot_versions`: использовать `version_number`, `content`,
         `published_at` (либо добавить `status`/`config` миграцией, но без дублей).
       - `bots`: убрать зависимость Runtime от несуществующего `bots.config`;
@@ -205,16 +217,21 @@ frontend могли с ним работать.
       - `scheduled_jobs`: развести runtime-джобы и пользовательские задачи либо
         привести к одной таблице.
 - [ ] Унифицировать шифрование токенов:
+      > Backend-сторона готова: `TOKEN_ENCRYPTION_KEY` добавлен в
+      > `.env.example`, формат `v1:` описан в `docs/runtime-protocol.md`.
+      > Осталось переименовать env и поддержать `v1:` в Runtime.
       - один env `TOKEN_ENCRYPTION_KEY` (urlsafe base64, 32 байта) для backend
         и Runtime;
       - Runtime должен понимать префикс `v1:`;
       - убрать fallback «считать токен plaintext»;
       - добавить тест: backend зашифровал → Runtime расшифровал → Discord принял.
-- [ ] Починить OAuth-контракт:
+- [x] Починить OAuth-контракт:
       - `GET /api/v1/auth/discord/login` (или алиас `/auth/discord`);
       - callback → `FRONTEND_URL/auth/callback/discord?code=...`;
       - frontend обменивает `code` через `/auth/discord/exchange`;
       - `next`-параметр либо поддержать, либо убрать.
+      > Backend готов; страницу callback и обмен `code` должен доделать
+      > frontend (Данила).
 - [ ] Добавить недостающие эндпоинты:
       - `POST /bots/validate-token`;
       - `POST /bots/{id}/token` — обновление токена;
@@ -223,11 +240,15 @@ frontend могли с ним работать.
       - `GET /bots/{id}/events`;
       - `/messages`;
       - `POST /bots/{id}/save-as-template`.
+      > `validate-token` и `token` готовы. Flows/events/messages/templates —
+      > следующий этап, требуют моделей и согласования с frontend.
 - [ ] Добавить синхронизацию гильдий: Runtime или backend делает upsert в
       `bot_guilds` при join/leave; отдавать это в `/bots/{id}/guilds`.
+      > Backend endpoint готов: `POST /bots/{id}/guilds/sync` с
+      > `X-Runtime-Token`. Runtime должен его вызывать.
 - [ ] Проверить production-настройки: `config.settings.prod`, `ALLOWED_HOSTS`,
       CORS/CSRF, cookies, статика, миграции.
-- [ ] Обновить `.env.example`, API-контракт и тесты.
+- [x] Обновить `.env.example`, API-контракт и тесты.
 
 #### Готово, когда
 
