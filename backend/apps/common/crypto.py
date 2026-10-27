@@ -18,16 +18,22 @@ _PREFIX = "v1:"
 
 
 def _key() -> bytes:
-    raw = os.getenv("TOKEN_ENCRYPTION_KEY", "")
+    raw = os.getenv("TOKEN_ENCRYPTION_KEY", "").strip()
     if raw:
         try:
-            key = base64.urlsafe_b64decode(raw)
+            padded = raw + "=" * (-len(raw) % 4)
+            key = base64.urlsafe_b64decode(padded)
         except Exception as exc:  # pragma: no cover - configuration error
             raise ValueError("TOKEN_ENCRYPTION_KEY must be url-safe base64") from exc
         if len(key) != 32:
             raise ValueError("TOKEN_ENCRYPTION_KEY must decode to 32 bytes")
         return key
-    return hashlib.sha256(settings.SECRET_KEY.encode("utf-8")).digest()
+    if settings.DEBUG or settings.SETTINGS_MODULE.endswith(".dev"):
+        # Local development convenience only. Production must share an explicit
+        # key with Runtime; deriving from SECRET_KEY would silently create
+        # tokens Runtime cannot decrypt.
+        return hashlib.sha256(settings.SECRET_KEY.encode("utf-8")).digest()
+    raise ValueError("TOKEN_ENCRYPTION_KEY is required in production")
 
 
 def encrypt_secret(value: str) -> str:
@@ -43,7 +49,8 @@ def decrypt_secret(value: str) -> str:
         return ""
     if not value.startswith(_PREFIX):
         raise ValueError("Unsupported secret format")
-    payload = base64.urlsafe_b64decode(value[len(_PREFIX) :])
+    payload_b64 = value[len(_PREFIX) :]
+    payload = base64.urlsafe_b64decode(payload_b64 + "=" * (-len(payload_b64) % 4))
     nonce, ciphertext = payload[:12], payload[12:]
     return AESGCM(_key()).decrypt(nonce, ciphertext, None).decode("utf-8")
 

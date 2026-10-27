@@ -49,6 +49,8 @@ https://github.com/Sammocoboi/ConstructorDiscrodBots.git
   - `frontend/node_modules` — зависимости через `npm ci`.
 - Проведён аудит моделей, сериализаторов, frontend-типов, `mockApi`,
   `httpApi` и страниц ботов/шаблонов.
+- Выполнена интеграция Runtime с Django-схемой и production-инфраструктурой
+  (раздел 5.3); подробности — в разделе 12.
 
 ## 4. Текущая точка
 
@@ -115,7 +117,8 @@ npm run test -- --run
 Runtime (из корневой папки `runtime`):
 
 ```powershell
-..\proect\.venv\Scripts\python.exe -m pytest -q
+cd runtime
+python -m pytest -q
 ruff check .
 mypy runtime
 ```
@@ -156,6 +159,54 @@ mypy runtime
 - Нет Docker/PostgreSQL и реального Discord-токена: compose, миграции на
   PostgreSQL и CF-14 вживую локально не проверяются.
 - `proect/` остаётся untracked legacy-папкой с локальным venv и вложенным
-  репозиторием; её нельзя коммитить.
-- Перед финальным коммитом нужно добавить `/proect/` в `.gitignore` или
-  очистить папку, сохранив только нужные локальные артефакты.
+  репозиторием; её нельзя коммитить. В `.gitignore` добавлен `/proect/`.
+- Production-стек и lifecycle требуют проверки на staging/VPS с реальным
+  тестовым Discord-ботом.
+
+## 12. Runtime и production-стек (раздел 5.3)
+
+### Что сделано
+
+- Runtime SQL переведён на Django-схему: `bots_bot`, `bots_botdraft`,
+  `bots_botversion`, `bots_runtimecommand`, `bots_botruntimestate`,
+  `templates_catalog_*`. Runtime владеет только `runtime_scheduled_jobs` и
+  `runtime_flow_traces`.
+- Конфиг бота: активная `bots_botversion.content` → `bots_botdraft.content` →
+  `{}`; `bots_bot.intents` объединяются с конфигом.
+- Команды: `pending` → `acknowledged`/`processed_at`; успешные внутренние
+  `acked`/`done` схлопываются в `acknowledged`, `failed` сохраняет `error`.
+- Токены: общий `TOKEN_ENCRYPTION_KEY` (URL-safe base64, 32 байта),
+  AES-256-GCM, формат `v1:<nonce+ciphertext>`, без plaintext-fallback.
+  Устаревшее `BOT_TOKEN_ENCRYPTION_KEY` Runtime принимает как fallback.
+  Ошибка расшифровки переводит бота в `error`/`desired_state=stopped` без
+  авторестарта.
+- Heartbeat пишет `worker_id`, `status`, `latency_ms`, `guild_count`,
+  `uptime_seconds`, `version_number`, `heartbeat_at`; `/ready` проверяет БД.
+- Добавлен единый `docker-compose.prod.yml`: `postgres`, `migrate`, `backend`
+  (gunicorn + `config.settings.prod` + WhiteNoise), `runtime`, `frontend`
+  (nginx), `caddy`; профили `backup` и `monitoring`.
+- Наружу открыт только Caddy (80/443 + UDP 443); PostgreSQL, backend, Runtime и
+  frontend доступны только во внутренней сети.
+- Caddy TERMINATES TLS и обслуживает `APP_DOMAIN`/`API_DOMAIN`; frontend nginx
+  проксирует `/api`, медиа отдаётся из общего volume.
+- Добавлены healthchecks, `restart: unless-stopped`, `stop_grace_period`,
+  `ops/backup.sh`, `ops/restore.sh`, `ops/prometheus/prometheus.yml`,
+  `.env.production.example`, `Caddyfile`, `frontend/Dockerfile`,
+  `frontend/nginx.conf`, `.dockerignore`.
+- Backend production: WhiteNoise, Pillow, `postgresql-client`; crypto ужесточён
+  (в production обязателен явный ключ). Сгенерирована недостающая миграция
+  `bots/0002_*`; slug бота получает UUID-суффикс, чтобы не ловить коллизии.
+- `runtime/infra/docker-compose.yml` стал Runtime-only и работает против
+  внешней PostgreSQL с уже применёнными Django-миграциями.
+- Обновлены `runtime/docs/runtime-protocol.md`, `deploy.md`, `runbook.md`,
+  README, корневой README и этот документ.
+
+### Проверки
+
+- Runtime: `64 passed`, `ruff` и `mypy` без ошибок.
+- Backend: `68 passed`, `ruff` без ошибок.
+- Compose, реальные миграции PostgreSQL, backup/restore, TLS и Discord
+  lifecycle **не запускались**: в локальном окружении нет Docker/PostgreSQL и
+  реального токена.
+- Перед production-запуском: `docker compose -f docker-compose.prod.yml config`,
+  staging `up`, проверка `migrate`/trigger, backup/restore и smoke-тест Discord.

@@ -14,6 +14,10 @@ class MissingIntentsError(PermanentBotError):
     pass
 
 
+class TokenDecryptionError(PermanentBotError):
+    """The stored token cannot be decrypted with the configured shared key."""
+
+
 class SupervisorCapacityError(RuntimeErrorBase):
     pass
 

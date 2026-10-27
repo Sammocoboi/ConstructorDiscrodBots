@@ -1,48 +1,57 @@
+"""Deprecated token cipher kept for older integration imports.
+
+New code must use :mod:`apps.common.crypto`, which shares
+``TOKEN_ENCRYPTION_KEY`` and the ``v1:`` payload format with Runtime. This
+wrapper delegates to it when no explicit key is supplied; the old static
+fallback key has been removed.
+"""
+
+from __future__ import annotations
 
 import base64
 import os
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+from apps.common.crypto import decrypt_secret, encrypt_secret
+
+
+def _normalize_key(key: bytes | str) -> bytes:
+    if isinstance(key, str):
+        try:
+            decoded = base64.urlsafe_b64decode(key + "=" * (-len(key) % 4))
+        except Exception as exc:
+            raise ValueError("key must be url-safe base64") from exc
+    else:
+        decoded = key
+    if len(decoded) != 32:
+        raise ValueError(f"AES-256 key must be exactly 32 bytes, got {len(decoded)}")
+    return decoded
+
 
 class TokenCipher:
-
-    def __init__(self, key: bytes | None = None):
-        if key is None:
-            env_key = os.environ.get("BOT_TOKEN_ENCRYPTION_KEY")
-            if env_key:
-                try:
-                    self.key = base64.b64decode(env_key)
-                except Exception:
-                    self.key = env_key.encode("utf-8").ljust(32, b"0")[:32]
-            else:
-                self.key = b"antigravity_discord_bot_aes256_k"
-        else:
-            self.key = key
-
-        if len(self.key) != 32:
-            raise ValueError(f"Длина ключа AES-256 должна составлять ровно 32 байта, получено {len(self.key)}")
-
-        self.aesgcm = AESGCM(self.key)
+    def __init__(self, key: bytes | str | None = None):
+        self.key = _normalize_key(key) if key is not None else None
 
     def encrypt(self, plain_token: str) -> str:
         if not plain_token:
             return ""
+        if self.key is None:
+            return encrypt_secret(plain_token)
         nonce = os.urandom(12)
-        ciphertext = self.aesgcm.encrypt(nonce, plain_token.encode("utf-8"), None)
-        combined = nonce + ciphertext
-        return base64.b64encode(combined).decode("utf-8")
+        ciphertext = AESGCM(self.key).encrypt(nonce, plain_token.encode("utf-8"), None)
+        return "v1:" + base64.urlsafe_b64encode(nonce + ciphertext).decode("ascii")
 
     def decrypt(self, encrypted_token: str) -> str:
         if not encrypted_token:
             return ""
-        combined = base64.b64decode(encrypted_token.encode("utf-8"))
-        if len(combined) < 28:
-            raise ValueError("Некорректная длина зашифрованного токена")
-        nonce = combined[:12]
-        ciphertext = combined[12:]
-        decrypted_bytes = self.aesgcm.decrypt(nonce, ciphertext, None)
-        return decrypted_bytes.decode("utf-8")
+        if self.key is None:
+            return decrypt_secret(encrypted_token)
+        if not encrypted_token.startswith("v1:"):
+            raise ValueError("unsupported token format")
+        combined = base64.urlsafe_b64decode(encrypted_token[3:])
+        nonce, ciphertext = combined[:12], combined[12:]
+        return AESGCM(self.key).decrypt(nonce, ciphertext, None).decode("utf-8")
 
     @staticmethod
     def mask_token(plain_or_encrypted: str) -> str:
@@ -54,5 +63,6 @@ class TokenCipher:
         prefix = clean[:6]
         suffix = clean[-4:]
         return f"{prefix}••••••••••••••••••••{suffix}"
+
 
 default_cipher = TokenCipher()

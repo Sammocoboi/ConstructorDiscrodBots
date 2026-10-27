@@ -5,14 +5,14 @@
 
 ## Контекст
 
-Нужны фоновые задачи: очистка `runtime_commands`, `flow_traces`, сброс
-`usage_counters`, синхронизация slash-команд, email. Backend — Django на
-PostgreSQL; Runtime — отдельный Python-сервис без Django. Кандидаты:
-Procrastinate, Django-Q2, собственный cron на `scheduled_jobs`.
+Нужны фоновые задачи: очистка `bots_runtimecommand`, `runtime_flow_traces`,
+синхронизация slash-команд, email. Backend — Django на PostgreSQL; Runtime —
+отдельный Python-сервис без Django. Кандидаты: Procrastinate, Django-Q2,
+собственный cron на `runtime_scheduled_jobs`.
 
 ## Решение
 
-1. **Runtime** использует таблицу `scheduled_jobs` + cron-парсер и
+1. **Runtime** использует таблицу `runtime_scheduled_jobs` + cron-парсер и
    `SELECT ... FOR UPDATE SKIP LOCKED` для захвата задач. Это уже реализовано
    в `runtime/scheduler.py` и `runtime/db.py`.
 2. **Backend** для своих задач (email, синхронизация команд, платежи)
@@ -34,12 +34,12 @@ Procrastinate, Django-Q2, собственный cron на `scheduled_jobs`.
 
 - Cron — только 5 полей, без секунд; сложные расписания выражаются несколькими
   задачами.
-- Нет встроенного retry/backoff у `scheduled_jobs`: ошибка пишется в
+- Нет встроенного retry/backoff у `runtime_scheduled_jobs`: ошибка пишется в
   `last_error`, `next_run_at` остаётся; повтор — по расписанию.
 - Для email/тяжёлых задач backend обязан использовать Procrastinate, а не
   Runtime.
-- При росте нагрузки `scheduled_jobs` можно заменить на Procrastinate без
-  изменения таблиц Runtime.
+- При росте нагрузки `runtime_scheduled_jobs` можно заменить на Procrastinate
+  без изменения таблиц Runtime.
 
 ## Альтернативы
 

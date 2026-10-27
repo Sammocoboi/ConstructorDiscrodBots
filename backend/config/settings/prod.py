@@ -1,8 +1,20 @@
 """Production settings."""
 
 from .base import *  # noqa: F401,F403
+from .base import MIDDLEWARE
 
 DEBUG = False
+
+# WhiteNoise serves Django admin/DRF static assets from the same Gunicorn
+# process; Caddy only terminates TLS and proxies requests.
+MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+WHITENOISE_MAX_AGE = 31536000
 
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True

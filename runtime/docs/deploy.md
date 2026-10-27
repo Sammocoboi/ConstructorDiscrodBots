@@ -1,134 +1,269 @@
 # Deploy
 
-## Состав
+## Топологии
 
-В этой ветке Docker Compose поднимает Runtime-контур:
+В репозитории три compose-файла с разным назначением:
 
-- `db` — PostgreSQL 16;
-- `migrate` — одноразовое применение `infra/migrations/001_runtime.sql`;
-- `runtime` — сервис `python -m runtime.main`.
+| Файл | Назначение | Сервисы |
+|---|---|---|
+| `docker-compose.prod.yml` (корень) | **production** | `postgres`, `migrate`, `backend`, `runtime`, `frontend`, `caddy`; профили `monitoring`, `backup` |
+| `docker-compose.yml` (корень) | локальная разработка | `db`, `backend` (`runserver`) |
+| `runtime/infra/docker-compose.yml` | только Runtime | `migrate`, `runtime`; PostgreSQL внешний |
 
-Backend (Django) и frontend живут в своих ветках. Они подключаются к тому же
-PostgreSQL; объединённый compose собирается после мержа зон. Runtime не
-импортирует Django-модели и общается с backend только через таблицы.
+Production-стек — единственный источник истины для реального запуска. В нём
+backend и Runtime используют **одну** БД, а наружу открыт только Caddy (80/443).
+PostgreSQL, backend, Runtime и frontend доступны только внутри Docker-сети.
 
 ## Требования
 
 - Docker Engine 24+ и Compose v2;
-- 1 ГБ RAM для Runtime + PostgreSQL;
-- исходящий HTTPS к Discord Gateway;
-- секрет `BOT_TOKEN_ENCRYPTION_KEY` (32 байта, base64), одинаковый с backend.
+- VPS минимум 2 vCPU / 4 ГБ RAM (для PostgreSQL + backend + Runtime + Caddy);
+- DNS A/AAAA-записи `app.<домен>` и `api.<домен>` на VPS;
+- открытые 80/tcp и 443/tcp (80 нужен Caddy для ACME HTTP-challenge и
+  редиректа);
+- исходящий HTTPS к Discord Gateway (443);
+- секрет `TOKEN_ENCRYPTION_KEY` — URL-safe base64 ровно 32 байта.
+
+## Подготовка `.env`
+
+```bash
+cp .env.production.example .env
+# заполнить APP_DOMAIN, API_DOMAIN, пароли, ключи, Discord/Stripe/Email
+```
+
+Ключ шифрования:
+
+```bash
+python -c "import base64,os;print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
+```
+
+`TOKEN_ENCRYPTION_KEY` должен быть **одинаковым** для backend и Runtime. При его
+потере/замене существующие `bots_bot.token_encrypted` перестанут
+расшифровываться; Runtime переведёт таких ботов в `error` и `desired_state =
+stopped`. Токены придётся заново сохранить через backend, имея их исходные
+значения.
+
+Обязательные переменные:
+
+| переменная | назначение |
+|---|---|
+| `APP_DOMAIN` | домен SPA, например `app.example.com` |
+| `API_DOMAIN` | домен API/admin, например `api.example.com` |
+| `DJANGO_SECRET_KEY` | ≥32 случайных символов |
+| `POSTGRES_PASSWORD` | пароль БД, не `constructor` |
+| `TOKEN_ENCRYPTION_KEY` | общий ключ backend/Runtime |
+| `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | Discord OAuth2 |
+| `DISCORD_REDIRECT_URI` | `https://api.<домен>/api/v1/auth/discord/callback` |
+| `STRIPE_*` | биллинг, если включён |
+| `EMAIL_*` | SMTP, если включён |
+| `WORKER_ID` | уникальный id Runtime-воркера |
+
+`DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS` и
+`DATABASE_URL` вычисляются в `docker-compose.prod.yml` из `APP_DOMAIN`,
+`API_DOMAIN` и `POSTGRES_*`; значения из `.env` для них не используются.
+Пароль PostgreSQL должен быть URL-safe (или percent-encoded), потому что он
+подставляется в `DATABASE_URL`.
 
 ## Первый деплой
 
 ```bash
-cd runtime/infra
-cp .env.example .env
-# отредактировать .env: пароль PostgreSQL, ключ, worker id
-docker compose up -d --build
-docker compose ps
-curl http://localhost:8080/health
-curl http://localhost:8080/ready
+docker compose -f docker-compose.prod.yml config >/dev/null
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml ps -a
+docker compose -f docker-compose.prod.yml logs migrate
 ```
 
-`migrate` завершается успешно один раз и остаётся в статусе `exited (0)` — это
-нормально. При изменении SQL перезапустите:
+`migrate` — одноразовый сервис. Он выполняет строго по порядку:
+
+1. `python manage.py migrate --noinput`;
+2. `python manage.py collectstatic --noinput`;
+3. `psql -f runtime/infra/migrations/001_runtime.sql`.
+
+Успешный `migrate` остаётся в статусе `exited (0)` — это нормально. Backend и
+Runtime стартуют только после `service_completed_successfully`. Runtime при
+старте ещё раз идемпотентно применяет свой SQL, поэтому trigger на
+`bots_runtimecommand` появится даже при ручном запуске.
+
+Проверка:
 
 ```bash
-docker compose run --rm migrate
+curl -fsS https://api.example.com/api/v1/health
+curl -fsS https://app.example.com/ >/dev/null
+docker compose -f docker-compose.prod.yml exec runtime \
+  python -c "import urllib.request;print(urllib.request.urlopen('http://127.0.0.1:8080/ready').read().decode())"
+docker compose -f docker-compose.prod.yml logs --tail=100 caddy backend runtime
 ```
 
-Для существующей БД миграция идемпотентна: `CREATE ... IF NOT EXISTS`,
-`ALTER ... IF NOT EXISTS`, `DROP TRIGGER IF EXISTS`. Seed-задачи вставляются
-через `ON CONFLICT (name) DO NOTHING`.
+Caddy выпускает сертификаты Let's Encrypt автоматически. Если DNS ещё не
+указал на VPS или закрыт 80/tcp, в `logs caddy` будут ошибки ACME.
 
-## Переменные
+Если изменился только Runtime SQL:
+
+```bash
+docker compose -f docker-compose.prod.yml run --rm migrate
+```
+
+## Маршрутизация и TLS
+
+```text
+https://app.<домен>/        -> frontend (nginx, SPA)
+https://app.<домен>/api/*   -> frontend nginx -> backend:8000
+https://app.<домен>/media/* -> общий volume backend_media через Caddy
+https://api.<домен>/        -> backend:8000 (API, /admin/, /static/, /api/docs/)
+https://api.<домен>/media/* -> общий volume backend_media через Caddy
+```
+
+- TLS завершается на Caddy; backend получает `X-Forwarded-Proto: https`.
+- Django static/admin отдаёт WhiteNoise из Gunicorn-процесса; отдельный nginx
+  для статики не нужен.
+- Frontend-контейнер — nginx со сборкой Vite; он проксирует `/api/` на backend,
+  поэтому SPA и API можно держать на одном origin.
+- Наружу опубликованы только `80:80`, `443:443`, `443:443/udp` у Caddy.
+  PostgreSQL (`5432`), backend (`8000`), Runtime (`8080`) и frontend (`80`) не
+  имеют `ports:`.
+
+## Переменные Runtime
 
 | переменная | по умолчанию | назначение |
 |---|---|---|
-| `POSTGRES_DB` | `constructor` | имя БД |
-| `POSTGRES_USER` | `constructor` | пользователь БД |
-| `POSTGRES_PASSWORD` | `constructor` | пароль БД (сменить) |
-| `POSTGRES_PORT` | `5432` | порт на хосте |
-| `DATABASE_URL` | `postgresql://constructor:constructor@db:5432/constructor` | DSN Runtime |
-| `WORKER_ID` | `runtime-1` | id воркера, уникален |
+| `WORKER_ID` | `runtime-1` | уникальный id воркера |
+| `LOG_LEVEL` | `INFO` | уровень логов |
 | `MAX_BOTS_PER_WORKER` | `25` | capacity |
 | `HEARTBEAT_INTERVAL` | `15` | секунды |
 | `RECONCILE_INTERVAL` | `10` | секунды |
 | `COMMAND_POLL_INTERVAL` | `30` | страховочный polling |
 | `RESTART_LIMIT` | `5` | попытки авторестарта |
-| `RUNTIME_PORT` | `8080` | health/metrics на хосте |
-| `BOT_TOKEN_ENCRYPTION_KEY` | — | AES-256-GCM ключ |
-| `SENTRY_DSN` | — | включает Sentry (extra `observability`) |
+| `SENTRY_DSN` | — | Sentry, если задан |
+| `TOKEN_ENCRYPTION_KEY` | — | общий AES-256-GCM ключ |
 
-Сгенерировать ключ:
-
-```bash
-python -c "import base64,os;print(base64.b64encode(os.urandom(32)).decode())"
-```
-
-Ключ нельзя менять без перешифрования токенов: иначе Runtime не сможет
-расшифровать `bots.token_encrypted` и упадёт в fallback «считать plaintext».
+Устаревшее `BOT_TOKEN_ENCRYPTION_KEY` Runtime принимает как fallback, но в
+новом стеке используйте только `TOKEN_ENCRYPTION_KEY`.
 
 ## Обновление
 
 ```bash
-cd runtime/infra
-docker compose pull
-docker compose build runtime
-docker compose up -d
-docker compose logs -f runtime
+git pull --ff-only
+docker compose -f docker-compose.prod.yml build backend runtime frontend
+docker compose -f docker-compose.prod.yml run --rm migrate
+docker compose -f docker-compose.prod.yml up -d --no-deps backend runtime frontend caddy
+docker compose -f docker-compose.prod.yml ps
 ```
 
-При SIGTERM Runtime останавливает listener, scheduler и всех ботов, освобождает
-advisory locks. `stop_grace_period: 20s` даёт запас на drain.
+- Перед обновлением с потенциально несовместимой миграцией сделайте backup.
+- Django-миграции выполняются вперёд; автоматического rollback схемы нет.
+- При SIGTERM Runtime останавливает listener, scheduler и ботов, освобождает
+  advisory locks. `stop_grace_period` — 20 секунд, у backend — 30 секунд.
 
-## CI
+## Rollback
 
-`.github/workflows/ci.yml` запускается на изменения в `runtime/`:
+Код:
 
-1. Python 3.12;
-2. `pip install -e ".[dev]"`;
-3. `ruff check .`;
-4. `mypy runtime`;
-5. `pytest -q`.
+```bash
+git checkout <предыдущий-коммит-или-тег>
+docker compose -f docker-compose.prod.yml build backend runtime frontend
+docker compose -f docker-compose.prod.yml up -d --no-deps backend runtime frontend caddy
+```
 
-CI не поднимает PostgreSQL: unit-тесты используют in-memory репозитории.
-Интеграционные тесты БД — отдельный этап (см. `docs/testing.md`).
+Если новая версия уже применила несовместимую миграцию, откат кода не вернёт
+схему. В этом случае остановите сервисы и восстановите БД из backup (ниже).
+Перед destructive-миграцией всегда делайте дамп.
 
 ## Бэкапы
 
-```bash
-cd runtime/infra
-./backup.sh
-```
-
-Скрипт делает `pg_dump --clean --if-exists`, сжимает gzip в `infra/backups/`
-и удаляет файлы старше 14 дней. Восстановление:
+Включить ежедневный backup-контейнер:
 
 ```bash
-./restore.sh backups/constructor-20261021T030000Z.sql.gz
+docker compose -f docker-compose.prod.yml --profile backup up -d backup
 ```
 
-Для production добавьте ежедневный cron/Task Scheduler и выгрузку в S3/внешнее
-хранилище. Проверяйте restore на staging раз в месяц.
+- дампы: `${BACKUP_DIR:-./backups}/constructor-<UTC>.dump`;
+- формат: `pg_dump --format=custom --no-owner --no-privileges`;
+- рядом пишется `.sha256`;
+- retention: `BACKUP_RETENTION_DAYS` (14 дней);
+- интервал: `BACKUP_INTERVAL` секунд (86400);
+- контейнер работает в цикле и делает первый дамп сразу при старте.
+
+Немедленный внеочередной дамп:
+
+```bash
+docker compose -f docker-compose.prod.yml restart backup
+```
+
+Восстановление (остановить сервисы, которые пишут в БД):
+
+```bash
+docker compose -f docker-compose.prod.yml stop backend runtime frontend caddy
+docker compose -f docker-compose.prod.yml run --rm --entrypoint sh backup \
+  /usr/local/bin/restore.sh /backups/constructor-20261027T030000Z.dump
+docker compose -f docker-compose.prod.yml up -d
+```
+
+`restore.sh` использует `pg_restore --clean --if-exists` и **заменяет**
+содержимое БД. Скопируйте дампы в S3/внешнее хранилище: локальный volume не
+защищает от потери VPS. Раз в месяц проверяйте restore на staging.
 
 ## Мониторинг
 
-- `/metrics` — Prometheus scrape;
-- `/health` — liveness, `/ready` — readiness;
-- `bot_runtime_state.heartbeat_at` — свежесть ботов;
-- `runtime_commands.status='failed'` — ошибки команд;
-- `scheduled_jobs.status='error'` и `last_error` — планировщик;
-- Sentry — исключения, если задан `SENTRY_DSN`.
+```bash
+docker compose -f docker-compose.prod.yml --profile monitoring up -d prometheus
+```
+
+- Prometheus: `http://127.0.0.1:9090` (порт привязан к loopback);
+- scrape target: `runtime:8080/metrics`;
+- `/health` — liveness контейнера Runtime;
+- `/ready` — БД + остановка воркера, `503` при проблемах;
+- Sentry — задайте `SENTRY_DSN`;
+- алерты: `runtime_commands_failed_total`, `runtime_bots_total{status="error"}`,
+  устаревший `bots_botruntimestate.heartbeat_at`, `503` от `/ready`.
+
+## Локальная разработка
+
+`docker-compose.yml` в корне — только PostgreSQL и Django `runserver`. Runtime и
+frontend запускаются отдельно:
+
+```bash
+# БД + backend
+cp .env.example .env
+docker compose up --build
+
+# Runtime против той же БД (после Django migrate)
+cd runtime/infra
+cp .env.example .env
+docker compose up --build
+
+# frontend
+cd frontend
+npm ci
+npm run dev
+```
+
+`runtime/infra/docker-compose.yml` не создаёт PostgreSQL и не применяет
+Django-миграции: он подключается к БД, где схема Django уже создана. В
+`.env.example` используется `host.docker.internal`, потому что корневой dev
+compose публикует PostgreSQL на хосте; compose добавляет `host-gateway` для
+Linux.
+
+## Ограничения проверки
+
+В текущем локальном окружении нет Docker, PostgreSQL и реального Discord-
+токена. Compose-файлы, миграции и lifecycle проверены статически и unit-тестами,
+но не запускались на реальном VPS. Перед production-запуском обязательны:
+
+- `docker compose -f docker-compose.prod.yml config`;
+- первый `up` на staging с реальными доменами;
+- проверка backup/restore;
+- smoke-тест Discord-бота (start/stop/reload/токен/intents).
 
 ## Production-чеклист
 
-- [ ] Сменить `POSTGRES_PASSWORD`, не коммитить `.env`.
-- [ ] Задать случайный `BOT_TOKEN_ENCRYPTION_KEY`, совпадающий с backend.
-- [ ] Закрыть PostgreSQL от внешней сети, оставить только внутреннюю сеть.
-- [ ] TLS-терминация перед `/metrics` (не публиковать наружу без auth).
-- [ ] Ограничить `MAX_BOTS_PER_WORKER` по RAM/CPU.
-- [ ] Настроить бэкапы и проверить restore.
-- [ ] Проверить `curl /ready` и алерт на 503.
-- [ ] Запустить staging на тестовом Discord-сервере.
+- [ ] DNS `app.*` и `api.*` указывает на VPS, 80/443 открыты.
+- [ ] `POSTGRES_PASSWORD` и `DJANGO_SECRET_KEY` заменены на случайные.
+- [ ] `TOKEN_ENCRYPTION_KEY` задан и совпадает у backend/Runtime.
+- [ ] `migrate` завершился с кодом 0, trigger `runtime_command_notify` создан.
+- [ ] `curl https://api.*/api/v1/health` и `/ready` отвечают `200`.
+- [ ] Caddy выпустил сертификаты для обоих доменов.
+- [ ] PostgreSQL/Runtime/backend/frontend не опубликованы наружу.
+- [ ] Backup-профиль включён, restore проверен.
+- [ ] Настроены Sentry/Prometheus и алерты.
+- [ ] `MAX_BOTS_PER_WORKER` соответствует RAM/CPU.
+- [ ] Пройден smoke-тест Discord на тестовом сервере.

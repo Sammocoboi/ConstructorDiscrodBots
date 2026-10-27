@@ -2,7 +2,8 @@
 
 Системные шаблоны лежат в `content/templates/*.json`, загружаются
 `TemplateService` и валидируются тем же конфигом, что и боты. Пользовательские
-шаблоны хранятся в таблице `templates`.
+шаблоны хранятся в `templates_catalog_template` и
+`templates_catalog_templateversion`.
 
 ## Системные шаблоны (8)
 

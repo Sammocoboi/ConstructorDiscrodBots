@@ -44,6 +44,8 @@ class FakeRepository:
         *,
         error: str | None = None,
         worker_id: str = "",
+        guild_count: int = 0,
+        version_number: int | None = None,
     ) -> None:
         self.statuses[bot_id] = (status, error)
 
@@ -57,6 +59,9 @@ class FakeRepository:
         status: str,
         latency_ms: int,
         uptime_seconds: int,
+        *,
+        guild_count: int = 0,
+        version_number: int | None = None,
     ) -> None:
         self.heartbeats.append(
             {
@@ -65,6 +70,8 @@ class FakeRepository:
                 "status": status,
                 "latency_ms": latency_ms,
                 "uptime_seconds": uptime_seconds,
+                "guild_count": guild_count,
+                "version_number": version_number,
             }
         )
 
@@ -90,6 +97,7 @@ class FakeClient:
         self.closed = asyncio.Event()
         self.reloaded = False
         self.latency_ms = 42
+        self.guild_count = 3
 
     async def start(self) -> None:
         if self.mode == "permanent":
@@ -278,4 +286,75 @@ async def test_heartbeat_loop_writes_state():
     await asyncio.sleep(0.05)
     assert repository.heartbeats
     assert repository.heartbeats[0]["latency_ms"] == 42
+    await supervisor.shutdown()
+
+
+async def test_heartbeat_includes_guilds_and_version():
+    spec = BotSpec(
+        id="b1",
+        name="Bot b1",
+        token="token",
+        config={},
+        version_number=7,
+    )
+    repository = FakeRepository([spec])
+    supervisor = Supervisor(
+        repository,
+        FakeFactory(),
+        max_bots=1,
+        heartbeat_interval=0.01,
+        reconcile_interval=3600,
+    )
+    await supervisor.start()
+    await wait_for_status(supervisor.runners["b1"], "online")
+    await asyncio.sleep(0.05)
+    heartbeat = repository.heartbeats[0]
+    assert heartbeat["guild_count"] == 3
+    assert heartbeat["version_number"] == 7
+    await supervisor.shutdown()
+
+
+async def test_token_decryption_error_is_permanent_and_does_not_start_client():
+    spec = bot()
+    spec.token_error = "token decryption failed"
+    repository = FakeRepository([spec])
+    factory = FakeFactory()
+    runner = BotRunner(
+        spec=spec,
+        repository=repository,
+        factory=factory,
+        worker_id="w1",
+        restart_limit=5,
+    )
+    await runner.start()
+    await wait_for_status(runner, "error")
+    await asyncio.sleep(0)
+    assert runner.permanent_failure
+    assert factory.created == []
+    assert repository.statuses["b1"] == ("error", "token decryption failed")
+    assert repository.desired["b1"] == "stopped"
+
+    # A later reconcile removes the runner because desired_state is stopped;
+    # that cleanup must not erase the error visible to the backend.
+    await runner.stop()
+    assert repository.statuses["b1"] == ("error", "token decryption failed")
+
+
+async def test_reload_updates_version_number():
+    repository = FakeRepository([bot()])
+    factory = FakeFactory()
+    supervisor = Supervisor(repository, factory, max_bots=1)
+    await supervisor.start_bot("b1")
+    runner = supervisor.runners["b1"]
+    await wait_for_status(runner, "online")
+
+    updated = bot()
+    updated.config = {"schema_version": 1, "flows": [], "commands": [], "revision": 2}
+    updated.version_number = 4
+    repository.bots["b1"] = updated
+
+    await supervisor.reload_bot("b1")
+    assert runner.spec.version_number == 4
+    assert runner.spec.config["revision"] == 2
+    assert factory.created[0].reloaded
     await supervisor.shutdown()

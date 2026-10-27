@@ -3,11 +3,17 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from runtime.supervisor import Supervisor
 
 log = logging.getLogger("runtime.health")
+
+
+def _label(value: str) -> str:
+    """Escape a Prometheus label value."""
+    return value.replace("\\", "\\\\").replace("\n", "\\n").replace('"', '\\"')
 
 
 def render_metrics(snapshot: dict[str, Any]) -> str:
@@ -21,7 +27,7 @@ def render_metrics(snapshot: dict[str, Any]) -> str:
     lines.append(f"runtime_restarts_total {metrics.get('restarts_total', 0)}")
     lines.append(f"runtime_uptime_seconds {metrics.get('uptime_seconds', 0)}")
     for bot in snapshot.get("bots", []):
-        labels = f'bot_id="{bot["id"]}",name="{bot["name"]}"'
+        labels = f'bot_id="{_label(str(bot["id"]))}",name="{_label(str(bot["name"]))}"'
         lines.append(f"runtime_bot_latency_ms{{{labels}}} {bot.get('latency_ms', 0)}")
         lines.append(f"runtime_bot_uptime_seconds{{{labels}}} {bot.get('uptime_seconds', 0)}")
     return "\n".join(lines) + "\n"
@@ -33,10 +39,12 @@ class HealthServer:
         supervisor: Supervisor,
         host: str = "0.0.0.0",
         port: int = 8080,
+        database_ready: Callable[[], Awaitable[bool]] | None = None,
     ) -> None:
         self._supervisor = supervisor
         self._host = host
         self._port = port
+        self._database_ready = database_ready
         self._server: asyncio.Server | None = None
 
     async def start(self) -> None:
@@ -71,8 +79,17 @@ class HealthServer:
                 await self._write(writer, 200, "application/json", body)
             elif path == "/ready":
                 bot_statuses = snapshot.get("statuses", {})
-                ready = not snapshot.get("stopping", False)
-                body = json.dumps({"ready": ready, "bots": bot_statuses})
+                database = True
+                if self._database_ready is not None:
+                    try:
+                        database = await self._database_ready()
+                    except Exception:
+                        log.exception("database readiness check failed")
+                        database = False
+                ready = database and not snapshot.get("stopping", False)
+                body = json.dumps(
+                    {"ready": ready, "database": database, "bots": bot_statuses}
+                )
                 await self._write(writer, 200 if ready else 503, "application/json", body)
             elif path == "/metrics":
                 await self._write(

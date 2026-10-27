@@ -82,7 +82,8 @@ class Bot(SoftDeleteModel):
     def save(self, *args, **kwargs):
         if not self.slug:
             base = slugify(self.name, allow_unicode=True)[:100] or "bot"
-            self.slug = f"{base}-{self.id.hex[:8]}" if self.id else f"{base}-{uuid.uuid4().hex[:8]}"
+            suffix = self.id.hex[-8:] if self.id else uuid.uuid4().hex[:8]
+            self.slug = f"{base}-{suffix}"
             update_fields = kwargs.get("update_fields")
             if update_fields is not None:
                 kwargs["update_fields"] = [*update_fields, "slug"]

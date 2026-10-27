@@ -10,7 +10,7 @@ ruff check .
 mypy runtime
 ```
 
-Текущее состояние: **60 тестов, все проходят**; `ruff` и `mypy --strict`
+Текущее состояние: **64 теста, все проходят**; `ruff` и `mypy --strict`
 зелёные.
 
 ## Что покрыто
@@ -40,7 +40,7 @@ mypy runtime
    рестарта.
 8. Отправить `stop`, проверить `stopped`; `start` — снова `online`.
 9. Проверить `join_member`: новый участник получает приветствие.
-10. Проверить `runtime_commands` и `bot_runtime_state`.
+10. Проверить `bots_runtimecommand` и `bots_botruntimestate`.
 
 ## Регрессия шаблонов
 
@@ -61,7 +61,8 @@ pytest tests/test_content.py -q
 - Живой Discord Gateway (нужен тестовый токен/сервер).
 - E2E Playwright (зона Данилы) — сценарии «бот за 5 минут», публикация flow.
 - Нагрузка k6/Locust: 100–1000 ботов, 200 блоков, 30 секунд.
-- Contract-тесты backend ↔ Runtime (схема `runtime_commands`).
+- Contract-тесты backend ↔ Runtime (схема `bots_runtimecommand` и
+  `bots_botruntimestate`).
 
 ## Definition of Done для Runtime-задачи
 
