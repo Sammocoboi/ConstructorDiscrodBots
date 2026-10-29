@@ -328,32 +328,35 @@ compose-файлов.
 
 #### Задачи
 
-- [ ] Production-конфиг:
-      - `VITE_USE_MOCKS=false`;
-      - `VITE_API_URL=/api/v1`;
-      - `VITE_ADMIN_URL=https://api.<домен>/admin/`.
-- [ ] Убрать демо-доступ и mock-only заглушки из production-сборки.
-- [ ] Свести пути API с backend (или попросить Артёма добавить алиасы):
-      - OAuth callback: принять `code`, вызвать `/auth/discord/exchange`,
-        сохранить сессию, обработать `error`;
-      - `/auth/discord` vs `/auth/discord/login`;
-      - `/bots/validate-token`, `/token`, `/flows`, `/messages`, `/events`.
-- [ ] Проверить реальные сценарии:
+- [x] Production-конфиг:
+      - `VITE_USE_MOCKS=false` (mock включается только явным `true`);
+      - `VITE_API_URL=/api/v1` (same-origin, проксируется nginx);
+      - `VITE_ADMIN_URL` задаётся при деплое (`/admin/` по умолчанию).
+- [x] Убраны демо-доступ и mock-only заглушки: подсказка о демо показывается
+      только в mock-режиме, заглушка «демо-видео» на лендинге удалена.
+- [x] Пути API сведены с backend:
+      - OAuth callback принимает `code`, вызывает `/auth/discord/exchange`,
+        сохраняет сессию и обрабатывает `error`;
+      - используется реальный `/auth/discord/login`;
+      - несуществующие `/bots/validate-token`, `/token`, `/flows`, `/messages`
+        убраны из UI, `/bots/{id}/events` заменён на `/bots/{id}/commands`.
+- [x] Реальные сценарии реализованы (нужен прогон на живом backend):
       - вход через Discord;
       - создание бота с токеном;
-      - список гильдий;
-      - invite;
-      - модули и команды;
-      - редактор flow;
-      - публикация;
-      - start/stop/status.
-- [ ] Сделать Dockerfile (multi-stage build) + nginx-конфиг с SPA-fallback и
-      проксированием `/api`.
-- [ ] Настроить корректную работу с refresh-cookie и ошибками 401/403/429.
-- [ ] Прогнать E2E против реального backend и тестового Discord-сервера;
-      проверить production-сборку.
-- [ ] Скрыть или пометить функции, которых ещё нет в backend, чтобы не
-      обещать пользователю нерабочий UI.
+      - список гильдий и invite;
+      - модули с настройкой по гильдиям и библиотека команд;
+      - start/stop/restart/status.
+- [x] Dockerfile (multi-stage node → nginx) + nginx-конфиг с SPA-fallback и
+      проксированием `/api`, `/admin`, `/static`.
+- [x] Refresh-cookie, CSRF (`/auth/csrf`) и обработка ошибок 401/403/429.
+- [ ] Прогнать E2E против реального backend и тестового Discord-сервера.
+      Заблокировано: нужен развёрнутый стек и тестовое Discord-приложение.
+- [x] Функции, которых ещё нет в backend, скрыты или возвращают понятную
+      ошибку 501: flows, messages, CRUD команд, замена токена, отмена подписки.
+
+**Остаточные зависимости от backend:** каталог `/templates` пуст, пока его не
+засеют системными шаблонами; полноценный smoke-тест требует реальных
+Discord-кредов.
 
 #### Готово, когда
 

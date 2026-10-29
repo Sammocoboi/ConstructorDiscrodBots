@@ -57,9 +57,8 @@ export default function TemplatesPage() {
     })
   }, [category, plan, query, templates.data])
 
-  const applyTemplate = (template?: Template) => {
-    if (template) navigate(`/app/bots/new?templateId=${encodeURIComponent(template.id)}`)
-    else navigate('/app/bots/new')
+  const applyTemplate = () => {
+    navigate('/app/bots/new')
   }
 
   return (
@@ -222,7 +221,7 @@ export default function TemplatesPage() {
                   <Button
                     size="compact-sm"
                     rightSection={<IconArrowRight size={13} />}
-                    onClick={() => applyTemplate(template)}
+                    onClick={() => applyTemplate()}
                   >
                     {t('templates.use')}
                   </Button>
@@ -254,7 +253,7 @@ export default function TemplatesPage() {
                   </Badge>
                 </Group>
                 <Text size="xs" c="dimmed">
-                  {selected.author} В· {formatDate(selected.createdAt)}
+                  {selected.author} · {formatDate(selected.createdAt)}
                 </Text>
               </Stack>
             </Group>
@@ -309,7 +308,7 @@ export default function TemplatesPage() {
               </Button>
               <Button
                 rightSection={<IconArrowRight size={14} />}
-                onClick={() => applyTemplate(selected)}
+                onClick={() => applyTemplate()}
               >
                 {t('templates.use')}
               </Button>

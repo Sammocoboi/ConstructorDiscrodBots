@@ -12,9 +12,14 @@ export const qk = {
   botEvents: (botId: string) => ['bots', botId, 'events'] as const,
   availableGuilds: ['discord-guilds'] as const,
   modules: ['modules'] as const,
-  botModules: (botId: string) => ['bots', botId, 'modules'] as const,
-  botModule: (botId: string, moduleId: string) =>
-    ['bots', botId, 'modules', moduleId] as const,
+  botModules: (botId: string, guildId?: string) =>
+    guildId
+      ? (['bots', botId, 'modules', guildId] as const)
+      : (['bots', botId, 'modules'] as const),
+  botModule: (botId: string, moduleId: string, guildId?: string) =>
+    guildId
+      ? (['bots', botId, 'modules', guildId, moduleId] as const)
+      : (['bots', botId, 'modules', moduleId] as const),
   commands: (botId: string) => ['bots', botId, 'commands'] as const,
   library: ['commands-library'] as const,
   flows: (botId: string) => ['bots', botId, 'flows'] as const,
@@ -82,18 +87,22 @@ export function useModules() {
   return useQuery({ queryKey: qk.modules, queryFn: () => api.modules.list() })
 }
 
-export function useBotModules(botId: string | undefined) {
+export function useBotModules(botId: string | undefined, guildId?: string) {
   return useQuery({
-    queryKey: qk.botModules(botId ?? ''),
-    queryFn: () => api.modules.forBot(botId as string),
+    queryKey: qk.botModules(botId ?? '', guildId),
+    queryFn: () => api.modules.forBot(botId as string, guildId),
     enabled: Boolean(botId),
   })
 }
 
-export function useBotModule(botId: string | undefined, moduleId: string | undefined) {
+export function useBotModule(
+  botId: string | undefined,
+  moduleId: string | undefined,
+  guildId?: string,
+) {
   return useQuery({
-    queryKey: qk.botModule(botId ?? '', moduleId ?? ''),
-    queryFn: () => api.modules.get(botId as string, moduleId as string),
+    queryKey: qk.botModule(botId ?? '', moduleId ?? '', guildId),
+    queryFn: () => api.modules.get(botId as string, moduleId as string, guildId),
     enabled: Boolean(botId && moduleId),
   })
 }
@@ -126,8 +135,12 @@ export function useFlow(botId: string | undefined, flowId: string | undefined) {
   })
 }
 
-export function useTemplates() {
-  return useQuery({ queryKey: qk.templates, queryFn: () => api.templates.list() })
+export function useTemplates(enabled = true) {
+  return useQuery({
+    queryKey: qk.templates,
+    queryFn: () => api.templates.list(),
+    enabled,
+  })
 }
 
 export function useMyTemplates() {

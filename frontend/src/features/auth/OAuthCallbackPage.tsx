@@ -3,35 +3,29 @@ import { Alert, Button, Center, Loader, Stack, Text, Title } from '@mantine/core
 import { IconAlertTriangle } from '@tabler/icons-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { http } from '../../shared/api/http'
+import { api } from '../../shared/api'
 import { errorMessage } from '../../shared/api/errors'
 import { useAuthStore } from '../../shared/stores/authStore'
-import type { User } from '../../shared/api/types'
-
-interface ExchangeResponse {
-  access: string
-  user: User
-}
 
 export function OAuthCallbackPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [params] = useSearchParams()
   const setSession = useAuthStore((state) => state.setSession)
   const started = useRef(false)
   const [error, setError] = useState<string | null>(null)
+
+  const code = params.get('code')
+  const oauthError = params.get('error')
 
   useEffect(() => {
     if (started.current) return
     started.current = true
 
-    const urlError = searchParams.get('error')
-    if (urlError) {
-      setError(urlError === 'access_denied' ? t('auth.oauthDenied') : urlError)
+    if (oauthError) {
+      setError(t('auth.oauthDenied'))
       return
     }
-
-    const code = searchParams.get('code')
     if (!code) {
       setError(t('auth.oauthMissingCode'))
       return
@@ -39,15 +33,19 @@ export function OAuthCallbackPage() {
 
     const run = async () => {
       try {
-        const data = await http.post<ExchangeResponse>('/auth/discord/exchange', { code })
-        setSession(data.user, data.access)
+        const session = await api.auth.exchangeDiscordCode(code)
+        if (!session.accessToken) {
+          setError(t('auth.oauthFailed'))
+          return
+        }
+        setSession(session.user, session.accessToken)
         navigate('/app', { replace: true })
       } catch (callbackError) {
-        setError(errorMessage(callbackError))
+        setError(errorMessage(callbackError, t('auth.oauthFailed')))
       }
     }
     void run()
-  }, [navigate, setSession, searchParams, t])
+  }, [code, oauthError, navigate, setSession, t])
 
   return (
     <Center mih="60vh">

@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { IconLock } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { api } from '../../shared/api'
@@ -17,6 +17,8 @@ type Values = z.infer<typeof resetPasswordSchema>
 export function ResetPasswordPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const token = params.get('token') ?? ''
   const [error, setError] = useState<string | null>(null)
   const {
     register,
@@ -28,7 +30,7 @@ export function ResetPasswordPage() {
   })
 
   const mutation = useMutation({
-    mutationFn: (values: Values) => api.auth.resetPassword(values.password),
+    mutationFn: (values: Values) => api.auth.resetPassword(values.password, token),
     onSuccess: () => {
       notifications.show({
         color: 'teal',
@@ -53,6 +55,9 @@ export function ResetPasswordPage() {
           {error}
         </Alert>
       )}
+      {!token && (
+        <Alert color="yellow">{t('auth.resetMissingToken')}</Alert>
+      )}
       <form onSubmit={handleSubmit((values) => mutation.mutate(values))}>
         <Stack>
           <PasswordInput
@@ -71,7 +76,7 @@ export function ResetPasswordPage() {
             }
             {...register('passwordConfirm')}
           />
-          <Button type="submit" loading={mutation.isPending}>
+          <Button type="submit" loading={mutation.isPending} disabled={!token}>
             {t('common.save')}
           </Button>
         </Stack>

@@ -13,6 +13,7 @@ import {
   TextInput,
   ThemeIcon,
   Title,
+  Tooltip,
 } from '@mantine/core'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
@@ -32,19 +33,22 @@ import { moduleCategoryLabel, moduleCategoryOptions } from '../../shared/lib/sta
 
 function ModuleCard({
   botId,
+  guildId,
   manifest,
   state,
 }: {
   botId: string
+  guildId?: string
   manifest: ModuleManifest
   state: ModuleState
 }) {
   const { t } = useTranslation()
   const toggleMutation = useToastMutation({
-    mutationFn: (enabled: boolean) => api.modules.toggle(botId, manifest.id, enabled),
+    mutationFn: (enabled: boolean) =>
+      api.modules.toggle(botId, manifest.id, enabled, guildId),
     successMessage: (enabled) =>
       enabled ? t('modules.enabledToast') : t('modules.disabledToast'),
-    invalidateKeys: [qk.botModules(botId), qk.bot(botId)],
+    invalidateKeys: [qk.botModules(botId, guildId), qk.bot(botId)],
   })
 
   return (
@@ -68,20 +72,30 @@ function ModuleCard({
             </ThemeIcon>
             <Stack gap={2}>
               <Title order={3} fz={16}>
-                <Link to={`/app/bots/${botId}/modules/${manifest.id}`}>{manifest.title}</Link>
+                <Link
+                  to={
+                    guildId
+                      ? `/app/bots/${botId}/modules/${manifest.id}?guild=${guildId}`
+                      : `/app/bots/${botId}/modules/${manifest.id}`
+                  }
+                >
+                  {manifest.title}
+                </Link>
               </Title>
               <Badge size="xs" variant="light" color="gray">
                 {moduleCategoryLabel[manifest.category]}
               </Badge>
             </Stack>
           </Group>
-          <Switch
-            checked={state.enabled}
-            size="md"
-            aria-label={manifest.title}
-            disabled={toggleMutation.isPending}
-            onChange={(event) => toggleMutation.mutate(event.currentTarget.checked)}
-          />
+          <Tooltip label={t('modules.noGuildTitle')} disabled={Boolean(guildId)}>
+            <Switch
+              checked={state.enabled}
+              size="md"
+              aria-label={manifest.title}
+              disabled={toggleMutation.isPending || !guildId}
+              onChange={(event) => toggleMutation.mutate(event.currentTarget.checked)}
+            />
+          </Tooltip>
         </Group>
 
         <Text size="sm" c="dimmed" lineClamp={3} style={{ flex: 1 }}>
@@ -115,7 +129,9 @@ export default function ModulesPage() {
   const { t } = useTranslation()
   const { botId } = useParams()
   const { data: bot } = useBot(botId)
-  const modules = useBotModules(botId)
+  const [selectedGuildId, setSelectedGuildId] = useState<string | null>(null)
+  const guildId = selectedGuildId ?? bot?.guilds[0]?.id
+  const modules = useBotModules(botId, guildId)
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string | null>(null)
   const [mode, setMode] = useState('all')
@@ -151,6 +167,15 @@ export default function ModulesPage() {
 
       <Card withBorder radius="lg" p="md">
         <Group gap="sm" wrap="wrap">
+          <Select
+            placeholder={t('modules.selectGuild')}
+            data={(bot.guilds ?? []).map((guild) => ({ value: guild.id, label: guild.name }))}
+            value={guildId ?? null}
+            onChange={setSelectedGuildId}
+            allowDeselect={false}
+            disabled={(bot.guilds ?? []).length === 0}
+            w={{ base: '100%', sm: 220 }}
+          />
           <TextInput
             placeholder={t('common.search')}
             leftSection={<IconSearch size={15} />}
@@ -177,6 +202,13 @@ export default function ModulesPage() {
         </Group>
       </Card>
 
+      {(bot.guilds ?? []).length === 0 && (
+        <Alert color="yellow" icon={<IconAlertTriangle size={16} />}>
+          <Text fw={600}>{t('modules.noGuildTitle')}</Text>
+          <Text size="sm">{t('modules.noGuildText')}</Text>
+        </Alert>
+      )}
+
       {modules.isLoading && <LoadingState />}
       {filtered.length === 0 && modules.data && (
         <EmptyState
@@ -191,6 +223,7 @@ export default function ModulesPage() {
           <ModuleCard
             key={manifest.id}
             botId={bot.id}
+            guildId={guildId}
             manifest={manifest}
             state={state}
           />

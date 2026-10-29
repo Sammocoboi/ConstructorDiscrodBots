@@ -143,10 +143,14 @@ export const mockApi = {
       await randomDelay(450, 800)
       return createSession(getDb().user)
     },
+    async exchangeDiscordCode(_code: string) {
+      await randomDelay(450, 800)
+      return createSession(getDb().user)
+    },
     async forgotPassword(_email: string) {
       await randomDelay()
     },
-    async resetPassword(_password: string) {
+    async resetPassword(_password: string, _token?: string) {
       await randomDelay()
     },
     async verifyEmail(_code: string) {
@@ -465,7 +469,10 @@ export const mockApi = {
       await randomDelay(100, 220)
       return clone(getDb().modules)
     },
-    async forBot(botId: string): Promise<{ manifest: ModuleManifest; state: ModuleState }[]> {
+    async forBot(
+      botId: string,
+      _guildId?: string,
+    ): Promise<{ manifest: ModuleManifest; state: ModuleState }[]> {
       await randomDelay(120, 260)
       const db = getDb()
       findBot(botId)
@@ -480,7 +487,7 @@ export const mockApi = {
         return { manifest: clone(manifest), state: clone(state) }
       })
     },
-    async get(botId: string, moduleId: string) {
+    async get(botId: string, moduleId: string, _guildId?: string) {
       await randomDelay(100, 220)
       const db = getDb()
       const manifest = findModule(moduleId)
@@ -490,7 +497,12 @@ export const mockApi = {
       if (!state) throw new ApiError(404, 'module_state_not_found', 'Настройки модуля не найдены.')
       return { manifest: clone(manifest), state: clone(state) }
     },
-    async toggle(botId: string, moduleId: string, enabled: boolean): Promise<ModuleState> {
+    async toggle(
+      botId: string,
+      moduleId: string,
+      enabled: boolean,
+      _guildId?: string,
+    ): Promise<ModuleState> {
       await randomDelay(180, 320)
       const db = getDb()
       findBot(botId)

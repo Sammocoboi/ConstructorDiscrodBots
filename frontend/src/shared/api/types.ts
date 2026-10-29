@@ -29,6 +29,8 @@ export interface User {
   isStaff: boolean
   twoFactorEnabled: boolean
   createdAt: string
+  avatarUrl?: string
+  isEmailVerified?: boolean
 }
 
 export interface AuthSession {
@@ -340,6 +342,7 @@ export interface BillingOverview {
   usage: Usage
   invoices: Invoice[]
   paymentMethod?: PaymentMethod
+  plans?: Plan[]
 }
 
 export interface Session {

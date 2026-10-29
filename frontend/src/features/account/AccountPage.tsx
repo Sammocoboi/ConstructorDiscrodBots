@@ -4,10 +4,8 @@ import {
   Badge,
   Button,
   Card,
-  Divider,
   Group,
   Stack,
-  Switch,
   Table,
   Text,
   TextInput,
@@ -22,7 +20,6 @@ import {
   IconDownload,
   IconLogout,
   IconMapPin,
-  IconShieldLock,
   IconTrash,
   IconUser,
 } from '@tabler/icons-react'
@@ -35,8 +32,6 @@ import { ErrorState, LoadingState } from '../../shared/components/states'
 import { formatRelative, initials } from '../../shared/lib/format'
 import { errorMessage } from '../../shared/api/errors'
 
-type NotificationKey = 'botErrors' | 'payments' | 'productUpdates' | 'weeklyDigest'
-
 export default function AccountPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -46,36 +41,19 @@ export default function AccountPage() {
   const logout = useAuthStore((state) => state.logout)
 
   const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [prefs, setPrefs] = useState<Record<NotificationKey, boolean>>({
-    botErrors: true,
-    payments: true,
-    productUpdates: true,
-    weeklyDigest: false,
-  })
   const [revokeId, setRevokeId] = useState<string | null>(null)
   const [logoutAllOpened, setLogoutAllOpened] = useState(false)
   const [deleteOpened, setDeleteOpened] = useState(false)
 
   useEffect(() => {
-    if (account.data) {
-      setName(account.data.user.username)
-      setEmail(account.data.user.email)
-      setPrefs(account.data.notifications)
-    }
+    if (account.data) setName(account.data.user.username)
   }, [account.data])
 
   const saveProfileMutation = useToastMutation({
-    mutationFn: () => api.account.updateProfile({ username: name, email }),
+    mutationFn: () => api.account.updateProfile({ username: name }),
     successMessage: t('account.profileSaved'),
     invalidateKeys: [qk.account],
     onSuccess: (user) => updateUser({ username: user.username, email: user.email }),
-  })
-
-  const prefsMutation = useToastMutation({
-    mutationFn: (patch: Partial<Record<NotificationKey, boolean>>) =>
-      api.account.updateNotifications(patch),
-    invalidateKeys: [qk.account],
   })
 
   const revokeMutation = useToastMutation({
@@ -106,11 +84,6 @@ export default function AccountPage() {
     },
   })
 
-  const togglePref = (key: NotificationKey, value: boolean) => {
-    setPrefs((current) => ({ ...current, [key]: value }))
-    prefsMutation.mutate({ [key]: value })
-  }
-
   const exportData = () => {
     if (!account.data) return
     const blob = new Blob([JSON.stringify(account.data, null, 2)], {
@@ -135,12 +108,6 @@ export default function AccountPage() {
   }
 
   const user = account.data.user
-  const notificationRows: { key: NotificationKey; label: string; description: string }[] = [
-    { key: 'botErrors', label: t('account.notifyBotErrors'), description: t('account.notifyBotErrorsHint') },
-    { key: 'payments', label: t('account.notifyPayments'), description: t('account.notifyPaymentsHint') },
-    { key: 'productUpdates', label: t('account.notifyUpdates'), description: t('account.notifyUpdatesHint') },
-    { key: 'weeklyDigest', label: t('account.notifyDigest'), description: t('account.notifyDigestHint') },
-  ]
 
   return (
     <Stack gap="lg" maw={1000} mx="auto" w="100%">
@@ -157,7 +124,7 @@ export default function AccountPage() {
         </Group>
         <Group align="flex-start" gap="xl" wrap="wrap">
           <Stack align="center" gap="xs">
-            <Avatar color="brand" size={84} radius="xl">
+            <Avatar color="brand" size={84} radius="xl" src={user.avatarUrl}>
               {initials(user.username)}
             </Avatar>
             <Text size="xs" c="dimmed">
@@ -174,17 +141,18 @@ export default function AccountPage() {
             <TextInput
               label={t('auth.email')}
               type="email"
-              value={email}
-              onChange={(event) => setEmail(event.currentTarget.value)}
+              value={user.email}
+              readOnly
+              description={
+                user.isEmailVerified
+                  ? t('account.emailVerified')
+                  : t('account.emailNotVerified')
+              }
             />
             <Group justify="flex-end" mt="xs">
               <Button
                 loading={saveProfileMutation.isPending}
-                disabled={
-                  !name.trim() ||
-                  !email.trim() ||
-                  (name === user.username && email === user.email)
-                }
+                disabled={!name.trim() || name === user.username}
                 onClick={() => saveProfileMutation.mutate()}
               >
                 {t('common.save')}
@@ -192,49 +160,6 @@ export default function AccountPage() {
             </Group>
           </Stack>
         </Group>
-        <Divider my="lg" />
-        <Group justify="space-between" wrap="nowrap">
-          <Group gap="sm">
-            <ThemeIcon variant="light" color={user.twoFactorEnabled ? 'teal' : 'gray'} radius="md">
-              <IconShieldLock size={16} />
-            </ThemeIcon>
-            <Stack gap={0}>
-              <Text size="sm" fw={600}>
-                {t('account.twoFactor')}
-              </Text>
-              <Text size="xs" c="dimmed">
-                {user.twoFactorEnabled ? t('account.twoFactorOn') : t('account.twoFactorOff')}
-              </Text>
-            </Stack>
-          </Group>
-          <Badge color={user.twoFactorEnabled ? 'teal' : 'gray'} variant="light">
-            {user.twoFactorEnabled ? t('common.enabled') : t('common.disabled')}
-          </Badge>
-        </Group>
-      </Card>
-
-      <Card withBorder radius="lg" p="lg">
-        <Title order={3} fz={18} mb="md">
-          {t('account.notifications')}
-        </Title>
-        <Stack gap="sm">
-          {notificationRows.map((row) => (
-            <Group key={row.key} justify="space-between" wrap="nowrap">
-              <Stack gap={0}>
-                <Text size="sm" fw={600}>
-                  {row.label}
-                </Text>
-                <Text size="xs" c="dimmed">
-                  {row.description}
-                </Text>
-              </Stack>
-              <Switch
-                checked={prefs[row.key]}
-                onChange={(event) => togglePref(row.key, event.currentTarget.checked)}
-              />
-            </Group>
-          ))}
-        </Stack>
       </Card>
 
       <Card withBorder radius="lg" p={0}>
