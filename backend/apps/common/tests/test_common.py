@@ -30,3 +30,15 @@ def test_error_format_for_unauthenticated_request(api_client: APIClient):
     assert set(response.data) == {"code", "message", "details", "request_id"}
     assert response.data["code"] == "not_authenticated"
     assert response.data["request_id"] == response["X-Request-ID"]
+
+
+@pytest.mark.django_db
+def test_post_without_trailing_slash_is_routed(auth_client: APIClient):
+    response = auth_client.post("/api/v1/bots", {"name": "Slash Bot"}, format="json")
+    assert response.status_code == 201, response.data
+
+
+@pytest.mark.django_db
+def test_get_without_trailing_slash_does_not_redirect(auth_client: APIClient):
+    response = auth_client.get("/api/v1/commands-library")
+    assert response.status_code == 200

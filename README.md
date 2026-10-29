@@ -48,6 +48,9 @@ copy .env.example .env           # Windows
 cd backend
 python manage.py migrate
 python manage.py seed_plans
+python manage.py seed_modules
+python manage.py seed_commands
+python manage.py seed_templates
 python manage.py createsuperuser
 python manage.py runserver
 ```
