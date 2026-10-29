@@ -1,0 +1,50 @@
+{
+	admin off
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+}
+
+# Public SPA. All /api traffic goes through the frontend nginx proxy.
+{$APP_DOMAIN} {
+	import security_headers
+	encode zstd gzip
+	request_body {
+		max_size 25MB
+	}
+
+	handle /media/* {
+		root * /srv
+		file_server
+	}
+
+	handle {
+		reverse_proxy frontend:80
+	}
+}
+
+# Public API/admin + uploaded media. Static/admin assets are served by
+# WhiteNoise from the backend container.
+{$API_DOMAIN} {
+	import security_headers
+	encode zstd gzip
+	request_body {
+		max_size 25MB
+	}
+
+	handle /media/* {
+		root * /srv
+		file_server
+	}
+
+	handle {
+		reverse_proxy backend:8000
+	}
+}

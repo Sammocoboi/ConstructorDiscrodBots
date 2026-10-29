@@ -5,43 +5,65 @@ import os
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-DEFAULT_KEY = b"antigravity_discord_bot_aes256_k"
+PREFIX = "v1:"
+KEY_BYTES = 32
 
 
-def normalize_key(raw_key: str | None) -> bytes:
-    if not raw_key:
-        return DEFAULT_KEY
+def _b64decode(value: str, *, what: str) -> bytes:
     try:
-        decoded = base64.b64decode(raw_key, validate=True)
-    except Exception:
-        decoded = raw_key.encode("utf-8")
-    if len(decoded) != 32:
-        decoded = decoded.ljust(32, b"0")[:32]
+        padded = value + "=" * (-len(value) % 4)
+        decoded = base64.b64decode(padded, altchars=b"-_", validate=True)
+    except Exception as exc:
+        raise ValueError(f"{what} must be url-safe base64") from exc
+    return decoded
+
+
+def normalize_key(raw_key: str | bytes | None) -> bytes:
+    """Decode the shared TOKEN_ENCRYPTION_KEY.
+
+    Backend and Runtime use the same format: URL-safe base64 of exactly 32
+    bytes. There is deliberately no fallback key and no padding/truncation:
+    a misconfigured deployment must fail loudly instead of silently writing
+    tokens that the other service cannot read.
+    """
+
+    if raw_key is None or raw_key == "":
+        raise ValueError("TOKEN_ENCRYPTION_KEY is required")
+    if isinstance(raw_key, bytes):
+        if len(raw_key) == KEY_BYTES:
+            return raw_key
+        raise ValueError("TOKEN_ENCRYPTION_KEY must be exactly 32 bytes")
+    decoded = _b64decode(raw_key.strip(), what="TOKEN_ENCRYPTION_KEY")
+    if len(decoded) != KEY_BYTES:
+        raise ValueError("TOKEN_ENCRYPTION_KEY must decode to 32 bytes")
     return decoded
 
 
 class TokenCipher:
+    """AES-256-GCM token cipher compatible with backend ``apps.common.crypto``."""
+
     def __init__(self, key: bytes | str | None = None) -> None:
-        if isinstance(key, str):
-            key = normalize_key(key)
-        elif key is None:
-            key = DEFAULT_KEY
-        if len(key) != 32:
-            raise ValueError("AES-256-GCM requires a 32-byte key")
-        self._aesgcm = AESGCM(key)
+        normalized = normalize_key(key)
+        self._aesgcm = AESGCM(normalized)
 
     def encrypt(self, plain_token: str) -> str:
         if not plain_token:
             return ""
         nonce = os.urandom(12)
         ciphertext = self._aesgcm.encrypt(nonce, plain_token.encode("utf-8"), None)
-        return base64.b64encode(nonce + ciphertext).decode("ascii")
+        payload = base64.urlsafe_b64encode(nonce + ciphertext).decode("ascii")
+        return f"{PREFIX}{payload}"
 
     def decrypt(self, encrypted_token: str) -> str:
         if not encrypted_token:
             return ""
-        combined = base64.b64decode(encrypted_token.encode("ascii"))
-        if len(combined) < 28:
+        if not encrypted_token.startswith(PREFIX):
+            raise ValueError("unsupported token format: expected v1: prefix")
+        combined = _b64decode(
+            encrypted_token[len(PREFIX) :],
+            what="encrypted token",
+        )
+        if len(combined) < 12 + 16:
             raise ValueError("encrypted token is too short")
         nonce, ciphertext = combined[:12], combined[12:]
         return self._aesgcm.decrypt(nonce, ciphertext, None).decode("utf-8")

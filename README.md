@@ -60,14 +60,40 @@ python manage.py runserver
 
 Без `DATABASE_URL` используется SQLite — этого достаточно для локальной разработки и тестов. Для PostgreSQL задайте `DATABASE_URL` в `.env`.
 
-## Docker Compose
+## Docker Compose (разработка)
 
 ```bash
 copy .env.example .env
 docker compose up --build
 ```
 
-Поднимаются PostgreSQL и backend. Миграции применяются автоматически при старте контейнера.
+Корневой `docker-compose.yml` — dev-only: PostgreSQL и backend с `runserver`.
+Frontend запускается через `npm run dev`, Runtime — отдельно.
+
+## Production
+
+Единый production-стек: [`docker-compose.prod.yml`](docker-compose.prod.yml).
+
+```bash
+cp .env.production.example .env
+# заполнить домены, пароли, TOKEN_ENCRYPTION_KEY и внешние ключи
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+В стек входят PostgreSQL, одноразовый `migrate` (Django + Runtime SQL), backend
+(gunicorn + WhiteNoise), Runtime, frontend (nginx) и Caddy с автоматическим TLS.
+Наружу открыты только 80/443; PostgreSQL, backend, Runtime и frontend — только
+внутренняя сеть. Домены: `APP_DOMAIN` (SPA) и `API_DOMAIN` (API/admin).
+
+Опциональные профили:
+
+```bash
+docker compose -f docker-compose.prod.yml --profile backup up -d backup
+docker compose -f docker-compose.prod.yml --profile monitoring up -d prometheus
+```
+
+Подробно: [runtime/docs/deploy.md](runtime/docs/deploy.md),
+[runtime/docs/runbook.md](runtime/docs/runbook.md).
 
 ## Тесты и линтеры
 
@@ -123,6 +149,11 @@ docs/
   deployment.md      # деплой, бэкапы, мониторинг
   openapi.yaml       # экспорт OpenAPI
   adr/               # архитектурные решения
+frontend/            # React + Vite SPA, Dockerfile/nginx для production
+runtime/             # Discord Runtime: supervisor, interpreter, scheduler
+ops/                 # backup/restore и Prometheus для production
+docker-compose.prod.yml
+Caddyfile
 ```
 
 ## Ветки и PR

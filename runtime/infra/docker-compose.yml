@@ -1,43 +1,23 @@
 name: discord-constructor-runtime
 
+# Runtime-only stack for local development against a PostgreSQL instance that
+# already has Django migrations applied (for example the root docker-compose.yml
+# stack). Production uses the single root docker-compose.prod.yml instead.
 services:
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-constructor}
-      POSTGRES_USER: ${POSTGRES_USER:-constructor}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-constructor}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
   migrate:
     image: postgres:16-alpine
-    depends_on:
-      db:
-        condition: service_healthy
     environment:
-      PGPASSWORD: ${POSTGRES_PASSWORD:-constructor}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
     volumes:
       - ./migrations:/migrations:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command:
-      - psql
-      - -h
-      - db
-      - -U
-      - ${POSTGRES_USER:-constructor}
-      - -d
-      - ${POSTGRES_DB:-constructor}
-      - -v
-      - ON_ERROR_STOP=1
-      - -f
-      - /migrations/001_runtime.sql
+      - sh
+      - -c
+      - >-
+        psql "$${DATABASE_URL}" -v ON_ERROR_STOP=1
+        -f /migrations/001_runtime.sql
     restart: "no"
 
   runtime:
@@ -45,7 +25,7 @@ services:
       context: ..
       dockerfile: infra/Dockerfile.runtime
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://constructor:constructor@db:5432/constructor}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
       WORKER_ID: ${WORKER_ID:-runtime-1}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       MAX_BOTS_PER_WORKER: ${MAX_BOTS_PER_WORKER:-25}
@@ -55,15 +35,14 @@ services:
       RESTART_LIMIT: ${RESTART_LIMIT:-5}
       HEALTH_HOST: 0.0.0.0
       HEALTH_PORT: 8080
-      BOT_TOKEN_ENCRYPTION_KEY: ${BOT_TOKEN_ENCRYPTION_KEY:-}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:?TOKEN_ENCRYPTION_KEY is required}
       SENTRY_DSN: ${SENTRY_DSN:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       migrate:
         condition: service_completed_successfully
     ports:
-      - "${RUNTIME_PORT:-8080}:8080"
+      - "127.0.0.1:${RUNTIME_PORT:-8080}:8080"
     restart: unless-stopped
     stop_grace_period: 20s
-
-volumes:
-  pgdata:

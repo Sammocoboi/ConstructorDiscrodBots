@@ -32,6 +32,8 @@ class BotSpec:
     token: str
     config: dict[str, Any] = field(default_factory=dict)
     desired_state: str = DesiredState.RUNNING
+    version_number: int | None = None
+    token_error: str | None = None
 
 
 @dataclass(slots=True)

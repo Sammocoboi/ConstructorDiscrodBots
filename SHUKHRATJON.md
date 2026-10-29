@@ -1,0 +1,212 @@
+# Шухратжон — документация по проекту
+
+Рабочая документация по зоне ответственности Шухратжона в проекте
+**Constructor Discord Bots**. Документ фиксирует задачи, принятые технические
+решения, текущий статус и правила сдачи изменений.
+
+## 1. Роль в проекте
+
+Шухратжон отвечает за клиентские улучшения второго раунда обратной связи
+(CF-04 — CF-14), интеграцию frontend/backend и приведение контрактов API
+к единому виду. Рабочая ветка — `shuhrat`.
+
+Основной remote:
+
+```text
+https://github.com/Sammocoboi/ConstructorDiscrodBots.git
+```
+
+## 2. Задачи и приоритеты
+
+| ID | Задача | Приоритет | Статус |
+|---|---|---|---|
+| CF-04 | Аватар и баннер бота | P1 | В работе |
+| CF-05 | Показывать только серверы с правами администратора | P0 | В работе |
+| CF-06 | Полноценная страница шаблона | P1 | Ожидает |
+| CF-08 | Убрать дублирование Pro / «Перейти на Pro» | P0 | Ожидает |
+| CF-09 | Редактирование intents и профиля бота | P1 | Ожидает |
+| CF-10 | Публичный и непубличный бот | P1 | Ожидает |
+| CF-11 | Двухфакторная аутентификация (TOTP) | P2 | Ожидает |
+| CF-12 | E2E-тест онбординга | P0 | Ожидает |
+| CF-13 | Проверка контрактов mock/real API с OpenAPI | P0 | Ожидает |
+| CF-14 | E2E-тест с живым Discord-сервером | P0 | Ожидает |
+
+## 3. Что уже сделано
+
+- Runtime и конструктор ботов реализованы ранее; коммит `14fa2f2` запушен.
+- Ветка `shuhrat` содержит полную версию приложения.
+- Выполнен merge `origin/integration/all` в `shuhrat`, коммит `74123eb`.
+- Конфликт был только в `team-plan.md`; принята версия из integration.
+- Корневой layout признан каноническим: `backend/`, `frontend/`, `runtime/`,
+  `content/`, `docs/`.
+- Корневой `runtime/` совпадает с последней версией Runtime из integration.
+- Проверки перед началом CF-задач:
+  - Runtime: `60 passed`, `ruff` и `mypy` без ошибок;
+  - backend: `68 passed`;
+  - frontend: typecheck, lint и 12 unit-тестов без ошибок.
+- Созданы локальные окружения:
+  - `backend/.venv` — Python 3.14 и dev-зависимости;
+  - `frontend/node_modules` — зависимости через `npm ci`.
+- Проведён аудит моделей, сериализаторов, frontend-типов, `mockApi`,
+  `httpApi` и страниц ботов/шаблонов.
+- Выполнена интеграция Runtime с Django-схемой и production-инфраструктурой
+  (раздел 5.3); подробности — в разделе 12.
+
+## 4. Текущая точка
+
+CF-05 находится в работе. Запланирован endpoint
+`GET /api/v1/me/discord-guilds`, который:
+
+- берёт OAuth-токен Discord из `OAuthAccount`;
+- вызывает Discord `/users/@me/guilds`;
+- оставляет только серверы, где пользователь владелец или администратор;
+- кеширует результат на 60 секунд;
+- помечает серверы, к которым уже добавлен бот.
+
+Frontend и mock API должны аналогично фильтровать серверы и блокировать выбор
+недоступных серверов. Тесты Discord-запросов выполняются через monkeypatch,
+без реального токена.
+
+## 5. Принятые технические решения
+
+- Не поддерживать вторую копию Runtime в `proect/`; источник истины — корневой
+  `runtime/`.
+- Не коммитить `proect/`, `backend/.venv`, `frontend/node_modules` и кеши.
+- Для CF-13 использовать adapter/DTO на frontend, не менять публичный mock API
+  ради подстройки под snake_case backend.
+- Для CF-09 привести intents к каноническим ключам
+  (`guild_members`, `message_content` и т. д.) и валидировать их на backend.
+- Для CF-04 использовать загрузку изображений с проверкой типа и размера;
+  аватар приводится к 128×128, баннер — к 600×240.
+- Для CF-10 публичный endpoint не должен раскрывать токен, владельца и другие
+  приватные поля.
+- CF-14 без Discord-токена и тестового сервера должен корректно пропускаться,
+  а не падать.
+
+## 6. Правила работы
+
+- Все изменения делать в ветке `shuhrat`.
+- Перед коммитом проверять `git status` и `git diff`, не добавлять секреты.
+- Для frontend использовать существующие Mantine-компоненты, React Query и
+  mock API; не добавлять новые библиотеки без необходимости.
+- Для backend соблюдать форматирование `ruff` и типизацию `mypy`.
+- Все пользовательские строки добавлять в `ru.ts` и `en.ts`.
+- Файлы проекта хранятся в UTF-8. Искажения кириллицы в PowerShell — это
+  особенность консольного вывода, а не повреждение файлов.
+- Утилита `rg` в окружении не установлена; для поиска использовать доступный
+  grep-инструмент.
+
+## 7. Команды проверки
+
+Backend:
+
+```powershell
+backend\.venv\Scripts\python.exe -m pytest -q
+backend\.venv\Scripts\python.exe -m ruff check backend
+backend\.venv\Scripts\python.exe -m mypy backend
+```
+
+Frontend:
+
+```powershell
+npm run typecheck
+npm run lint
+npm run test -- --run
+```
+
+Runtime (из корневой папки `runtime`):
+
+```powershell
+cd runtime
+python -m pytest -q
+ruff check .
+mypy runtime
+```
+
+## 8. Definition of Done для CF-задач
+
+- Функциональность работает и в mock-режиме, и через `httpApi`.
+- Backend возвращает предсказуемый snake_case-контракт, frontend маппит его
+  через adapter.
+- Добавлены или обновлены тесты.
+- Обновлены OpenAPI и пользовательская документация, если менялся API.
+- Пройдены pytest, ruff, mypy, frontend typecheck/lint/tests.
+- Изменения закоммичены с понятным сообщением и запушены в `origin/shuhrat`.
+
+## 9. Следующие шаги
+
+1. Завершить CF-05 и покрыть его тестами.
+2. Реализовать CF-08, CF-04, CF-09, CF-10 и CF-06.
+3. Добавить adapter/DTO и contract-тесты для CF-13.
+4. Подготовить CF-12 и условный CF-14.
+5. Реализовать TOTP для CF-11.
+6. Прогнать полный набор проверок и обновить документацию.
+
+## 10. Полезные материалы
+
+- `team-plan.md` — общий план, раздел 14;
+- `docs/team-plan.md` — проектная версия плана;
+- `docs/customer-feedback-round-2.md` — исходная обратная связь;
+- `docs/openapi.yaml` — OpenAPI-схема;
+- `frontend/src/shared/api/types.ts` — frontend-контракты;
+- `frontend/src/shared/api/httpApi.ts` — реальный API и адаптеры;
+- `frontend/src/shared/api/mockApi.ts` — mock-режим;
+- `backend/apps/bots/` — боты, гильдии, версии и Runtime-команды;
+- `backend/apps/templates_catalog/` — каталог шаблонов.
+
+## 11. Ограничения окружения
+
+- Нет Docker/PostgreSQL и реального Discord-токена: compose, миграции на
+  PostgreSQL и CF-14 вживую локально не проверяются.
+- `proect/` остаётся untracked legacy-папкой с локальным venv и вложенным
+  репозиторием; её нельзя коммитить. В `.gitignore` добавлен `/proect/`.
+- Production-стек и lifecycle требуют проверки на staging/VPS с реальным
+  тестовым Discord-ботом.
+
+## 12. Runtime и production-стек (раздел 5.3)
+
+### Что сделано
+
+- Runtime SQL переведён на Django-схему: `bots_bot`, `bots_botdraft`,
+  `bots_botversion`, `bots_runtimecommand`, `bots_botruntimestate`,
+  `templates_catalog_*`. Runtime владеет только `runtime_scheduled_jobs` и
+  `runtime_flow_traces`.
+- Конфиг бота: активная `bots_botversion.content` → `bots_botdraft.content` →
+  `{}`; `bots_bot.intents` объединяются с конфигом.
+- Команды: `pending` → `acknowledged`/`processed_at`; успешные внутренние
+  `acked`/`done` схлопываются в `acknowledged`, `failed` сохраняет `error`.
+- Токены: общий `TOKEN_ENCRYPTION_KEY` (URL-safe base64, 32 байта),
+  AES-256-GCM, формат `v1:<nonce+ciphertext>`, без plaintext-fallback.
+  Устаревшее `BOT_TOKEN_ENCRYPTION_KEY` Runtime принимает как fallback.
+  Ошибка расшифровки переводит бота в `error`/`desired_state=stopped` без
+  авторестарта.
+- Heartbeat пишет `worker_id`, `status`, `latency_ms`, `guild_count`,
+  `uptime_seconds`, `version_number`, `heartbeat_at`; `/ready` проверяет БД.
+- Добавлен единый `docker-compose.prod.yml`: `postgres`, `migrate`, `backend`
+  (gunicorn + `config.settings.prod` + WhiteNoise), `runtime`, `frontend`
+  (nginx), `caddy`; профили `backup` и `monitoring`.
+- Наружу открыт только Caddy (80/443 + UDP 443); PostgreSQL, backend, Runtime и
+  frontend доступны только во внутренней сети.
+- Caddy TERMINATES TLS и обслуживает `APP_DOMAIN`/`API_DOMAIN`; frontend nginx
+  проксирует `/api`, медиа отдаётся из общего volume.
+- Добавлены healthchecks, `restart: unless-stopped`, `stop_grace_period`,
+  `ops/backup.sh`, `ops/restore.sh`, `ops/prometheus/prometheus.yml`,
+  `.env.production.example`, `Caddyfile`, `frontend/Dockerfile`,
+  `frontend/nginx.conf`, `.dockerignore`.
+- Backend production: WhiteNoise, Pillow, `postgresql-client`; crypto ужесточён
+  (в production обязателен явный ключ). Сгенерирована недостающая миграция
+  `bots/0002_*`; slug бота получает UUID-суффикс, чтобы не ловить коллизии.
+- `runtime/infra/docker-compose.yml` стал Runtime-only и работает против
+  внешней PostgreSQL с уже применёнными Django-миграциями.
+- Обновлены `runtime/docs/runtime-protocol.md`, `deploy.md`, `runbook.md`,
+  README, корневой README и этот документ.
+
+### Проверки
+
+- Runtime: `64 passed`, `ruff` и `mypy` без ошибок.
+- Backend: `68 passed`, `ruff` без ошибок.
+- Compose, реальные миграции PostgreSQL, backup/restore, TLS и Discord
+  lifecycle **не запускались**: в локальном окружении нет Docker/PostgreSQL и
+  реального токена.
+- Перед production-запуском: `docker compose -f docker-compose.prod.yml config`,
+  staging `up`, проверка `migrate`/trigger, backup/restore и smoke-тест Discord.

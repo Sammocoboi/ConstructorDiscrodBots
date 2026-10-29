@@ -23,6 +23,7 @@ db.sqlite3-journal
 .env
 .env.*
 !.env.example
+!.env.production.example
 
 # Node / frontend (если появится)
 node_modules/
@@ -42,3 +43,9 @@ Thumbs.db
 # Runtime service
 /runtime/infra/backups/
 /runtime/ConstructorDiscrodBots/
+/proect/
+
+# Backups / database dumps
+/backups/
+*.dump
+*.dump.sha256

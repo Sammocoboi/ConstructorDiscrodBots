@@ -50,6 +50,26 @@ def _int_env(name: str, default: int) -> int:
     return value
 
 
+def _token_key() -> str:
+    """Return the key shared with Django.
+
+    ``TOKEN_ENCRYPTION_KEY`` is the canonical name. The legacy
+    ``BOT_TOKEN_ENCRYPTION_KEY`` is accepted only to make the migration of
+    existing deployments less painful; new installations must use the canonical
+    name.
+    """
+
+    canonical = os.environ.get("TOKEN_ENCRYPTION_KEY", "").strip()
+    if canonical:
+        return canonical
+    legacy = os.environ.get("BOT_TOKEN_ENCRYPTION_KEY", "").strip()
+    if legacy:
+        return legacy
+    raise ValueError(
+        "TOKEN_ENCRYPTION_KEY is required (same url-safe base64 key as Django)"
+    )
+
+
 def load_settings() -> Settings:
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
@@ -65,7 +85,7 @@ def load_settings() -> Settings:
         restart_limit=_int_env("RESTART_LIMIT", 5),
         health_host=os.environ.get("HEALTH_HOST", "0.0.0.0"),
         health_port=_int_env("HEALTH_PORT", 8080),
-        token_key=os.environ.get("BOT_TOKEN_ENCRYPTION_KEY"),
+        token_key=_token_key(),
         blocks_dir=Path(os.environ.get("BLOCKS_DIR", PROJECT_ROOT / "content" / "blocks")),
         templates_dir=Path(
             os.environ.get("TEMPLATES_DIR", PROJECT_ROOT / "content" / "templates")

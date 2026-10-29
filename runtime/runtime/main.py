@@ -99,6 +99,7 @@ async def run(settings: Settings) -> None:
             supervisor,
             host=settings.health_host,
             port=settings.health_port,
+            database_ready=repository.ping,
         )
 
         await supervisor.start()

@@ -423,6 +423,10 @@ class DiscordBotClient(discord.Client):
             return 0
         return int(latency * 1000)
 
+    @property
+    def guild_count(self) -> int:
+        return len(self.guilds)
+
     async def start(self, token: str | None = None, *, reconnect: bool = True) -> None:
         if self._task is not None and not self._task.done():
             return

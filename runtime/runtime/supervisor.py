@@ -26,6 +26,9 @@ class BotClient(Protocol):
     @property
     def latency_ms(self) -> int: ...
 
+    @property
+    def guild_count(self) -> int: ...
+
 
 class BotClientFactory(Protocol):
     def __call__(self, bot: BotSpec) -> BotClient: ...
@@ -43,6 +46,8 @@ class SupervisorRepository(Protocol):
         *,
         error: str | None = None,
         worker_id: str = "",
+        guild_count: int = 0,
+        version_number: int | None = None,
     ) -> None: ...
 
     async def set_bot_desired_state(self, bot_id: str, desired_state: str) -> None: ...
@@ -54,6 +59,9 @@ class SupervisorRepository(Protocol):
         status: str,
         latency_ms: int,
         uptime_seconds: int,
+        *,
+        guild_count: int = 0,
+        version_number: int | None = None,
     ) -> None: ...
 
     async def mark_command(
@@ -110,6 +118,12 @@ class BotRunner:
         return self._client.latency_ms
 
     @property
+    def guild_count(self) -> int:
+        if self._client is None:
+            return 0
+        return getattr(self._client, "guild_count", 0)
+
+    @property
     def uptime_seconds(self) -> int:
         if self._started_at is None:
             return 0
@@ -147,12 +161,18 @@ class BotRunner:
                 pass
         self._task = None
         self._client = None
-        if self._status not in {BotStatus.STOPPED, BotStatus.SUSPENDED}:
+        if self._status not in {
+            BotStatus.STOPPED,
+            BotStatus.SUSPENDED,
+            BotStatus.ERROR,
+        }:
             self._status = BotStatus.STOPPED
             await self.repository.set_bot_status(
                 self.spec.id,
                 BotStatus.STOPPED,
                 worker_id=self.worker_id,
+                guild_count=0,
+                version_number=self.spec.version_number,
             )
 
     async def reload(self, config: dict[str, Any]) -> None:
@@ -174,6 +194,21 @@ class BotRunner:
         raise TimeoutError(f"bot {self.spec.id} did not settle in {timeout}s")
 
     async def _supervise(self) -> None:
+        if self.spec.token_error:
+            self.permanent_failure = True
+            self._status = BotStatus.ERROR
+            await self.repository.set_bot_status(
+                self.spec.id,
+                BotStatus.ERROR,
+                error=self.spec.token_error,
+                worker_id=self.worker_id,
+                guild_count=0,
+                version_number=self.spec.version_number,
+            )
+            await self.repository.set_bot_desired_state(self.spec.id, DesiredState.STOPPED)
+            self._desired = DesiredState.STOPPED
+            return
+
         while self._desired == DesiredState.RUNNING:
             if self._attempts >= self.restart_limit:
                 await self._mark_suspended()
@@ -186,6 +221,8 @@ class BotRunner:
                 self.spec.id,
                 BotStatus.STARTING,
                 worker_id=self.worker_id,
+                guild_count=0,
+                version_number=self.spec.version_number,
             )
             try:
                 await client.start()
@@ -199,6 +236,8 @@ class BotRunner:
                     BotStatus.ERROR,
                     error=str(exc),
                     worker_id=self.worker_id,
+                    guild_count=self.guild_count,
+                    version_number=self.spec.version_number,
                 )
                 await self.repository.set_bot_desired_state(self.spec.id, DesiredState.STOPPED)
                 self._desired = DesiredState.STOPPED
@@ -211,6 +250,8 @@ class BotRunner:
                     BotStatus.ERROR,
                     error=str(exc),
                     worker_id=self.worker_id,
+                    guild_count=self.guild_count,
+                    version_number=self.spec.version_number,
                 )
                 if self._attempts >= self.restart_limit:
                     await self._mark_suspended()
@@ -224,6 +265,8 @@ class BotRunner:
                 self.spec.id,
                 BotStatus.ONLINE,
                 worker_id=self.worker_id,
+                guild_count=self.guild_count,
+                version_number=self.spec.version_number,
             )
             try:
                 await client.wait_closed()
@@ -241,6 +284,8 @@ class BotRunner:
                 BotStatus.ERROR,
                 error="gateway connection lost",
                 worker_id=self.worker_id,
+                guild_count=0,
+                version_number=self.spec.version_number,
             )
             if self._attempts >= self.restart_limit:
                 await self._mark_suspended()
@@ -253,6 +298,8 @@ class BotRunner:
                 self.spec.id,
                 BotStatus.STOPPED,
                 worker_id=self.worker_id,
+                guild_count=0,
+                version_number=self.spec.version_number,
             )
 
     def _backoff(self) -> float:
@@ -265,6 +312,8 @@ class BotRunner:
             BotStatus.SUSPENDED,
             error=f"autorestart limit {self.restart_limit} exceeded",
             worker_id=self.worker_id,
+            guild_count=0,
+            version_number=self.spec.version_number,
         )
 
 
@@ -324,6 +373,8 @@ class Supervisor:
                     BotStatus.SUSPENDED,
                     error=f"worker {self.worker_id} is at capacity ({self._max_bots})",
                     worker_id=self.worker_id,
+                    guild_count=0,
+                    version_number=bot.version_number,
                 )
                 continue
             try:
@@ -380,6 +431,8 @@ class Supervisor:
             return
         runner.spec.name = spec.name
         runner.spec.token = spec.token
+        runner.spec.version_number = spec.version_number
+        runner.spec.token_error = spec.token_error
         await runner.reload(spec.config)
 
     async def handle_command(self, command: RuntimeCommand) -> None:
@@ -461,6 +514,8 @@ class Supervisor:
                         runner.status,
                         runner.latency_ms,
                         runner.uptime_seconds,
+                        guild_count=runner.guild_count,
+                        version_number=runner.spec.version_number,
                     )
                 except Exception:
                     log.exception("heartbeat failed for bot %s", bot_id)
