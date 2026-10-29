@@ -413,7 +413,9 @@ def fetch_user_manageable_guilds(user: User) -> list[dict]:
 
     active_bot_guilds = {
         bg.guild_id: bg
-        for bg in BotGuild.objects.filter(bot__owner=user, left_at__isnull=True).select_related("bot")
+        for bg in BotGuild.objects.filter(bot__owner=user, left_at__isnull=True).select_related(
+            "bot"
+        )
     }
 
     result = []
@@ -469,4 +471,3 @@ def fetch_user_manageable_guilds(user: User) -> list[dict]:
 
     cache.set(cache_key, result, timeout=DISCORD_GUILDS_CACHE_TTL)
     return result
-

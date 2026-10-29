@@ -74,9 +74,7 @@ class BotModuleUpdateView(APIView):
         enabled = serializer.validated_data["enabled"]
         settings_dict = serializer.validated_data.get("settings", {})
         bot_permissions = serializer.validated_data.get("bot_permissions", 0)
-        bot_highest_role_pos = serializer.validated_data.get(
-            "bot_highest_role_pos", 100
-        )
+        bot_highest_role_pos = serializer.validated_data.get("bot_highest_role_pos", 100)
         target_role_pos = serializer.validated_data.get("target_role_pos")
 
         if settings_dict:

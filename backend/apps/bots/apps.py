@@ -8,4 +8,3 @@ class BotsConfig(AppConfig):
 
     def ready(self):
         import apps.bots.signals  # noqa: F401
-

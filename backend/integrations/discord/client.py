@@ -1,4 +1,3 @@
-
 import logging
 import time
 from typing import Any
@@ -8,6 +7,7 @@ import requests
 
 logger = logging.getLogger(__name__)
 
+
 class DiscordAPIError(Exception):
     def __init__(self, status_code: int, message: str, response_data: dict[str, Any] | None = None):
         super().__init__(f"Discord API error {status_code}: {message}")
@@ -15,20 +15,24 @@ class DiscordAPIError(Exception):
         self.message = message
         self.response_data = response_data or {}
 
+
 class DiscordUnauthorizedError(DiscordAPIError):
     pass
+
 
 class DiscordForbiddenError(DiscordAPIError):
     pass
 
+
 class DiscordNotFoundError(DiscordAPIError):
     pass
+
 
 class DiscordRateLimitError(DiscordAPIError):
     pass
 
-class DiscordRestClient:
 
+class DiscordRestClient:
     BASE_URL = "https://discord.com/api/v10/"
 
     def __init__(
@@ -36,7 +40,7 @@ class DiscordRestClient:
         bot_token: str | None = None,
         max_retries: int = 3,
         session: requests.Session | None = None,
-        on_unauthorized_callback: Any | None = None
+        on_unauthorized_callback: Any | None = None,
     ):
         self.bot_token = bot_token
         self.max_retries = max_retries
@@ -44,7 +48,9 @@ class DiscordRestClient:
         self.on_unauthorized_callback = on_unauthorized_callback
         self._route_reset_times: dict[str, float] = {}
 
-    def _get_headers(self, custom_token: str | None = None, is_bearer: bool = False) -> dict[str, str]:
+    def _get_headers(
+        self, custom_token: str | None = None, is_bearer: bool = False
+    ) -> dict[str, str]:
         token = custom_token or self.bot_token
         if not token:
             raise ValueError("Токен авторизации Discord не указан")
@@ -62,7 +68,7 @@ class DiscordRestClient:
         params: dict[str, Any] | None = None,
         json_data: Any | None = None,
         custom_token: str | None = None,
-        is_bearer: bool = False
+        is_bearer: bool = False,
     ) -> Any:
         url = urljoin(self.BASE_URL, endpoint.lstrip("/"))
         headers = self._get_headers(custom_token, is_bearer)
@@ -75,7 +81,7 @@ class DiscordRestClient:
                     params=params,
                     json=json_data,
                     headers=headers,
-                    timeout=10
+                    timeout=10,
                 )
 
                 if response.status_code == 429:
@@ -90,14 +96,20 @@ class DiscordRestClient:
 
                     logger.warning(
                         "Discord 429 Rate Limit на %s %s. Пауза %s сек. Попытка %d/%d",
-                        method, endpoint, retry_after, attempt + 1, self.max_retries
+                        method,
+                        endpoint,
+                        retry_after,
+                        attempt + 1,
+                        self.max_retries,
                     )
 
                     if attempt < self.max_retries:
                         time.sleep(retry_after)
                         continue
                     else:
-                        raise DiscordRateLimitError(429, f"Превышен лимит запросов Discord, retry_after={retry_after}")
+                        raise DiscordRateLimitError(
+                            429, f"Превышен лимит запросов Discord, retry_after={retry_after}"
+                        )
 
                 if response.status_code == 401:
                     logger.error("Discord 401 Unauthorized для токена на эндпоинте %s", endpoint)
@@ -106,15 +118,21 @@ class DiscordRestClient:
                             self.on_unauthorized_callback()
                         except Exception as cb_err:
                             logger.exception("Ошибка в callback on_unauthorized: %s", cb_err)
-                    raise DiscordUnauthorizedError(401, "Неверный или отозванный токен бота (Discord 401)")
+                    raise DiscordUnauthorizedError(
+                        401, "Неверный или отозванный токен бота (Discord 401)"
+                    )
 
                 if response.status_code == 403:
                     data = response.json() if response.content else {}
-                    raise DiscordForbiddenError(403, data.get("message", "Доступ запрещен (Discord 403)"), data)
+                    raise DiscordForbiddenError(
+                        403, data.get("message", "Доступ запрещен (Discord 403)"), data
+                    )
 
                 if response.status_code == 404:
                     data = response.json() if response.content else {}
-                    raise DiscordNotFoundError(404, data.get("message", "Ресурс не найден (Discord 404)"), data)
+                    raise DiscordNotFoundError(
+                        404, data.get("message", "Ресурс не найден (Discord 404)"), data
+                    )
 
                 if not response.ok:
                     data = {}
@@ -122,7 +140,9 @@ class DiscordRestClient:
                         data = response.json()
                     except Exception:
                         pass
-                    raise DiscordAPIError(response.status_code, data.get("message", response.text), data)
+                    raise DiscordAPIError(
+                        response.status_code, data.get("message", response.text), data
+                    )
 
                 if response.status_code == 204 or not response.content:
                     return None
@@ -130,7 +150,7 @@ class DiscordRestClient:
 
             except requests.RequestException as e:
                 if attempt < self.max_retries:
-                    time.sleep(0.5 * (2 ** attempt))
+                    time.sleep(0.5 * (2**attempt))
                     continue
                 raise DiscordAPIError(
                     0, f"Сетевая ошибка при запросе к Discord API: {str(e)}"
@@ -141,10 +161,14 @@ class DiscordRestClient:
     def get_current_bot_user(self) -> dict[str, Any]:
         data = self.request("GET", "users/@me")
         if not data.get("bot", False):
-            raise DiscordAPIError(400, "Указанный токен принадлежит обычному пользователю, а не Discord-боту!")
+            raise DiscordAPIError(
+                400, "Указанный токен принадлежит обычному пользователю, а не Discord-боту!"
+            )
         return data
 
-    def modify_current_bot_user(self, username: str | None = None, avatar_base64: str | None = None) -> dict[str, Any]:
+    def modify_current_bot_user(
+        self, username: str | None = None, avatar_base64: str | None = None
+    ) -> dict[str, Any]:
         payload = {}
         if username:
             payload["username"] = username
@@ -169,24 +193,17 @@ class DiscordRestClient:
 
     def get_user_guilds(self, user_oauth_token: str) -> list[dict[str, Any]]:
         return self.request(
-            "GET",
-            "users/@me/guilds",
-            custom_token=user_oauth_token,
-            is_bearer=True
+            "GET", "users/@me/guilds", custom_token=user_oauth_token, is_bearer=True
         )
 
-    def bulk_overwrite_global_commands(self, application_id: str, commands: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        return self.request(
-            "PUT",
-            f"applications/{application_id}/commands",
-            json_data=commands
-        )
+    def bulk_overwrite_global_commands(
+        self, application_id: str, commands: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        return self.request("PUT", f"applications/{application_id}/commands", json_data=commands)
 
     def bulk_overwrite_guild_commands(
         self, application_id: str, guild_id: str, commands: list[dict[str, Any]]
     ) -> list[dict[str, Any]]:
         return self.request(
-            "PUT",
-            f"applications/{application_id}/guilds/{guild_id}/commands",
-            json_data=commands
+            "PUT", f"applications/{application_id}/guilds/{guild_id}/commands", json_data=commands
         )

@@ -76,9 +76,9 @@ def test_replace_token_encrypts_and_enqueues_reload(auth_client: APIClient, user
     bot.refresh_from_db()
     assert bot.token_encrypted
     assert decrypt_secret(bot.token_encrypted) == "fresh-token"
-    assert RuntimeCommand.objects.filter(
-        bot=bot, command=RuntimeCommand.Command.RELOAD
-    ).count() == 1
+    assert (
+        RuntimeCommand.objects.filter(bot=bot, command=RuntimeCommand.Command.RELOAD).count() == 1
+    )
 
 
 @pytest.mark.django_db

@@ -1,4 +1,3 @@
-
 from urllib.parse import urlencode
 
 
@@ -45,6 +44,7 @@ class DiscordPermissions:
     USE_EMBEDDED_ACTIVITIES = 1 << 39
     MODERATE_MEMBERS = 1 << 40
 
+
 PERMISSION_NAMES: dict[int, str] = {
     DiscordPermissions.CREATE_INSTANT_INVITE: "Создание приглашения (Create Instant Invite)",
     DiscordPermissions.KICK_MEMBERS: "Выгонять участников (Kick Members)",
@@ -77,7 +77,9 @@ BASE_BOT_PERMISSIONS: int = (
 
 MODULE_REQUIRED_PERMISSIONS: dict[str, int] = {
     "core": BASE_BOT_PERMISSIONS,
-    "welcomes": DiscordPermissions.SEND_MESSAGES | DiscordPermissions.EMBED_LINKS | DiscordPermissions.MANAGE_ROLES,
+    "welcomes": DiscordPermissions.SEND_MESSAGES
+    | DiscordPermissions.EMBED_LINKS
+    | DiscordPermissions.MANAGE_ROLES,
     "moderation": (
         DiscordPermissions.BAN_MEMBERS
         | DiscordPermissions.KICK_MEMBERS
@@ -128,9 +130,9 @@ MODULE_REQUIRED_INTENTS: dict[str, list[str]] = {
     "roles": ["GUILD_MEMBERS"],
 }
 
+
 def calculate_permissions_integer(
-    enabled_module_ids: list[str] | None = None,
-    custom_permissions: int = 0
+    enabled_module_ids: list[str] | None = None, custom_permissions: int = 0
 ) -> int:
     total = BASE_BOT_PERMISSIONS | custom_permissions
     if enabled_module_ids:
@@ -138,6 +140,7 @@ def calculate_permissions_integer(
             mod_perms = MODULE_REQUIRED_PERMISSIONS.get(mod_id, 0)
             total |= mod_perms
     return total
+
 
 def calculate_required_intents(enabled_module_ids: list[str] | None = None) -> list[str]:
     intents: set[str] = set()
@@ -147,11 +150,12 @@ def calculate_required_intents(enabled_module_ids: list[str] | None = None) -> l
                 intents.add(item)
     return sorted(list(intents))
 
+
 def generate_invite_url(
     client_id: str,
     permissions_integer: int,
     guild_id: str | None = None,
-    disable_guild_select: bool = False
+    disable_guild_select: bool = False,
 ) -> str:
     params = {
         "client_id": client_id,
@@ -164,16 +168,22 @@ def generate_invite_url(
             params["disable_guild_select"] = "true"
     return f"https://discord.com/oauth2/authorize?{urlencode(params)}"
 
-def check_missing_permissions(bot_permissions_int: int, required_permissions_int: int) -> list[dict[str, object]]:
+
+def check_missing_permissions(
+    bot_permissions_int: int, required_permissions_int: int
+) -> list[dict[str, object]]:
     missing = []
     for perm_flag, perm_name in PERMISSION_NAMES.items():
         if (required_permissions_int & perm_flag) == perm_flag:
             if (bot_permissions_int & perm_flag) != perm_flag:
-                missing.append({
-                    "flag": perm_flag,
-                    "name": perm_name,
-                })
+                missing.append(
+                    {
+                        "flag": perm_flag,
+                        "name": perm_name,
+                    }
+                )
     return missing
+
 
 def check_role_hierarchy(bot_highest_role_pos: int, target_role_pos: int) -> dict[str, object]:
     can_manage = bot_highest_role_pos > target_role_pos
@@ -181,8 +191,10 @@ def check_role_hierarchy(bot_highest_role_pos: int, target_role_pos: int) -> dic
         "can_manage": can_manage,
         "bot_role_position": bot_highest_role_pos,
         "target_role_position": target_role_pos,
-        "warning": None if can_manage else (
+        "warning": None
+        if can_manage
+        else (
             "Роль бота на сервере должна быть расположена выше роли, которой он управляет! "
             "Переместите роль бота выше в настройках сервера Discord."
-        )
+        ),
     }

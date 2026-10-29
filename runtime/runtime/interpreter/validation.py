@@ -337,10 +337,7 @@ def validate_flow(
                         node_id,
                     )
         elif node_type == "switch":
-            has_default = any(
-                edge.get("branch") in (None, "default")
-                for edge in outgoing
-            )
+            has_default = any(edge.get("branch") in (None, "default") for edge in outgoing)
             if not has_default:
                 result.warning("unfinished_branch", f"node {node_id}: no default branch", node_id)
         elif node_type == "random_chance":

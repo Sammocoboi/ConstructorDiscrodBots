@@ -1,11 +1,9 @@
-
 import time
 from collections.abc import Callable
 from typing import Any
 
 
 class DiscordDataCache:
-
     def __init__(self, default_ttl: int = 60):
         self.default_ttl = default_ttl
         self._cache: dict[str, tuple[Any, float]] = {}
@@ -41,5 +39,6 @@ class DiscordDataCache:
         fresh = fetcher()
         self.set(key, fresh, ttl)
         return fresh
+
 
 default_discord_cache = DiscordDataCache(default_ttl=60)

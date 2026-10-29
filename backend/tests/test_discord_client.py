@@ -1,4 +1,3 @@
-﻿
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -29,6 +28,7 @@ def test_get_current_bot_user_success():
         assert user["username"] == "MyCoolBot"
         assert user["bot"] is True
 
+
 def test_client_handles_401_unauthorized_with_callback():
     callback_called = False
 
@@ -48,6 +48,7 @@ def test_client_handles_401_unauthorized_with_callback():
 
     assert callback_called is True
 
+
 def test_client_handles_429_rate_limit_and_retries():
     client = DiscordRestClient(bot_token="test_token", max_retries=2)
 
@@ -64,10 +65,8 @@ def test_client_handles_429_rate_limit_and_retries():
 
     with patch.object(client.session, "request", side_effect=[mock_429, mock_200]) as mock_req:
         res = client.bulk_overwrite_global_commands(
-            application_id="12345",
-            commands=[{"name": "ping", "description": "ping command"}]
+            application_id="12345", commands=[{"name": "ping", "description": "ping command"}]
         )
         assert len(res) == 1
         assert res[0]["name"] == "ping"
         assert mock_req.call_count == 2
-

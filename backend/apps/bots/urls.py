@@ -13,6 +13,11 @@ urlpatterns = [
         name="bot-guild-sync",
     ),
     path(
+        "bots/validate-token",
+        views.ValidateTokenView.as_view(),
+        name="bot-validate-token",
+    ),
+    path(
         "bots/<uuid:bot_id>/guilds/<str:guild_id>",
         views.BotGuildDetailView.as_view(),
         name="bot-guild-detail",

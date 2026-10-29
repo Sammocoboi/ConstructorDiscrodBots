@@ -87,9 +87,7 @@ class HealthServer:
                         log.exception("database readiness check failed")
                         database = False
                 ready = database and not snapshot.get("stopping", False)
-                body = json.dumps(
-                    {"ready": ready, "database": database, "bots": bot_statuses}
-                )
+                body = json.dumps({"ready": ready, "database": database, "bots": bot_statuses})
                 await self._write(writer, 200 if ready else 503, "application/json", body)
             elif path == "/metrics":
                 await self._write(

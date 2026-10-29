@@ -1,10 +1,10 @@
-
 import logging
 
 from django.conf import settings
 from django.core.mail import send_mail
 
 logger = logging.getLogger(__name__)
+
 
 class NotificationType:
     EMAIL_VERIFICATION = "email_verification"
@@ -13,12 +13,14 @@ class NotificationType:
     BOT_TOKEN_INVALID = "bot_token_invalid"
     BOT_STOPPED = "bot_stopped"
 
-class NotificationService:
 
+class NotificationService:
     @staticmethod
     def send_email_verification(to_email: str, user_name: str, verification_token: str) -> bool:
         subject = "Подтверждение email на платформе «Конструктор Discord-ботов»"
-        verification_link = f"https://constructor-discord-bots.local/auth/verify-email?token={verification_token}"
+        verification_link = (
+            f"https://constructor-discord-bots.local/auth/verify-email?token={verification_token}"
+        )
         message = (
             f"Здравствуйте, {user_name}!\n\n"
             f"Благодарим за регистрацию в «Конструкторе Discord-ботов».\n"
@@ -31,7 +33,9 @@ class NotificationService:
     @staticmethod
     def send_password_reset(to_email: str, user_name: str, reset_token: str) -> bool:
         subject = "Сброс пароля на платформе «Конструктор Discord-ботов»"
-        reset_link = f"https://constructor-discord-bots.local/auth/reset-password?token={reset_token}"
+        reset_link = (
+            f"https://constructor-discord-bots.local/auth/reset-password?token={reset_token}"
+        )
         message = (
             f"Здравствуйте, {user_name}!\n\n"
             f"Был получен запрос на сброс пароля для вашей учетной записи.\n"
@@ -43,12 +47,7 @@ class NotificationService:
 
     @staticmethod
     def send_payment_receipt(
-        to_email: str,
-        user_name: str,
-        plan_name: str,
-        amount: str,
-        currency: str,
-        invoice_id: str
+        to_email: str, user_name: str, plan_name: str, amount: str, currency: str, invoice_id: str
     ) -> bool:
         subject = f"Квитанция об оплате подписки: {plan_name}"
         message = (
@@ -66,7 +65,7 @@ class NotificationService:
         user_name: str,
         bot_name: str,
         bot_id: str,
-        error_details: str = "Discord вернул ошибку 401 Unauthorized"
+        error_details: str = "Discord вернул ошибку 401 Unauthorized",
     ) -> bool:
         subject = f"⚠️ Остановка бота «{bot_name}»: недействительный токен"
         settings_link = f"https://constructor-discord-bots.local/bots/{bot_id}/profile"
@@ -81,12 +80,16 @@ class NotificationService:
             f"{settings_link}\n"
             f"Все ваши сценарии, модули и настройки сохранены."
         )
-        logger.warning("Отправка алерта об ошибке токена бота %s (%s) на email %s", bot_name, bot_id, to_email)
+        logger.warning(
+            "Отправка алерта об ошибке токена бота %s (%s) на email %s", bot_name, bot_id, to_email
+        )
         return NotificationService._deliver_email(to_email, subject, message)
 
     @staticmethod
     def _deliver_email(to_email: str, subject: str, message: str) -> bool:
-        from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "support@constructor-discord-bots.local")
+        from_email = getattr(
+            settings, "DEFAULT_FROM_EMAIL", "support@constructor-discord-bots.local"
+        )
         try:
             send_mail(
                 subject=subject,
@@ -98,5 +101,10 @@ class NotificationService:
             logger.info("Email успешно отправлен на %s с темой '%s'", to_email, subject)
             return True
         except Exception as e:
-            logger.warning("Эмуляция отправки email на %s (SMTP недоступен: %s). Тема: %s", to_email, e, subject)
+            logger.warning(
+                "Эмуляция отправки email на %s (SMTP недоступен: %s). Тема: %s",
+                to_email,
+                e,
+                subject,
+            )
             return True

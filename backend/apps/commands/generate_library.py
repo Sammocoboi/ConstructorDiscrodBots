@@ -23,8 +23,13 @@ ALL_COMMANDS = [
         "options": [
             {"name": "user", "description": "Кого забанить", "type": 6, "required": True},
             {"name": "reason", "description": "Причина бана", "type": 3, "required": False},
-            {"name": "delete_days", "description": "Удалить сообщения за N дней", "type": 4, "required": False}
-        ]
+            {
+                "name": "delete_days",
+                "description": "Удалить сообщения за N дней",
+                "type": 4,
+                "required": False,
+            },
+        ],
     },
     {
         "slug": "unban",
@@ -38,9 +43,14 @@ ALL_COMMANDS = [
         "default_member_permissions": "4",
         "required_intents": ["GUILD_MEMBERS"],
         "options": [
-            {"name": "user_id", "description": "Discord ID забаненного пользователя", "type": 3, "required": True},
-            {"name": "reason", "description": "Причина разбана", "type": 3, "required": False}
-        ]
+            {
+                "name": "user_id",
+                "description": "Discord ID забаненного пользователя",
+                "type": 3,
+                "required": True,
+            },
+            {"name": "reason", "description": "Причина разбана", "type": 3, "required": False},
+        ],
     },
     {
         "slug": "kick",
@@ -55,8 +65,8 @@ ALL_COMMANDS = [
         "required_intents": ["GUILD_MEMBERS"],
         "options": [
             {"name": "user", "description": "Кого исключить", "type": 6, "required": True},
-            {"name": "reason", "description": "Причина кика", "type": 3, "required": False}
-        ]
+            {"name": "reason", "description": "Причина кика", "type": 3, "required": False},
+        ],
     },
     {
         "slug": "timeout",
@@ -70,9 +80,14 @@ ALL_COMMANDS = [
         "default_member_permissions": "1099511627776",
         "options": [
             {"name": "user", "description": "Участник", "type": 6, "required": True},
-            {"name": "duration_minutes", "description": "Длительность в минутах", "type": 4, "required": True},
-            {"name": "reason", "description": "Причина", "type": 3, "required": False}
-        ]
+            {
+                "name": "duration_minutes",
+                "description": "Длительность в минутах",
+                "type": 4,
+                "required": True,
+            },
+            {"name": "reason", "description": "Причина", "type": 3, "required": False},
+        ],
     },
     {
         "slug": "warn",
@@ -86,8 +101,8 @@ ALL_COMMANDS = [
         "default_member_permissions": "8192",
         "options": [
             {"name": "user", "description": "Кому выдать варн", "type": 6, "required": True},
-            {"name": "reason", "description": "Причина варна", "type": 3, "required": True}
-        ]
+            {"name": "reason", "description": "Причина варна", "type": 3, "required": True},
+        ],
     },
     {
         "slug": "warnings",
@@ -99,7 +114,7 @@ ALL_COMMANDS = [
         "required_module": "moderation",
         "options": [
             {"name": "user", "description": "Чьи варны посмотреть", "type": 6, "required": False}
-        ]
+        ],
     },
     {
         "slug": "clearwarns",
@@ -111,9 +126,7 @@ ALL_COMMANDS = [
         "required_module": "moderation",
         "required_permissions": 8192,
         "default_member_permissions": "8192",
-        "options": [
-            {"name": "user", "description": "Участник", "type": 6, "required": True}
-        ]
+        "options": [{"name": "user", "description": "Участник", "type": 6, "required": True}],
     },
     {
         "slug": "purge",
@@ -126,8 +139,13 @@ ALL_COMMANDS = [
         "required_permissions": 8192,
         "default_member_permissions": "8192",
         "options": [
-            {"name": "amount", "description": "Количество сообщений (от 1 до 100)", "type": 4, "required": True}
-        ]
+            {
+                "name": "amount",
+                "description": "Количество сообщений (от 1 до 100)",
+                "type": 4,
+                "required": True,
+            }
+        ],
     },
     {
         "slug": "slowmode",
@@ -140,8 +158,13 @@ ALL_COMMANDS = [
         "required_permissions": 16,
         "default_member_permissions": "16",
         "options": [
-            {"name": "seconds", "description": "Секунды задержки (0 для отключения)", "type": 4, "required": True}
-        ]
+            {
+                "name": "seconds",
+                "description": "Секунды задержки (0 для отключения)",
+                "type": 4,
+                "required": True,
+            }
+        ],
     },
     {
         "slug": "lock",
@@ -152,7 +175,7 @@ ALL_COMMANDS = [
         "type": "slash",
         "required_module": "moderation",
         "required_permissions": 16,
-        "default_member_permissions": "16"
+        "default_member_permissions": "16",
     },
     {
         "slug": "unlock",
@@ -163,7 +186,7 @@ ALL_COMMANDS = [
         "type": "slash",
         "required_module": "moderation",
         "required_permissions": 16,
-        "default_member_permissions": "16"
+        "default_member_permissions": "16",
     },
     {
         "slug": "nick",
@@ -177,8 +200,13 @@ ALL_COMMANDS = [
         "default_member_permissions": "134217728",
         "options": [
             {"name": "user", "description": "Участник", "type": 6, "required": True},
-            {"name": "nickname", "description": "Новый никнейм (оставьте пустым для сброса)", "type": 3, "required": False}
-        ]
+            {
+                "name": "nickname",
+                "description": "Новый никнейм (оставьте пустым для сброса)",
+                "type": 3,
+                "required": False,
+            },
+        ],
     },
     {
         "slug": "modlog",
@@ -189,9 +217,8 @@ ALL_COMMANDS = [
         "type": "slash",
         "required_module": "moderation",
         "required_permissions": 128,
-        "default_member_permissions": "128"
+        "default_member_permissions": "128",
     },
-
     {
         "slug": "ping",
         "name": "ping",
@@ -199,7 +226,7 @@ ALL_COMMANDS = [
         "category": "utility",
         "description": "Показывает пинг шлюза Discord и статус бота",
         "type": "slash",
-        "cooldown": {"type": "user", "seconds": 3}
+        "cooldown": {"type": "user", "seconds": 3},
     },
     {
         "slug": "serverinfo",
@@ -207,7 +234,7 @@ ALL_COMMANDS = [
         "title": "Информация о сервере",
         "category": "utility",
         "description": "Показывает детальную статистику сервера",
-        "type": "slash"
+        "type": "slash",
     },
     {
         "slug": "userinfo",
@@ -216,7 +243,7 @@ ALL_COMMANDS = [
         "category": "utility",
         "description": "Показывает дату регистрации, роли и статус участника",
         "type": "slash",
-        "options": [{"name": "user", "description": "Участник", "type": 6, "required": False}]
+        "options": [{"name": "user", "description": "Участник", "type": 6, "required": False}],
     },
     {
         "slug": "avatar",
@@ -225,7 +252,7 @@ ALL_COMMANDS = [
         "category": "utility",
         "description": "Отображает полноразмерную аватарку участника",
         "type": "slash",
-        "options": [{"name": "user", "description": "Участник", "type": 6, "required": False}]
+        "options": [{"name": "user", "description": "Участник", "type": 6, "required": False}],
     },
     {
         "slug": "roleinfo",
@@ -234,7 +261,7 @@ ALL_COMMANDS = [
         "category": "utility",
         "description": "Отображает ID, цвет, права и число участников роли",
         "type": "slash",
-        "options": [{"name": "role", "description": "Роль", "type": 8, "required": True}]
+        "options": [{"name": "role", "description": "Роль", "type": 8, "required": True}],
     },
     {
         "slug": "channelinfo",
@@ -243,7 +270,7 @@ ALL_COMMANDS = [
         "category": "utility",
         "description": "Отображает тип, ID и тему канала",
         "type": "slash",
-        "options": [{"name": "channel", "description": "Канал", "type": 7, "required": False}]
+        "options": [{"name": "channel", "description": "Канал", "type": 7, "required": False}],
     },
     {
         "slug": "poll",
@@ -255,8 +282,8 @@ ALL_COMMANDS = [
         "options": [
             {"name": "question", "description": "Вопрос голосования", "type": 3, "required": True},
             {"name": "option1", "description": "Вариант 1", "type": 3, "required": True},
-            {"name": "option2", "description": "Вариант 2", "type": 3, "required": True}
-        ]
+            {"name": "option2", "description": "Вариант 2", "type": 3, "required": True},
+        ],
     },
     {
         "slug": "remind",
@@ -266,9 +293,14 @@ ALL_COMMANDS = [
         "description": "Бот напомнит вам о важном событии через указанное время",
         "type": "slash",
         "options": [
-            {"name": "minutes", "description": "Через сколько минут напомнить", "type": 4, "required": True},
-            {"name": "text", "description": "Текст напоминания", "type": 3, "required": True}
-        ]
+            {
+                "name": "minutes",
+                "description": "Через сколько минут напомнить",
+                "type": 4,
+                "required": True,
+            },
+            {"name": "text", "description": "Текст напоминания", "type": 3, "required": True},
+        ],
     },
     {
         "slug": "embed",
@@ -282,8 +314,13 @@ ALL_COMMANDS = [
         "options": [
             {"name": "title", "description": "Заголовок эмбеда", "type": 3, "required": True},
             {"name": "description", "description": "Текст сообщения", "type": 3, "required": True},
-            {"name": "color", "description": "HEX-цвет (например #5865F2)", "type": 3, "required": False}
-        ]
+            {
+                "name": "color",
+                "description": "HEX-цвет (например #5865F2)",
+                "type": 3,
+                "required": False,
+            },
+        ],
     },
     {
         "slug": "say",
@@ -296,9 +333,8 @@ ALL_COMMANDS = [
         "default_member_permissions": "8192",
         "options": [
             {"name": "text", "description": "Сообщение для отправки", "type": 3, "required": True}
-        ]
+        ],
     },
-
     {
         "slug": "role_add",
         "name": "role_add",
@@ -311,8 +347,8 @@ ALL_COMMANDS = [
         "default_member_permissions": "268435456",
         "options": [
             {"name": "user", "description": "Участник", "type": 6, "required": True},
-            {"name": "role", "description": "Роль", "type": 8, "required": True}
-        ]
+            {"name": "role", "description": "Роль", "type": 8, "required": True},
+        ],
     },
     {
         "slug": "role_remove",
@@ -326,8 +362,8 @@ ALL_COMMANDS = [
         "default_member_permissions": "268435456",
         "options": [
             {"name": "user", "description": "Участник", "type": 6, "required": True},
-            {"name": "role", "description": "Роль", "type": 8, "required": True}
-        ]
+            {"name": "role", "description": "Роль", "type": 8, "required": True},
+        ],
     },
     {
         "slug": "autorole",
@@ -341,7 +377,7 @@ ALL_COMMANDS = [
         "default_member_permissions": "268435456",
         "options": [
             {"name": "role", "description": "Роль для новичков", "type": 8, "required": True}
-        ]
+        ],
     },
     {
         "slug": "reactionroles",
@@ -352,7 +388,7 @@ ALL_COMMANDS = [
         "type": "slash",
         "required_module": "roles",
         "required_permissions": 268435456,
-        "default_member_permissions": "268435456"
+        "default_member_permissions": "268435456",
     },
     {
         "slug": "selfroles",
@@ -361,7 +397,7 @@ ALL_COMMANDS = [
         "category": "roles",
         "description": "Открывает меню самостоятельного выбора ролей",
         "type": "slash",
-        "required_module": "roles"
+        "required_module": "roles",
     },
     {
         "slug": "rolemenu",
@@ -372,7 +408,7 @@ ALL_COMMANDS = [
         "type": "slash",
         "required_module": "roles",
         "required_permissions": 268435456,
-        "default_member_permissions": "268435456"
+        "default_member_permissions": "268435456",
     },
     {
         "slug": "colorrole",
@@ -381,9 +417,8 @@ ALL_COMMANDS = [
         "category": "roles",
         "description": "Позволяет пользователю выбрать цвет своего ника из доступных",
         "type": "slash",
-        "required_module": "roles"
+        "required_module": "roles",
     },
-
     {
         "slug": "profile",
         "name": "profile",
@@ -391,7 +426,7 @@ ALL_COMMANDS = [
         "category": "social",
         "description": "Показывает социальный профиль, репутацию и значки",
         "type": "slash",
-        "options": [{"name": "user", "description": "Чей профиль", "type": 6, "required": False}]
+        "options": [{"name": "user", "description": "Чей профиль", "type": 6, "required": False}],
     },
     {
         "slug": "rep",
@@ -401,7 +436,9 @@ ALL_COMMANDS = [
         "description": "Выражает благодарность и добавляет очко репутации участнику",
         "type": "slash",
         "cooldown": {"type": "user", "seconds": 43200},
-        "options": [{"name": "user", "description": "Кому повысить репутацию", "type": 6, "required": True}]
+        "options": [
+            {"name": "user", "description": "Кому повысить репутацию", "type": 6, "required": True}
+        ],
     },
     {
         "slug": "birthday",
@@ -412,8 +449,8 @@ ALL_COMMANDS = [
         "type": "slash",
         "options": [
             {"name": "day", "description": "День (1-31)", "type": 4, "required": True},
-            {"name": "month", "description": "Месяц (1-12)", "type": 4, "required": True}
-        ]
+            {"name": "month", "description": "Месяц (1-12)", "type": 4, "required": True},
+        ],
     },
     {
         "slug": "hug",
@@ -422,7 +459,7 @@ ALL_COMMANDS = [
         "category": "social",
         "description": "Дружески обнимает выбранного пользователя с анимацией",
         "type": "slash",
-        "options": [{"name": "user", "description": "Кого обнять", "type": 6, "required": True}]
+        "options": [{"name": "user", "description": "Кого обнять", "type": 6, "required": True}],
     },
     {
         "slug": "pat",
@@ -431,7 +468,7 @@ ALL_COMMANDS = [
         "category": "social",
         "description": "Отправляет милую реакцию поглаживания",
         "type": "slash",
-        "options": [{"name": "user", "description": "Кого погладить", "type": 6, "required": True}]
+        "options": [{"name": "user", "description": "Кого погладить", "type": 6, "required": True}],
     },
     {
         "slug": "afk",
@@ -440,7 +477,9 @@ ALL_COMMANDS = [
         "category": "social",
         "description": "Бот будет отвечать, что вы отошли, когда вас тегают",
         "type": "slash",
-        "options": [{"name": "reason", "description": "Причина отсутствия", "type": 3, "required": False}]
+        "options": [
+            {"name": "reason", "description": "Причина отсутствия", "type": 3, "required": False}
+        ],
     },
     {
         "slug": "marry",
@@ -449,7 +488,7 @@ ALL_COMMANDS = [
         "category": "social",
         "description": "Сделать предложение руки и сердца другому участнику",
         "type": "slash",
-        "options": [{"name": "user", "description": "Избранник", "type": 6, "required": True}]
+        "options": [{"name": "user", "description": "Избранник", "type": 6, "required": True}],
     },
     {
         "slug": "leaderboard",
@@ -457,9 +496,8 @@ ALL_COMMANDS = [
         "title": "Таблица репутации",
         "category": "social",
         "description": "Топ участников сервера по очкам репутации",
-        "type": "slash"
+        "type": "slash",
     },
-
     {
         "slug": "rank",
         "name": "rank",
@@ -468,7 +506,7 @@ ALL_COMMANDS = [
         "description": "Показывает ваш текущий уровень и прогресс до следующего",
         "type": "slash",
         "required_module": "levels",
-        "options": [{"name": "user", "description": "Участник", "type": 6, "required": False}]
+        "options": [{"name": "user", "description": "Участник", "type": 6, "required": False}],
     },
     {
         "slug": "top",
@@ -477,7 +515,7 @@ ALL_COMMANDS = [
         "category": "levels",
         "description": "Таблица лидеров сервера по набранному опыту",
         "type": "slash",
-        "required_module": "levels"
+        "required_module": "levels",
     },
     {
         "slug": "setxp",
@@ -491,8 +529,8 @@ ALL_COMMANDS = [
         "default_member_permissions": "8",
         "options": [
             {"name": "user", "description": "Участник", "type": 6, "required": True},
-            {"name": "amount", "description": "Новое значение опыта", "type": 4, "required": True}
-        ]
+            {"name": "amount", "description": "Новое значение опыта", "type": 4, "required": True},
+        ],
     },
     {
         "slug": "levelroles",
@@ -501,7 +539,7 @@ ALL_COMMANDS = [
         "category": "levels",
         "description": "Список наградных ролей, выдаваемых за достижение уровней",
         "type": "slash",
-        "required_module": "levels"
+        "required_module": "levels",
     },
     {
         "slug": "resetlevels",
@@ -512,7 +550,7 @@ ALL_COMMANDS = [
         "type": "slash",
         "required_module": "levels",
         "required_permissions": 8,
-        "default_member_permissions": "8"
+        "default_member_permissions": "8",
     },
     {
         "slug": "xpboost",
@@ -525,10 +563,14 @@ ALL_COMMANDS = [
         "required_permissions": 8,
         "default_member_permissions": "8",
         "options": [
-            {"name": "multiplier", "description": "Множитель (например 2 для x2)", "type": 4, "required": True}
-        ]
+            {
+                "name": "multiplier",
+                "description": "Множитель (например 2 для x2)",
+                "type": 4,
+                "required": True,
+            }
+        ],
     },
-
     {
         "slug": "balance",
         "name": "balance",
@@ -537,7 +579,7 @@ ALL_COMMANDS = [
         "description": "Показывает количество монет в кошельке и в банке",
         "type": "slash",
         "required_module": "economy",
-        "options": [{"name": "user", "description": "Чей баланс", "type": 6, "required": False}]
+        "options": [{"name": "user", "description": "Чей баланс", "type": 6, "required": False}],
     },
     {
         "slug": "daily",
@@ -547,7 +589,7 @@ ALL_COMMANDS = [
         "description": "Получить ежедневный бонус монет раз в 24 часа",
         "type": "slash",
         "required_module": "economy",
-        "cooldown": {"type": "user", "seconds": 86400}
+        "cooldown": {"type": "user", "seconds": 86400},
     },
     {
         "slug": "work",
@@ -557,7 +599,7 @@ ALL_COMMANDS = [
         "description": "Выполнить разовую работу и получить честную зарплату",
         "type": "slash",
         "required_module": "economy",
-        "cooldown": {"type": "user", "seconds": 3600}
+        "cooldown": {"type": "user", "seconds": 3600},
     },
     {
         "slug": "pay",
@@ -569,8 +611,8 @@ ALL_COMMANDS = [
         "required_module": "economy",
         "options": [
             {"name": "user", "description": "Получатель", "type": 6, "required": True},
-            {"name": "amount", "description": "Сумма перевода", "type": 4, "required": True}
-        ]
+            {"name": "amount", "description": "Сумма перевода", "type": 4, "required": True},
+        ],
     },
     {
         "slug": "shop",
@@ -579,7 +621,7 @@ ALL_COMMANDS = [
         "category": "economy",
         "description": "Витрина товаров и эксклюзивных ролей за монеты",
         "type": "slash",
-        "required_module": "economy"
+        "required_module": "economy",
     },
     {
         "slug": "buy",
@@ -589,7 +631,7 @@ ALL_COMMANDS = [
         "description": "Приобрести товар из магазина по его ID",
         "type": "slash",
         "required_module": "economy",
-        "options": [{"name": "item_id", "description": "ID товара", "type": 3, "required": True}]
+        "options": [{"name": "item_id", "description": "ID товара", "type": 3, "required": True}],
     },
     {
         "slug": "inventory",
@@ -598,7 +640,7 @@ ALL_COMMANDS = [
         "category": "economy",
         "description": "Список купленных вами предметов и активных эффектов",
         "type": "slash",
-        "required_module": "economy"
+        "required_module": "economy",
     },
     {
         "slug": "gamble",
@@ -608,7 +650,7 @@ ALL_COMMANDS = [
         "description": "Ставка в азартную игру с шансом удвоить баланс",
         "type": "slash",
         "required_module": "economy",
-        "options": [{"name": "bet", "description": "Размер ставки", "type": 4, "required": True}]
+        "options": [{"name": "bet", "description": "Размер ставки", "type": 4, "required": True}],
     },
     {
         "slug": "baltop",
@@ -617,9 +659,8 @@ ALL_COMMANDS = [
         "category": "economy",
         "description": "Список самых богатых участников сервера",
         "type": "slash",
-        "required_module": "economy"
+        "required_module": "economy",
     },
-
     {
         "slug": "coinflip",
         "name": "coinflip",
@@ -627,7 +668,7 @@ ALL_COMMANDS = [
         "category": "fun",
         "description": "Подбрасывает монетку: Орёл или Решка",
         "type": "slash",
-        "required_module": "fun"
+        "required_module": "fun",
     },
     {
         "slug": "dice",
@@ -637,7 +678,14 @@ ALL_COMMANDS = [
         "description": "Выпадение случайного числа от 1 до 6 (или N граней)",
         "type": "slash",
         "required_module": "fun",
-        "options": [{"name": "sides", "description": "Количество граней (по умолчанию 6)", "type": 4, "required": False}]
+        "options": [
+            {
+                "name": "sides",
+                "description": "Количество граней (по умолчанию 6)",
+                "type": 4,
+                "required": False,
+            }
+        ],
     },
     {
         "slug": "8ball",
@@ -647,7 +695,7 @@ ALL_COMMANDS = [
         "description": "Дает мистический ответ на ваш вопрос",
         "type": "slash",
         "required_module": "fun",
-        "options": [{"name": "question", "description": "Ваш вопрос", "type": 3, "required": True}]
+        "options": [{"name": "question", "description": "Ваш вопрос", "type": 3, "required": True}],
     },
     {
         "slug": "rps",
@@ -666,10 +714,10 @@ ALL_COMMANDS = [
                 "choices": [
                     {"name": "Камень 🪨", "value": "rock"},
                     {"name": "Ножницы ✂️", "value": "scissors"},
-                    {"name": "Бумага 📄", "value": "paper"}
-                ]
+                    {"name": "Бумага 📄", "value": "paper"},
+                ],
             }
-        ]
+        ],
     },
     {
         "slug": "trivia",
@@ -678,7 +726,7 @@ ALL_COMMANDS = [
         "category": "fun",
         "description": "Случайный вопрос с вариантами ответов на кнопках",
         "type": "slash",
-        "required_module": "fun"
+        "required_module": "fun",
     },
     {
         "slug": "guessnumber",
@@ -687,7 +735,7 @@ ALL_COMMANDS = [
         "category": "fun",
         "description": "Мини-игра: угадайте число от 1 до 100",
         "type": "slash",
-        "required_module": "fun"
+        "required_module": "fun",
     },
     {
         "slug": "slots",
@@ -696,7 +744,7 @@ ALL_COMMANDS = [
         "category": "fun",
         "description": "Крутить барабан с эмодзи в надежде выбить 777",
         "type": "slash",
-        "required_module": "fun"
+        "required_module": "fun",
     },
     {
         "slug": "hangman",
@@ -705,9 +753,8 @@ ALL_COMMANDS = [
         "category": "fun",
         "description": "Угадывание спрятанного слова по буквам",
         "type": "slash",
-        "required_module": "fun"
+        "required_module": "fun",
     },
-
     {
         "slug": "ticket_panel",
         "name": "ticket_panel",
@@ -717,7 +764,7 @@ ALL_COMMANDS = [
         "type": "slash",
         "required_module": "tickets",
         "required_permissions": 16,
-        "default_member_permissions": "16"
+        "default_member_permissions": "16",
     },
     {
         "slug": "ticket_close",
@@ -727,7 +774,9 @@ ALL_COMMANDS = [
         "description": "Закрывает текущее обращение и архивирует транскрипт",
         "type": "slash",
         "required_module": "tickets",
-        "options": [{"name": "reason", "description": "Причина закрытия", "type": 3, "required": False}]
+        "options": [
+            {"name": "reason", "description": "Причина закрытия", "type": 3, "required": False}
+        ],
     },
     {
         "slug": "ticket_add",
@@ -737,7 +786,7 @@ ALL_COMMANDS = [
         "description": "Предоставляет доступ к каналу обращения указанному пользователю",
         "type": "slash",
         "required_module": "tickets",
-        "options": [{"name": "user", "description": "Участник", "type": 6, "required": True}]
+        "options": [{"name": "user", "description": "Участник", "type": 6, "required": True}],
     },
     {
         "slug": "ticket_remove",
@@ -747,7 +796,7 @@ ALL_COMMANDS = [
         "description": "Забирает доступ к тикету у указанного пользователя",
         "type": "slash",
         "required_module": "tickets",
-        "options": [{"name": "user", "description": "Участник", "type": 6, "required": True}]
+        "options": [{"name": "user", "description": "Участник", "type": 6, "required": True}],
     },
     {
         "slug": "ticket_transcript",
@@ -756,9 +805,8 @@ ALL_COMMANDS = [
         "category": "tickets",
         "description": "Формирует текстовый файл со всеми сообщениями тикета",
         "type": "slash",
-        "required_module": "tickets"
+        "required_module": "tickets",
     },
-
     {
         "slug": "autoresponder",
         "name": "autoresponder",
@@ -770,9 +818,14 @@ ALL_COMMANDS = [
         "required_permissions": 8192,
         "default_member_permissions": "8192",
         "options": [
-            {"name": "trigger", "description": "Слово или фраза триггера", "type": 3, "required": True},
-            {"name": "response", "description": "Ответ бота", "type": 3, "required": True}
-        ]
+            {
+                "name": "trigger",
+                "description": "Слово или фраза триггера",
+                "type": 3,
+                "required": True,
+            },
+            {"name": "response", "description": "Ответ бота", "type": 3, "required": True},
+        ],
     },
     {
         "slug": "welcome",
@@ -786,8 +839,8 @@ ALL_COMMANDS = [
         "default_member_permissions": "32",
         "options": [
             {"name": "channel", "description": "Канал приветствий", "type": 7, "required": True},
-            {"name": "message", "description": "Текст приветствия", "type": 3, "required": False}
-        ]
+            {"name": "message", "description": "Текст приветствия", "type": 3, "required": False},
+        ],
     },
     {
         "slug": "goodbye",
@@ -801,8 +854,8 @@ ALL_COMMANDS = [
         "default_member_permissions": "32",
         "options": [
             {"name": "channel", "description": "Канал прощаний", "type": 7, "required": True},
-            {"name": "message", "description": "Текст прощания", "type": 3, "required": False}
-        ]
+            {"name": "message", "description": "Текст прощания", "type": 3, "required": False},
+        ],
     },
     {
         "slug": "autodelete",
@@ -815,8 +868,13 @@ ALL_COMMANDS = [
         "required_permissions": 16,
         "default_member_permissions": "16",
         "options": [
-            {"name": "seconds", "description": "Время жизни сообщений в секундах", "type": 4, "required": True}
-        ]
+            {
+                "name": "seconds",
+                "description": "Время жизни сообщений в секундах",
+                "type": 4,
+                "required": True,
+            }
+        ],
     },
     {
         "slug": "schedule",
@@ -831,8 +889,13 @@ ALL_COMMANDS = [
         "options": [
             {"name": "channel", "description": "Куда отправить", "type": 7, "required": True},
             {"name": "text", "description": "Текст сообщения", "type": 3, "required": True},
-            {"name": "cron", "description": "Cron-выражение (например '0 12 * * *')", "type": 3, "required": True}
-        ]
+            {
+                "name": "cron",
+                "description": "Cron-выражение (например '0 12 * * *')",
+                "type": 3,
+                "required": True,
+            },
+        ],
     },
     {
         "slug": "counting",
@@ -843,9 +906,8 @@ ALL_COMMANDS = [
         "type": "slash",
         "required_module": "automation",
         "required_permissions": 16,
-        "default_member_permissions": "16"
+        "default_member_permissions": "16",
     },
-
     {
         "slug": "giveaway_start",
         "name": "giveaway_start",
@@ -858,9 +920,19 @@ ALL_COMMANDS = [
         "default_member_permissions": "16",
         "options": [
             {"name": "prize", "description": "Что разыгрывается", "type": 3, "required": True},
-            {"name": "duration_minutes", "description": "Длительность в минутах", "type": 4, "required": True},
-            {"name": "winners_count", "description": "Количество победителей (по умолчанию 1)", "type": 4, "required": False}
-        ]
+            {
+                "name": "duration_minutes",
+                "description": "Длительность в минутах",
+                "type": 4,
+                "required": True,
+            },
+            {
+                "name": "winners_count",
+                "description": "Количество победителей (по умолчанию 1)",
+                "type": 4,
+                "required": False,
+            },
+        ],
     },
     {
         "slug": "giveaway_end",
@@ -872,7 +944,14 @@ ALL_COMMANDS = [
         "required_module": "giveaways",
         "required_permissions": 16,
         "default_member_permissions": "16",
-        "options": [{"name": "message_id", "description": "ID сообщения розыгрыша", "type": 3, "required": True}]
+        "options": [
+            {
+                "name": "message_id",
+                "description": "ID сообщения розыгрыша",
+                "type": 3,
+                "required": True,
+            }
+        ],
     },
     {
         "slug": "giveaway_reroll",
@@ -884,7 +963,14 @@ ALL_COMMANDS = [
         "required_module": "giveaways",
         "required_permissions": 16,
         "default_member_permissions": "16",
-        "options": [{"name": "message_id", "description": "ID сообщения розыгрыша", "type": 3, "required": True}]
+        "options": [
+            {
+                "name": "message_id",
+                "description": "ID сообщения розыгрыша",
+                "type": 3,
+                "required": True,
+            }
+        ],
     },
     {
         "slug": "giveaway_list",
@@ -893,9 +979,10 @@ ALL_COMMANDS = [
         "category": "giveaways",
         "description": "Показывает текущие активные розыгрыши на сервере",
         "type": "slash",
-        "required_module": "giveaways"
-    }
+        "required_module": "giveaways",
+    },
 ]
+
 
 def generate_command_json_files():
     COMMANDS_DIR.mkdir(parents=True, exist_ok=True)
@@ -911,12 +998,12 @@ def generate_command_json_files():
         card.setdefault("required_intents", [])
         card.setdefault("default_member_permissions", None)
         card.setdefault("cooldown", {"type": "user", "seconds": 3})
-        
+
         card["preview"] = {
             "embed": {
                 "title": f"Команда /{cmd['name']}",
                 "description": cmd["description"],
-                "color": 5793266
+                "color": 5793266,
             }
         }
         card["flow"] = {
@@ -925,13 +1012,10 @@ def generate_command_json_files():
                 {
                     "id": "node_reply",
                     "type": "send_message",
-                    "params": {
-                        "content": f"Выполнена команда /{cmd['name']}.",
-                        "ephemeral": True
-                    }
+                    "params": {"content": f"Выполнена команда /{cmd['name']}.", "ephemeral": True},
                 }
             ],
-            "edges": []
+            "edges": [],
         }
 
         file_path = cat_dir / f"{cmd['slug']}.json"
@@ -940,6 +1024,7 @@ def generate_command_json_files():
         count += 1
 
     print(f"Успешно сгенерировано {count} команд в директории {COMMANDS_DIR}")
+
 
 if __name__ == "__main__":
     generate_command_json_files()

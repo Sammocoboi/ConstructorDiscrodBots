@@ -18,4 +18,7 @@ def invalidate_user_guilds_on_bot_guild_change(sender, instance, **kwargs):
         if instance.bot_id and instance.bot.owner_id:
             cache.delete(f"discord:guilds:{instance.bot.owner_id}")
     except Exception:
-        logger.exception("Failed to invalidate discord guilds cache for user %s", getattr(instance, "bot_id", None))
+        logger.exception(
+            "Failed to invalidate discord guilds cache for user %s",
+            getattr(instance, "bot_id", None),
+        )

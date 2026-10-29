@@ -5,7 +5,7 @@ import logging
 import signal
 from typing import Any
 
-from runtime.bot import DiscordBotClient
+from runtime.bot import DiscordBotClient, set_guild_repository
 from runtime.config import Settings, load_settings
 from runtime.crypto import TokenCipher
 from runtime.db import PostgresRepository, connect, ensure_schema
@@ -79,6 +79,7 @@ async def run(settings: Settings) -> None:
             settings.database_url,
             TokenCipher(settings.token_key),
         )
+        set_guild_repository(repository)
         supervisor = Supervisor(
             repository,
             build_factory(registry),

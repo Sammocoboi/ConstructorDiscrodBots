@@ -74,9 +74,7 @@ class BotInstallCommandsView(APIView):
             name = command["name"]
             slug = command["slug"]
 
-            conflict_info = CommandLibraryRegistry.check_name_conflict(
-                existing_names, name
-            )
+            conflict_info = CommandLibraryRegistry.check_name_conflict(existing_names, name)
             if conflict_info["has_conflict"]:
                 if conflict_action == "skip":
                     conflicts_handled.append(

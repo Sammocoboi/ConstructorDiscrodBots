@@ -65,9 +65,7 @@ def _token_key() -> str:
     legacy = os.environ.get("BOT_TOKEN_ENCRYPTION_KEY", "").strip()
     if legacy:
         return legacy
-    raise ValueError(
-        "TOKEN_ENCRYPTION_KEY is required (same url-safe base64 key as Django)"
-    )
+    raise ValueError("TOKEN_ENCRYPTION_KEY is required (same url-safe base64 key as Django)")
 
 
 def load_settings() -> Settings:
@@ -87,8 +85,6 @@ def load_settings() -> Settings:
         health_port=_int_env("HEALTH_PORT", 8080),
         token_key=_token_key(),
         blocks_dir=Path(os.environ.get("BLOCKS_DIR", PROJECT_ROOT / "content" / "blocks")),
-        templates_dir=Path(
-            os.environ.get("TEMPLATES_DIR", PROJECT_ROOT / "content" / "templates")
-        ),
+        templates_dir=Path(os.environ.get("TEMPLATES_DIR", PROJECT_ROOT / "content" / "templates")),
         sentry_dsn=os.environ.get("SENTRY_DSN") or None,
     )

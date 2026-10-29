@@ -1,10 +1,8 @@
-
 import time
 from typing import Any
 
 
 class CommandAccessRule:
-
     def __init__(
         self,
         default_member_permissions: str | None = None,
@@ -14,7 +12,7 @@ class CommandAccessRule:
         denied_channels: list[str] | None = None,
         allowed_users: list[str] | None = None,
         denied_users: list[str] | None = None,
-        no_permission_message: str = "У вас недостаточно прав для использования этой команды."
+        no_permission_message: str = "У вас недостаточно прав для использования этой команды.",
     ):
         self.default_member_permissions = default_member_permissions
         self.allowed_roles = set(allowed_roles or [])
@@ -26,11 +24,7 @@ class CommandAccessRule:
         self.no_permission_message = no_permission_message
 
     def is_allowed(
-        self,
-        user_id: str,
-        user_roles: list[str],
-        channel_id: str,
-        user_permissions_int: int = 0
+        self, user_id: str, user_roles: list[str], channel_id: str, user_permissions_int: int = 0
     ) -> tuple[bool, str | None]:
         if user_id in self.denied_users:
             return False, self.no_permission_message
@@ -53,7 +47,9 @@ class CommandAccessRule:
         if self.default_member_permissions:
             try:
                 required = int(self.default_member_permissions)
-                if (user_permissions_int & required) != required and (user_permissions_int & 0x8) != 0x8:
+                if (user_permissions_int & required) != required and (
+                    user_permissions_int & 0x8
+                ) != 0x8:
                     return False, self.no_permission_message
             except ValueError:
                 pass
@@ -72,8 +68,8 @@ class CommandAccessRule:
             "no_permission_message": self.no_permission_message,
         }
 
-class CommandCooldownTracker:
 
+class CommandCooldownTracker:
     def __init__(self):
         self._history: dict[tuple[str, str, str], list[float]] = {}
 
@@ -84,7 +80,7 @@ class CommandCooldownTracker:
         identifier: str,
         cooldown_seconds: int = 5,
         max_uses: int = 1,
-        window_seconds: int | None = None
+        window_seconds: int | None = None,
     ) -> tuple[bool, float]:
         now = time.time()
         window = window_seconds if window_seconds is not None else cooldown_seconds
@@ -106,5 +102,6 @@ class CommandCooldownTracker:
     def reset(self, command_slug: str, scope: str, identifier: str) -> None:
         key = (scope, identifier, command_slug)
         self._history.pop(key, None)
+
 
 default_cooldown_tracker = CommandCooldownTracker()

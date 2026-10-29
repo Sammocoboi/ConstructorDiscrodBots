@@ -483,9 +483,7 @@ class PostgresRepository:
             id=str(row["id"]),
             bot_id=str(row["bot_id"]),
             number=int(row["version_number"]),
-            status=VersionStatus.PUBLISHED
-            if bool(row["is_active"])
-            else VersionStatus.ARCHIVED,
+            status=VersionStatus.PUBLISHED if bool(row["is_active"]) else VersionStatus.ARCHIVED,
             config=_as_dict(row["content"]),
             comment=str(row["comment"] or ""),
             created_at=row["created_at"],
@@ -761,6 +759,58 @@ class PostgresRepository:
         # historical billing data. The runtime scheduler must not touch it.
         log.info("usage counters are period-based in Django; reset skipped")
         return 0
+
+    # --- Guild sync -------------------------------------------------------
+
+    async def upsert_guild(
+        self,
+        bot_id: str,
+        guild_id: str,
+        guild_name: str,
+    ) -> None:
+        """Insert or update a guild for a bot (on_guild_join)."""
+        await self._pool.execute(
+            """
+            INSERT INTO bot_guilds
+                (id, bot_id, guild_id, guild_name, joined_at, created_at, updated_at)
+            VALUES (gen_random_uuid(), $1::uuid, $2, $3, now(), now(), now())
+            ON CONFLICT ON CONSTRAINT unique_bot_guild DO UPDATE
+            SET guild_name = EXCLUDED.guild_name,
+                left_at = NULL,
+                deleted_at = NULL,
+                updated_at = now()
+            """,
+            _uuid(bot_id),
+            guild_id,
+            guild_name,
+        )
+
+    async def remove_guild(
+        self,
+        bot_id: str,
+        guild_id: str,
+    ) -> None:
+        """Mark a guild as left (on_guild_remove)."""
+        await self._pool.execute(
+            """
+            UPDATE bot_guilds
+            SET left_at = now(), updated_at = now()
+            WHERE bot_id = $1::uuid AND guild_id = $2 AND left_at IS NULL
+            """,
+            _uuid(bot_id),
+            guild_id,
+        )
+
+    async def count_guilds(self, bot_id: str) -> int:
+        """Count active guilds for a bot."""
+        count = await self._pool.fetchval(
+            """
+            SELECT COUNT(*) FROM bot_guilds
+            WHERE bot_id = $1::uuid AND left_at IS NULL AND deleted_at IS NULL
+            """,
+            _uuid(bot_id),
+        )
+        return int(count or 0)
 
 
 def _affected(result: str) -> int:

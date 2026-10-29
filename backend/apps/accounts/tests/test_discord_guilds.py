@@ -80,7 +80,10 @@ def test_user_guilds_filters_unmanageable_guilds(auth_client: APIClient, user: U
         },
     ]
 
-    with patch("integrations.discord.client.DiscordRestClient.get_user_guilds", return_value=mock_discord_guilds):
+    with patch(
+        "integrations.discord.client.DiscordRestClient.get_user_guilds",
+        return_value=mock_discord_guilds,
+    ):
         response = auth_client.get("/api/v1/me/discord-guilds")
 
     assert response.status_code == 200
@@ -123,7 +126,10 @@ def test_guilds_cache_and_invalidation_on_bot_added(auth_client: APIClient, user
         }
     ]
 
-    with patch("integrations.discord.client.DiscordRestClient.get_user_guilds", return_value=mock_discord_guilds) as mock_fetch:
+    with patch(
+        "integrations.discord.client.DiscordRestClient.get_user_guilds",
+        return_value=mock_discord_guilds,
+    ) as mock_fetch:
         resp1 = auth_client.get("/api/v1/me/discord-guilds")
         assert resp1.status_code == 200
         assert resp1.data[0]["botAdded"] is False

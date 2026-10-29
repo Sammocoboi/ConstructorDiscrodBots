@@ -197,7 +197,7 @@ def sync_bot_guilds(bot: Bot, guilds: list[dict]) -> int:
         )
         seen.add(guild_id)
 
-    BotGuild.all_objects.filter(bot=bot, left_at__isnull=True).exclude(
-        guild_id__in=seen
-    ).update(left_at=timezone.now(), updated_at=timezone.now())
+    BotGuild.all_objects.filter(bot=bot, left_at__isnull=True).exclude(guild_id__in=seen).update(
+        left_at=timezone.now(), updated_at=timezone.now()
+    )
     return len(seen)

@@ -159,4 +159,3 @@ class DiscordUserGuildSerializer(serializers.Serializer):
     canManage = serializers.BooleanField()
     channels = DiscordUserGuildChannelSerializer(many=True, default=list)
     roles = DiscordUserGuildRoleSerializer(many=True, default=list)
-

@@ -28,11 +28,7 @@ class FakeRepository:
         self.locks: list[FakeLock] = []
 
     async def list_running_bots(self) -> list[BotSpec]:
-        return [
-            bot
-            for bot in self.bots.values()
-            if bot.desired_state == DesiredState.RUNNING
-        ]
+        return [bot for bot in self.bots.values() if bot.desired_state == DesiredState.RUNNING]
 
     async def get_bot(self, bot_id: str) -> BotSpec | None:
         return self.bots.get(bot_id)
@@ -259,15 +255,11 @@ async def test_runtime_commands_reload_and_stop():
     await wait_for_status(runner, "online")
     client = factory.created[0]
 
-    await supervisor.handle_command(
-        RuntimeCommand(id="c1", bot_id="b1", command="reload")
-    )
+    await supervisor.handle_command(RuntimeCommand(id="c1", bot_id="b1", command="reload"))
     assert client.reloaded
     assert repository.commands == ["acked", "done"]
 
-    await supervisor.handle_command(
-        RuntimeCommand(id="c2", bot_id="b1", command="stop")
-    )
+    await supervisor.handle_command(RuntimeCommand(id="c2", bot_id="b1", command="stop"))
     assert runner.status == "stopped"
     await supervisor.shutdown()
 

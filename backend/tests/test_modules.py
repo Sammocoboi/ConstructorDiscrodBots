@@ -1,4 +1,3 @@
-
 import pytest
 from django.contrib.auth import get_user_model
 from rest_framework import status
@@ -24,20 +23,20 @@ def test_modules_registry_contains_all_core_modules():
     assert "automation" in slugs
     assert "giveaways" in slugs
 
+
 def test_validate_module_settings_json_schema():
     valid_settings = {
         "welcome_channel_id": "123456789",
         "welcome_message": "Привет!",
         "welcome_embed": True,
-        "autorole_id": None
+        "autorole_id": None,
     }
     ModuleRegistry.validate_settings("welcomes", valid_settings)
 
-    invalid_settings = {
-        "welcome_embed": "not_a_boolean"
-    }
+    invalid_settings = {"welcome_embed": "not_a_boolean"}
     with pytest.raises(ValidationError):
         ModuleRegistry.validate_settings("welcomes", invalid_settings)
+
 
 @pytest.mark.django_db
 def test_bot_module_enable_and_settings_update():
@@ -47,18 +46,18 @@ def test_bot_module_enable_and_settings_update():
     )
     client.force_authenticate(user=user)
     bot = Bot.objects.create(name="ModuleBot", owner=user)
-    
+
     payload = {
         "guild_id": "999111222",
         "enabled": True,
         "settings": {
             "welcome_channel_id": "555666777",
             "welcome_message": "Добро пожаловать, {user.mention}!",
-            "welcome_embed": True
+            "welcome_embed": True,
         },
         "bot_permissions": 268453888,
         "bot_highest_role_pos": 20,
-        "target_role_pos": 10
+        "target_role_pos": 10,
     }
 
     resp = client.put(f"/api/v1/bots/{bot.id}/modules/welcomes", payload, format="json")
@@ -69,4 +68,3 @@ def test_bot_module_enable_and_settings_update():
     guild = BotGuild.objects.get(bot=bot, guild_id="999111222")
     assert "welcomes" in guild.enabled_modules
     assert guild.settings["welcomes"]["welcome_channel_id"] == "555666777"
-

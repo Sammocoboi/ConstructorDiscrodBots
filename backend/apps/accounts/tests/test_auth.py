@@ -153,8 +153,7 @@ def test_disabled_email_auth_is_still_throttled(api_client: APIClient, settings)
     payload = {"email": "nobody@example.com", "password": "StrongPass123!"}
 
     statuses = [
-        api_client.post("/api/v1/auth/login", payload, format="json").status_code
-        for _ in range(11)
+        api_client.post("/api/v1/auth/login", payload, format="json").status_code for _ in range(11)
     ]
 
     assert statuses[:10] == [403] * 10

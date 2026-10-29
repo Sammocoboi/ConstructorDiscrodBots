@@ -19,6 +19,16 @@ from runtime.models import BotSpec
 
 log = logging.getLogger("runtime.bot")
 
+# Import db types for guild sync — optional, set at runtime
+_guild_repo = None
+
+
+def set_guild_repository(repo):
+    """Set the repository instance used for guild sync."""
+    global _guild_repo
+    _guild_repo = repo
+
+
 OPTION_TYPES: dict[str, Any] = {
     "string": str,
     "integer": int,
@@ -211,6 +221,75 @@ class DiscordBotClient(discord.Client):
                 continue
             await self._execute_flow(flow, context)
 
+    async def on_guild_join(self, guild: discord.Guild) -> None:
+        """Sync guild to DB when the bot is added to a server."""
+        log.info("bot %s joined guild %s (%s)", self.spec.id, guild.id, guild.name)
+        if _guild_repo is not None:
+            try:
+                await _guild_repo.upsert_guild(
+                    self.spec.id,
+                    str(guild.id),
+                    guild.name,
+                )
+            except Exception:
+                log.exception("failed to upsert guild %s for bot %s", guild.id, self.spec.id)
+
+    async def on_guild_remove(self, guild: discord.Guild) -> None:
+        """Mark guild as left in DB when the bot is removed from a server."""
+        log.info("bot %s removed from guild %s (%s)", self.spec.id, guild.id, guild.name)
+        if _guild_repo is not None:
+            try:
+                await _guild_repo.remove_guild(
+                    self.spec.id,
+                    str(guild.id),
+                )
+            except Exception:
+                log.exception("failed to remove guild %s for bot %s", guild.id, self.spec.id)
+
+    async def on_error(self, event_method: str, *args, **kwargs) -> None:
+        """Handle Discord gateway errors with specific messages."""
+        import sys
+
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        if exc_value is None:
+            return
+
+        error_msg = str(exc_value)
+
+        if isinstance(exc_value, discord.HTTPException):
+            if exc_value.status == 429:
+                retry_after = getattr(exc_value, "retry_after", 5.0)
+                log.warning(
+                    "bot %s: rate limited (429) in %s, retry after %.1fs",
+                    self.spec.id,
+                    event_method,
+                    retry_after,
+                )
+                await asyncio.sleep(retry_after)
+                return
+            elif exc_value.status == 401:
+                log.error(
+                    "bot %s: unauthorized (401) in %s — token may be invalid",
+                    self.spec.id,
+                    event_method,
+                )
+                return
+            elif exc_value.status == 403:
+                log.warning(
+                    "bot %s: forbidden (403) in %s — missing permissions: %s",
+                    self.spec.id,
+                    event_method,
+                    error_msg,
+                )
+                return
+
+        log.exception(
+            "bot %s: unhandled error in %s: %s",
+            self.spec.id,
+            event_method,
+            error_msg,
+        )
+
     @staticmethod
     def _message_matches(trigger: dict[str, Any], content: str) -> bool:
         prefix = trigger.get("prefix")
@@ -328,11 +407,7 @@ class DiscordBotClient(discord.Client):
             if trigger_type == "slash_command":
                 command_id = trigger.get("command_id")
                 matched_command: dict[str, Any] | None = next(
-                    (
-                        item
-                        for item in self._command_defs.values()
-                        if item.get("id") == command_id
-                    ),
+                    (item for item in self._command_defs.values() if item.get("id") == command_id),
                     None,
                 )
                 if (

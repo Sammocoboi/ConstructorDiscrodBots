@@ -64,7 +64,7 @@ export const httpApi: MockApi = {
     },
     async loginWithDiscord() {
       const next = encodeURIComponent(`${window.location.pathname}${window.location.search}`)
-      window.location.assign(`${API_BASE}/auth/discord?next=${next}`)
+      window.location.assign(`${API_BASE}/auth/discord/login?next=${next}`)
       return new Promise<AuthSession>(() => undefined)
     },
     async forgotPassword(email) {

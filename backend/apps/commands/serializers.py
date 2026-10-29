@@ -32,9 +32,7 @@ class CommandLibraryListSerializer(CommandLibrarySerializer):
 
 
 class InstallCommandsRequestSerializer(serializers.Serializer):
-    slugs = serializers.ListField(
-        child=serializers.CharField(), required=False, default=list
-    )
+    slugs = serializers.ListField(child=serializers.CharField(), required=False, default=list)
     category = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     action_on_conflict = serializers.ChoiceField(
         choices=["replace", "rename", "skip"], default="replace"
@@ -43,9 +41,7 @@ class InstallCommandsRequestSerializer(serializers.Serializer):
 
 
 class CommandPermissionsUpdateSerializer(serializers.Serializer):
-    default_member_permissions = serializers.CharField(
-        allow_null=True, required=False
-    )
+    default_member_permissions = serializers.CharField(allow_null=True, required=False)
     allowed_roles = serializers.ListField(
         child=serializers.CharField(), required=False, default=list
     )
@@ -64,9 +60,7 @@ class CommandPermissionsUpdateSerializer(serializers.Serializer):
     denied_users = serializers.ListField(
         child=serializers.CharField(), required=False, default=list
     )
-    cooldown_type = serializers.ChoiceField(
-        choices=["user", "channel", "guild"], default="user"
-    )
+    cooldown_type = serializers.ChoiceField(choices=["user", "channel", "guild"], default="user")
     cooldown_seconds = serializers.IntegerField(default=5, min_value=0, max_value=86400)
     no_permission_message = serializers.CharField(
         default="У вас недостаточно прав для использования этой команды."

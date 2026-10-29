@@ -81,14 +81,11 @@ def test_discord_callback_returns_code_and_next(api_client: APIClient, settings,
         patch.object(services, "get_or_create_discord_user", return_value=user),
         patch.object(services, "create_discord_login_code", return_value="one-time-code"),
     ):
-        response = api_client.get(
-            f"/api/v1/auth/discord/callback?state={state}&code=discord-code"
-        )
+        response = api_client.get(f"/api/v1/auth/discord/callback?state={state}&code=discord-code")
 
     assert response.status_code == 302
     assert response["Location"] == (
-        "http://localhost:5173/auth/callback/discord"
-        "?code=one-time-code&next=%2Fapp%2Fbots%2F1"
+        "http://localhost:5173/auth/callback/discord?code=one-time-code&next=%2Fapp%2Fbots%2F1"
     )
 
 

@@ -18,9 +18,7 @@ class FakeSchedulerRepository:
         self.finished: list[dict] = []
 
     async def list_due_jobs(self, now: datetime, limit: int = 20) -> list[ScheduledJob]:
-        self.jobs = [
-            job for job in self.jobs if job.next_run_at is None or job.next_run_at <= now
-        ]
+        self.jobs = [job for job in self.jobs if job.next_run_at is None or job.next_run_at <= now]
         return self.jobs[:limit]
 
     async def mark_job_finished(
@@ -81,9 +79,7 @@ async def test_scheduler_processes_due_jobs():
     assert processed == 1
     assert calls == [{}]
     assert repository.finished[0]["status"] == "idle"
-    assert repository.finished[0]["next_run_at"] == datetime(
-        2026, 1, 2, 3, 0, tzinfo=UTC
-    )
+    assert repository.finished[0]["next_run_at"] == datetime(2026, 1, 2, 3, 0, tzinfo=UTC)
 
 
 async def test_scheduler_marks_unknown_handler_failed():

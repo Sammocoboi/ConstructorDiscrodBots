@@ -40,7 +40,6 @@ def test_normalize_key_is_strict():
         normalize_key(base64.urlsafe_b64encode(b"k" * 16).decode())
 
 
-
 def test_mask_hides_most_of_token():
     assert TokenCipher.mask("") == ""
     assert TokenCipher.mask("short") == "********"
@@ -52,9 +51,7 @@ def test_render_metrics():
     text = render_metrics(
         {
             "statuses": {"online": 2, "error": 1},
-            "bots": [
-                {"id": "b1", "name": "Alpha", "latency_ms": 30, "uptime_seconds": 100}
-            ],
+            "bots": [{"id": "b1", "name": "Alpha", "latency_ms": 30, "uptime_seconds": 100}],
             "metrics": {
                 "commands_total": 5,
                 "commands_failed": 1,

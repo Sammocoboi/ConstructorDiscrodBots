@@ -26,6 +26,4 @@ class UpdateModuleSettingsSerializer(serializers.Serializer):
     settings = serializers.DictField(required=False, default=dict)
     bot_permissions = serializers.IntegerField(required=False, default=0)
     bot_highest_role_pos = serializers.IntegerField(required=False, default=100)
-    target_role_pos = serializers.IntegerField(
-        required=False, allow_null=True, default=None
-    )
+    target_role_pos = serializers.IntegerField(required=False, allow_null=True, default=None)

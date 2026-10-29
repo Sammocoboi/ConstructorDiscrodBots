@@ -1,4 +1,3 @@
-
 from typing import Any
 
 import jsonschema
@@ -33,20 +32,35 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
                 "welcome_message": {
                     "type": "string",
                     "title": "Текст приветствия",
-                    "default": "Добро пожаловать на сервер, {user.mention}!"
+                    "default": "Добро пожаловать на сервер, {user.mention}!",
                 },
-                "welcome_embed": {"type": "boolean", "title": "Отправлять как Embed", "default": True},
-                "autorole_id": {"type": ["string", "null"], "title": "Авто-роль для новых участников"},
-                "dm_welcome": {"type": "boolean", "title": "Отправлять приветствие в ЛС", "default": False},
-                "dm_message": {"type": "string", "title": "Текст в ЛС", "default": "Приветствуем в нашем сообществе!"},
+                "welcome_embed": {
+                    "type": "boolean",
+                    "title": "Отправлять как Embed",
+                    "default": True,
+                },
+                "autorole_id": {
+                    "type": ["string", "null"],
+                    "title": "Авто-роль для новых участников",
+                },
+                "dm_welcome": {
+                    "type": "boolean",
+                    "title": "Отправлять приветствие в ЛС",
+                    "default": False,
+                },
+                "dm_message": {
+                    "type": "string",
+                    "title": "Текст в ЛС",
+                    "default": "Приветствуем в нашем сообществе!",
+                },
                 "goodbye_channel_id": {"type": ["string", "null"], "title": "Канал прощаний"},
                 "goodbye_message": {
                     "type": "string",
                     "title": "Текст прощания",
-                    "default": "{user.name} покинул нас."
-                }
-            }
-        }
+                    "default": "{user.name} покинул нас.",
+                },
+            },
+        },
     },
     "moderation": {
         "id": "moderation",
@@ -58,35 +72,48 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
         "min_plan": "free",
         "required_permissions": MODULE_REQUIRED_PERMISSIONS["moderation"],
         "required_intents": MODULE_REQUIRED_INTENTS["moderation"],
-        "commands": ["ban", "unban", "kick", "timeout", "warn", "warnings", "clearwarns", "purge", "modlog"],
+        "commands": [
+            "ban",
+            "unban",
+            "kick",
+            "timeout",
+            "warn",
+            "warnings",
+            "clearwarns",
+            "purge",
+            "modlog",
+        ],
         "events": ["MEMBER_BAN_ADD", "MEMBER_BAN_REMOVE"],
         "dangerous_actions": True,
         "settings_schema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
-                "mod_log_channel_id": {"type": ["string", "null"], "title": "Канал журнала модерации"},
+                "mod_log_channel_id": {
+                    "type": ["string", "null"],
+                    "title": "Канал журнала модерации",
+                },
                 "warn_action_3": {
                     "type": "string",
                     "title": "Действие при 3 варнах",
                     "enum": ["none", "timeout_1h", "kick", "ban"],
-                    "default": "timeout_1h"
+                    "default": "timeout_1h",
                 },
                 "warn_action_5": {
                     "type": "string",
                     "title": "Действие при 5 варнах",
                     "enum": ["none", "timeout_24h", "kick", "ban"],
-                    "default": "ban"
+                    "default": "ban",
                 },
                 "exempt_role_ids": {
                     "type": "array",
                     "title": "Иммунные роли (белый список)",
                     "items": {"type": "string"},
-                    "default": []
+                    "default": [],
                 },
-                "default_reason": {"type": "string", "default": "Причина не указана"}
-            }
-        }
+                "default_reason": {"type": "string", "default": "Причина не указана"},
+            },
+        },
     },
     "antispam": {
         "id": "antispam",
@@ -105,19 +132,34 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
-                "max_messages_per_5s": {"type": "integer", "minimum": 2, "maximum": 20, "default": 5},
-                "max_mentions_per_message": {"type": "integer", "minimum": 1, "maximum": 20, "default": 5},
+                "max_messages_per_5s": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 20,
+                    "default": 5,
+                },
+                "max_mentions_per_message": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20,
+                    "default": 5,
+                },
                 "block_discord_invites": {"type": "boolean", "default": True},
                 "block_links": {"type": "boolean", "default": False},
-                "max_caps_percentage": {"type": "integer", "minimum": 50, "maximum": 100, "default": 70},
+                "max_caps_percentage": {
+                    "type": "integer",
+                    "minimum": 50,
+                    "maximum": 100,
+                    "default": 70,
+                },
                 "punishment": {
                     "type": "string",
                     "enum": ["delete", "warn", "timeout_10m"],
-                    "default": "timeout_10m"
+                    "default": "timeout_10m",
                 },
-                "whitelist_role_ids": {"type": "array", "items": {"type": "string"}, "default": []}
-            }
-        }
+                "whitelist_role_ids": {"type": "array", "items": {"type": "string"}, "default": []},
+            },
+        },
     },
     "tickets": {
         "id": "tickets",
@@ -129,7 +171,13 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
         "min_plan": "free",
         "required_permissions": MODULE_REQUIRED_PERMISSIONS["tickets"],
         "required_intents": [],
-        "commands": ["ticket_panel", "ticket_close", "ticket_add", "ticket_remove", "ticket_transcript"],
+        "commands": [
+            "ticket_panel",
+            "ticket_close",
+            "ticket_add",
+            "ticket_remove",
+            "ticket_transcript",
+        ],
         "events": ["INTERACTION_CREATE"],
         "dangerous_actions": False,
         "settings_schema": {
@@ -142,10 +190,10 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
                 "transcript_channel_id": {"type": ["string", "null"]},
                 "welcome_text": {
                     "type": "string",
-                    "default": "Спасибо за обращение! Опишите проблему, агент скоро подключится."
-                }
-            }
-        }
+                    "default": "Спасибо за обращение! Опишите проблему, агент скоро подключится.",
+                },
+            },
+        },
     },
     "levels": {
         "id": "levels",
@@ -170,27 +218,24 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
                 "levelup_channel_mode": {
                     "type": "string",
                     "enum": ["current", "custom", "dm", "silent"],
-                    "default": "current"
+                    "default": "current",
                 },
                 "levelup_channel_id": {"type": ["string", "null"]},
                 "levelup_message": {
                     "type": "string",
-                    "default": "Поздравляем, {user.mention}! Ты достиг уровня {level}!"
+                    "default": "Поздравляем, {user.mention}! Ты достиг уровня {level}!",
                 },
                 "reward_roles": {
                     "type": "array",
                     "items": {
                         "type": "object",
                         "required": ["level", "role_id"],
-                        "properties": {
-                            "level": {"type": "integer"},
-                            "role_id": {"type": "string"}
-                        }
+                        "properties": {"level": {"type": "integer"}, "role_id": {"type": "string"}},
                     },
-                    "default": []
-                }
-            }
-        }
+                    "default": [],
+                },
+            },
+        },
     },
     "economy": {
         "id": "economy",
@@ -202,7 +247,17 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
         "min_plan": "free",
         "required_permissions": MODULE_REQUIRED_PERMISSIONS["economy"],
         "required_intents": [],
-        "commands": ["balance", "daily", "work", "pay", "shop", "buy", "inventory", "gamble", "baltop"],
+        "commands": [
+            "balance",
+            "daily",
+            "work",
+            "pay",
+            "shop",
+            "buy",
+            "inventory",
+            "gamble",
+            "baltop",
+        ],
         "events": [],
         "dangerous_actions": False,
         "settings_schema": {
@@ -214,9 +269,14 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
                 "daily_amount": {"type": "integer", "default": 100},
                 "work_min": {"type": "integer", "default": 20},
                 "work_max": {"type": "integer", "default": 80},
-                "transfer_fee_percent": {"type": "integer", "minimum": 0, "maximum": 50, "default": 5}
-            }
-        }
+                "transfer_fee_percent": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 50,
+                    "default": 5,
+                },
+            },
+        },
     },
     "logging": {
         "id": "logging",
@@ -240,9 +300,9 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
                 "voice_logs_channel_id": {"type": ["string", "null"]},
                 "log_message_deletes": {"type": "boolean", "default": True},
                 "log_message_edits": {"type": "boolean", "default": True},
-                "log_role_changes": {"type": "boolean", "default": True}
-            }
-        }
+                "log_role_changes": {"type": "boolean", "default": True},
+            },
+        },
     },
     "roles": {
         "id": "roles",
@@ -254,7 +314,14 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
         "min_plan": "free",
         "required_permissions": MODULE_REQUIRED_PERMISSIONS["roles"],
         "required_intents": MODULE_REQUIRED_INTENTS["roles"],
-        "commands": ["role_add", "role_remove", "reactionroles", "selfroles", "rolemenu", "colorrole"],
+        "commands": [
+            "role_add",
+            "role_remove",
+            "reactionroles",
+            "selfroles",
+            "rolemenu",
+            "colorrole",
+        ],
         "events": ["MESSAGE_REACTION_ADD", "MESSAGE_REACTION_REMOVE", "INTERACTION_CREATE"],
         "dangerous_actions": False,
         "settings_schema": {
@@ -276,16 +343,16 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
                                     "properties": {
                                         "label": {"type": "string"},
                                         "role_id": {"type": "string"},
-                                        "emoji": {"type": "string"}
-                                    }
-                                }
-                            }
-                        }
+                                        "emoji": {"type": "string"},
+                                    },
+                                },
+                            },
+                        },
                     },
-                    "default": []
+                    "default": [],
                 }
-            }
-        }
+            },
+        },
     },
     "fun": {
         "id": "fun",
@@ -297,10 +364,19 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
         "min_plan": "free",
         "required_permissions": MODULE_REQUIRED_PERMISSIONS["fun"],
         "required_intents": [],
-        "commands": ["coinflip", "dice", "8ball", "rps", "trivia", "guessnumber", "slots", "hangman"],
+        "commands": [
+            "coinflip",
+            "dice",
+            "8ball",
+            "rps",
+            "trivia",
+            "guessnumber",
+            "slots",
+            "hangman",
+        ],
         "events": [],
         "dangerous_actions": False,
-        "settings_schema": {"type": "object", "properties": {}}
+        "settings_schema": {"type": "object", "properties": {}},
     },
     "automation": {
         "id": "automation",
@@ -325,13 +401,13 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
                         "properties": {
                             "trigger": {"type": "string"},
                             "response": {"type": "string"},
-                            "exact_match": {"type": "boolean", "default": False}
-                        }
+                            "exact_match": {"type": "boolean", "default": False},
+                        },
                     },
-                    "default": []
+                    "default": [],
                 }
-            }
-        }
+            },
+        },
     },
     "giveaways": {
         "id": "giveaways",
@@ -350,14 +426,14 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
             "type": "object",
             "properties": {
                 "default_channel_id": {"type": ["string", "null"]},
-                "manager_role_id": {"type": ["string", "null"]}
-            }
-        }
-    }
+                "manager_role_id": {"type": ["string", "null"]},
+            },
+        },
+    },
 }
 
-class ModuleRegistry:
 
+class ModuleRegistry:
     @staticmethod
     def list_all() -> list[dict[str, Any]]:
         return list(BUILTIN_MODULES.values())
@@ -388,7 +464,7 @@ class ModuleRegistry:
         slug: str,
         bot_permissions_int: int,
         bot_highest_role_pos: int = 100,
-        target_role_pos: int | None = None
+        target_role_pos: int | None = None,
     ) -> dict[str, Any]:
         manifest = BUILTIN_MODULES.get(slug)
         if not manifest:
@@ -396,7 +472,7 @@ class ModuleRegistry:
 
         required_perms = manifest.get("required_permissions", 0)
         missing_perms = check_missing_permissions(bot_permissions_int, required_perms)
-        
+
         hierarchy_check = None
         if target_role_pos is not None:
             hierarchy_check = check_role_hierarchy(bot_highest_role_pos, target_role_pos)
@@ -417,7 +493,8 @@ class ModuleRegistry:
             warnings.append(str(hierarchy_check["warning"]))
 
         return {
-            "valid": len(missing_perms) == 0 and (hierarchy_check is None or hierarchy_check.get("can_manage")),
+            "valid": len(missing_perms) == 0
+            and (hierarchy_check is None or hierarchy_check.get("can_manage")),
             "missing_permissions": missing_perms,
             "hierarchy_check": hierarchy_check,
             "dangerous_actions": manifest.get("dangerous_actions", False),

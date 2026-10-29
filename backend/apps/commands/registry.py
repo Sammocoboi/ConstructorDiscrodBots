@@ -1,4 +1,3 @@
-
 import json
 from pathlib import Path
 from typing import Any
@@ -7,6 +6,7 @@ from rest_framework.exceptions import NotFound
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 COMMANDS_DIR = BASE_DIR / "content" / "commands"
+
 
 class CommandLibraryRegistry:
     _cache: dict[str, dict[str, Any]] | None = None
@@ -33,9 +33,7 @@ class CommandLibraryRegistry:
 
     @classmethod
     def list_commands(
-        cls,
-        category: str | None = None,
-        search: str | None = None
+        cls, category: str | None = None, search: str | None = None
     ) -> list[dict[str, Any]]:
         all_cmds = list(cls.load_commands().values())
         filtered = all_cmds
@@ -46,7 +44,8 @@ class CommandLibraryRegistry:
         if search:
             query = search.lower().strip()
             filtered = [
-                c for c in filtered
+                c
+                for c in filtered
                 if query in c.get("name", "").lower()
                 or query in c.get("title", "").lower()
                 or query in c.get("description", "").lower()
@@ -86,14 +85,12 @@ class CommandLibraryRegistry:
             "required_module": required_module,
             "required_intents": required_intents,
             "required_permissions": required_permissions,
-            "needs_module_activation": bool(required_module)
+            "needs_module_activation": bool(required_module),
         }
 
     @classmethod
     def check_name_conflict(
-        cls,
-        existing_command_names: list[str],
-        candidate_name: str
+        cls, existing_command_names: list[str], candidate_name: str
     ) -> dict[str, Any]:
         candidate_lower = candidate_name.lower().strip()
         has_conflict = candidate_lower in [n.lower().strip() for n in existing_command_names]
@@ -101,7 +98,9 @@ class CommandLibraryRegistry:
         suggested_name = candidate_name
         if has_conflict:
             counter = 2
-            while f"{candidate_lower}_{counter}" in [n.lower().strip() for n in existing_command_names]:
+            while f"{candidate_lower}_{counter}" in [
+                n.lower().strip() for n in existing_command_names
+            ]:
                 counter += 1
             suggested_name = f"{candidate_name}_{counter}"
 
@@ -109,5 +108,5 @@ class CommandLibraryRegistry:
             "has_conflict": has_conflict,
             "original_name": candidate_name,
             "suggested_name": suggested_name,
-            "action_choices": ["replace", "rename", "skip"] if has_conflict else ["add"]
+            "action_choices": ["replace", "rename", "skip"] if has_conflict else ["add"],
         }

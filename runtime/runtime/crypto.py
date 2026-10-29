@@ -8,6 +8,9 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 PREFIX = "v1:"
 KEY_BYTES = 32
 
+# Backend uses "v1:" prefix with urlsafe base64
+_V1_PREFIX = "v1:"
+
 
 def _b64decode(value: str, *, what: str) -> bytes:
     try:
