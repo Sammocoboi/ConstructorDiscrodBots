@@ -22,7 +22,7 @@ def normalize_image(upload, kind: str) -> ContentFile:
     if kind not in SIZES:
         raise serializers.ValidationError("Unknown image kind")
     try:
-        image = Image.open(upload)
+        image: Image.Image = Image.open(upload)
         image.verify()
         upload.seek(0)
         image = Image.open(upload)

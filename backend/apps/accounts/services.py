@@ -451,7 +451,7 @@ def fetch_user_manageable_guilds(user: User) -> list[dict]:
 
         channels = []
         roles = []
-        if bot_added and isinstance(bot_guild.settings, dict):
+        if bot_guild is not None and isinstance(bot_guild.settings, dict):
             channels = bot_guild.settings.get("channels", [])
             roles = bot_guild.settings.get("roles", [])
 

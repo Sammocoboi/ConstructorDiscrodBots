@@ -20,10 +20,10 @@ from runtime.models import BotSpec
 log = logging.getLogger("runtime.bot")
 
 # Import db types for guild sync — optional, set at runtime
-_guild_repo = None
+_guild_repo: Any | None = None
 
 
-def set_guild_repository(repo):
+def set_guild_repository(repo: Any) -> None:
     """Set the repository instance used for guild sync."""
     global _guild_repo
     _guild_repo = repo
@@ -246,7 +246,7 @@ class DiscordBotClient(discord.Client):
             except Exception:
                 log.exception("failed to remove guild %s for bot %s", guild.id, self.spec.id)
 
-    async def on_error(self, event_method: str, *args, **kwargs) -> None:
+    async def on_error(self, event_method: str, *args: Any, **kwargs: Any) -> None:
         """Handle Discord gateway errors with specific messages."""
         import sys
 
