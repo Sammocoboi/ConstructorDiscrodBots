@@ -20,7 +20,7 @@ import {
   Title,
 } from '@mantine/core'
 import { useTranslation } from 'react-i18next'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { IconAlertTriangle, IconArrowLeft, IconCheck, IconShield } from '@tabler/icons-react'
 import { api } from '../../shared/api'
 import {
@@ -55,6 +55,7 @@ function SchemaField({
   roles: { value: string; label: string }[]
   onChange: (value: unknown) => void
 }) {
+  const { t } = useTranslation()
   const label = `${property.title}${required ? ' *' : ''}`
   const description = property.description
 
@@ -98,7 +99,7 @@ function SchemaField({
         value={typeof value === 'number' ? value : Number(value ?? 0)}
         min={property.minimum}
         max={property.maximum}
-        suffix={property.format === 'duration' ? ' сек' : undefined}
+        suffix={property.format === 'duration' ? ` ${t('common.seconds')}` : undefined}
         onChange={(next) => onChange(typeof next === 'number' ? next : Number(next) || 0)}
         error={error}
       />
@@ -114,12 +115,26 @@ function SchemaField({
         value={Array.isArray(value) ? value.map(String) : []}
         onChange={(next) => onChange(next)}
         error={error}
-        placeholder="Добавьте значение и нажмите Enter"
+        placeholder={t('modules.addValue')}
       />
     )
   }
 
   if (property.format === 'channel') {
+    if (channels.length === 0) {
+      return (
+        <TextInput
+          label={label}
+          description={description}
+          required={required}
+          value={typeof value === 'string' ? value : ''}
+          onChange={(event) => onChange(event.currentTarget.value)}
+          error={error}
+          placeholder={t('modules.channelIdPlaceholder')}
+          styles={{ input: { fontFamily: 'monospace' } }}
+        />
+      )
+    }
     return (
       <Select
         label={label}
@@ -131,12 +146,26 @@ function SchemaField({
         value={typeof value === 'string' && value ? value : null}
         onChange={(next) => onChange(next ?? '')}
         error={error}
-        placeholder="Выберите канал"
+        placeholder={t('modules.selectChannel')}
       />
     )
   }
 
   if (property.format === 'role') {
+    if (roles.length === 0) {
+      return (
+        <TextInput
+          label={label}
+          description={description}
+          required={required}
+          value={typeof value === 'string' ? value : ''}
+          onChange={(event) => onChange(event.currentTarget.value)}
+          error={error}
+          placeholder={t('modules.roleIdPlaceholder')}
+          styles={{ input: { fontFamily: 'monospace' } }}
+        />
+      )
+    }
     return (
       <Select
         label={label}
@@ -148,7 +177,7 @@ function SchemaField({
         value={typeof value === 'string' && value ? value : null}
         onChange={(next) => onChange(next ?? '')}
         error={error}
-        placeholder="Выберите роль"
+        placeholder={t('modules.selectRole')}
       />
     )
   }
@@ -213,9 +242,16 @@ function SchemaField({
 export default function ModuleDetailPage() {
   const { t } = useTranslation()
   const { botId, moduleId } = useParams()
+  const [searchParams] = useSearchParams()
   const { data: bot } = useBot(botId)
-  const { data, isLoading, isError, error, refetch } = useBotModule(botId, moduleId)
-  const [guildId, setGuildId] = useState<string | null>(null)
+  const [guildId, setGuildId] = useState<string | null>(
+    searchParams.get('guild') ?? null,
+  )
+  const { data, isLoading, isError, error, refetch } = useBotModule(
+    botId,
+    moduleId,
+    guildId ?? undefined,
+  )
   const [values, setValues] = useState<Record<string, unknown>>({})
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
@@ -245,17 +281,25 @@ export default function ModuleDetailPage() {
         values,
       ),
     successMessage: t('modules.saved'),
-    invalidateKeys: [qk.botModule(botId ?? '', moduleId ?? ''), qk.botModules(botId ?? '')],
+    invalidateKeys: [
+      qk.botModule(botId ?? '', moduleId ?? '', guildId ?? undefined),
+      qk.botModules(botId ?? '', guildId ?? undefined),
+    ],
   })
 
   const toggleMutation = useToastMutation({
     mutationFn: (enabled: boolean) =>
-      api.modules.toggle(botId as string, moduleId as string, enabled),
+      api.modules.toggle(
+        botId as string,
+        moduleId as string,
+        enabled,
+        guild?.id,
+      ),
     successMessage: (enabled) =>
       enabled ? t('modules.enabledToast') : t('modules.disabledToast'),
     invalidateKeys: [
-      qk.botModule(botId ?? '', moduleId ?? ''),
-      qk.botModules(botId ?? ''),
+      qk.botModule(botId ?? '', moduleId ?? '', guildId ?? undefined),
+      qk.botModules(botId ?? '', guildId ?? undefined),
       qk.bot(botId ?? ''),
     ],
   })
@@ -327,7 +371,7 @@ export default function ModuleDetailPage() {
             <Switch
               checked={state.enabled}
               label={t('common.enabled')}
-              disabled={toggleMutation.isPending}
+              disabled={toggleMutation.isPending || !guild}
               onChange={(event) => toggleMutation.mutate(event.currentTarget.checked)}
             />
             <Button

@@ -158,13 +158,13 @@ export default function CommandLibraryPage() {
                     </Badge>
                   ))}
                   <Text size="10px" c="dimmed">
-                    {formatNumber(command.installs)} установок
+                    {formatNumber(command.installs)} {t('commands.installs')}
                   </Text>
                 </Group>
 
                 <Group gap="xs" grow>
                   <Button variant="default" size="compact-sm" onClick={() => setSelected(command)}>
-                    {t('commands.flowSteps')}
+                    {t('common.details')}
                   </Button>
                   <Button
                     variant={installed ? 'light' : 'filled'}
@@ -217,26 +217,13 @@ export default function CommandLibraryPage() {
                     </Text>
                     <Text size="xs" c="dimmed">
                       {parameter.type}
-                      {parameter.required ? ' · обязательный' : ''} — {parameter.description}
+                      {parameter.required ? ` · ${t('commands.requiredParam')}` : ''} —{' '}
+                      {parameter.description}
                     </Text>
                   </Group>
                 ))}
               </Stack>
             )}
-
-            <Stack gap={4}>
-              <Text fw={600} size="sm">
-                {t('commands.flowSteps')}
-              </Text>
-              {selected.flowSummary.map((step, index) => (
-                <Group key={step} gap="xs" wrap="nowrap">
-                  <ThemeIcon size={18} radius="xl" variant="light">
-                    <Text size="9px">{index + 1}</Text>
-                  </ThemeIcon>
-                  <Text size="sm">{step}</Text>
-                </Group>
-              ))}
-            </Stack>
 
             <Card withBorder radius="md" p="sm" bg="var(--mantine-color-default)">
               <Text size="xs" c="dimmed" mb={2}>

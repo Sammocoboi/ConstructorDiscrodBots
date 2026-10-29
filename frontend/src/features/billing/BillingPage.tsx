@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   Alert,
   Badge,
@@ -24,12 +23,11 @@ import {
   IconShieldCheck,
 } from '@tabler/icons-react'
 import { api } from '../../shared/api'
-import { qk, useBilling, useToastMutation } from '../../shared/api/hooks'
+import { useBilling, useToastMutation } from '../../shared/api/hooks'
 import type { PlanId } from '../../shared/api/types'
 import { PageHeader, LimitBar } from '../../shared/components/bits'
-import { ConfirmModal } from '../../shared/components/ConfirmModal'
 import { ErrorState, LoadingState } from '../../shared/components/states'
-import { plans } from '../../shared/mocks/plans'
+import { plans as fallbackPlans } from '../../shared/mocks/plans'
 import { formatDate, formatMoney, formatNumber } from '../../shared/lib/format'
 import { errorMessage } from '../../shared/api/errors'
 
@@ -42,10 +40,9 @@ const planName: Record<PlanId, string> = {
 export default function BillingPage() {
   const { t } = useTranslation()
   const billing = useBilling()
-  const [cancelOpened, setCancelOpened] = useState(false)
 
   const checkoutMutation = useToastMutation({
-    mutationFn: (planId: PlanId) => api.billing.checkout(planId),
+    mutationFn: (planId: string) => api.billing.checkout(planId),
     successMessage: t('billing.checkoutOpened'),
     onSuccess: (result) => window.open(result.url, '_blank', 'noopener,noreferrer'),
   })
@@ -54,18 +51,6 @@ export default function BillingPage() {
     mutationFn: () => api.billing.portal(),
     successMessage: t('billing.portalOpened'),
     onSuccess: (result) => window.open(result.url, '_blank', 'noopener,noreferrer'),
-  })
-
-  const cancelMutation = useToastMutation({
-    mutationFn: () => api.billing.cancel(),
-    successMessage: t('billing.canceled'),
-    invalidateKeys: [qk.billing],
-    onSuccess: () => setCancelOpened(false),
-  })
-
-  const downloadMutation = useToastMutation({
-    mutationFn: (invoiceId: string) => api.billing.downloadInvoice(invoiceId),
-    successMessage: t('billing.downloadStarted'),
   })
 
   if (billing.isLoading) return <LoadingState minHeight={320} />
@@ -78,8 +63,10 @@ export default function BillingPage() {
     )
   }
 
-  const { subscription, usage, invoices, paymentMethod } = billing.data
-  const currentPlan = plans.find((plan) => plan.id === subscription.planId) ?? plans[0]
+  const { subscription, usage, invoices } = billing.data
+  const availablePlans = billing.data.plans?.length ? billing.data.plans : fallbackPlans
+  const currentPlan =
+    availablePlans.find((plan) => plan.id === subscription.planId) ?? availablePlans[0]
 
   return (
     <Stack gap="lg" maw={1280} mx="auto" w="100%">
@@ -100,118 +87,94 @@ export default function BillingPage() {
 
       <Grid gutter="lg">
         <Grid.Col span={{ base: 12, lg: 8 }}>
-        <Card
-          radius="lg"
-          p="lg"
-          h="100%"
-          style={{
-            border: 'none',
-            background: 'linear-gradient(125deg, #262a78, #5865f2 60%, #00a8fc 140%)',
-            color: 'white',
-          }}
-        >
-          <Group justify="space-between" align="flex-start" wrap="wrap">
-            <Stack gap={4}>
-              <Text size="xs" fw={800} tt="uppercase" opacity={0.8}>
-                {t('billing.currentPlan')}
-              </Text>
-              <Title order={2} fz={34}>
-                {planName[subscription.planId]}
-              </Title>
-              <Group gap="xs">
-                <Badge variant="white" color="brand" size="sm">
-                  {subscription.status}
-                </Badge>
-                {subscription.cancelAtPeriodEnd && (
-                  <Badge variant="light" color="yellow" size="sm">
-                    {t('billing.cancelAtPeriodEnd')}
+          <Card
+            radius="lg"
+            p="lg"
+            h="100%"
+            style={{
+              border: 'none',
+              background: 'linear-gradient(125deg, #262a78, #5865f2 60%, #00a8fc 140%)',
+              color: 'white',
+            }}
+          >
+            <Group justify="space-between" align="flex-start" wrap="wrap">
+              <Stack gap={4}>
+                <Text size="xs" fw={800} tt="uppercase" opacity={0.8}>
+                  {t('billing.currentPlan')}
+                </Text>
+                <Title order={2} fz={34}>
+                  {currentPlan?.name ?? planName[subscription.planId]}
+                </Title>
+                <Group gap="xs">
+                  <Badge variant="white" color="brand" size="sm">
+                    {subscription.status}
                   </Badge>
+                  {subscription.cancelAtPeriodEnd && (
+                    <Badge variant="light" color="yellow" size="sm">
+                      {t('billing.cancelAtPeriodEnd')}
+                    </Badge>
+                  )}
+                </Group>
+                {currentPlan?.description && (
+                  <Text size="sm" opacity={0.85} mt="xs" maw={480}>
+                    {currentPlan.description}
+                  </Text>
                 )}
-              </Group>
-              <Text size="sm" opacity={0.85} mt="xs" maw={480}>
-                {currentPlan.description}
-              </Text>
-            </Stack>
-            <Stack align="flex-end" gap={4}>
-              <Text fz={30} fw={800} lh={1}>
-                {formatMoney(currentPlan.priceMonthly)}
-              </Text>
-              <Text size="xs" opacity={0.8}>
-                {t('billing.perMonth')}
-              </Text>
-            </Stack>
-          </Group>
-          <Group mt="lg" gap="sm">
-            <Button
-              variant="white"
-              color="brand"
-              leftSection={<IconExternalLink size={15} />}
-              loading={portalMutation.isPending}
-              onClick={() => portalMutation.mutate()}
-            >
-              {t('billing.portal')}
-            </Button>
-            {!subscription.cancelAtPeriodEnd && subscription.planId !== 'free' && (
+              </Stack>
+              {currentPlan && (
+                <Stack align="flex-end" gap={4}>
+                  <Text fz={30} fw={800} lh={1}>
+                    {formatMoney(currentPlan.priceMonthly)}
+                  </Text>
+                  <Text size="xs" opacity={0.8}>
+                    {t('billing.perMonth')}
+                  </Text>
+                </Stack>
+              )}
+            </Group>
+            <Group mt="lg" gap="sm">
               <Button
-                variant="subtle"
-                color="white"
-                onClick={() => setCancelOpened(true)}
+                variant="white"
+                color="brand"
+                leftSection={<IconExternalLink size={15} />}
+                loading={portalMutation.isPending}
+                onClick={() => portalMutation.mutate()}
               >
-                {t('billing.cancelAtPeriodEnd')}
+                {t('billing.portal')}
               </Button>
+            </Group>
+            {subscription.renewsAt && (
+              <Text size="xs" opacity={0.75} mt="md">
+                {t('billing.renews')}: {formatDate(subscription.renewsAt)}
+              </Text>
             )}
-          </Group>
-          {subscription.renewsAt && (
-            <Text size="xs" opacity={0.75} mt="md">
-              {t('billing.renews')}: {formatDate(subscription.renewsAt)}
-            </Text>
-          )}
-        </Card>
+          </Card>
         </Grid.Col>
 
         <Grid.Col span={{ base: 12, lg: 4 }}>
-        <Card withBorder radius="lg" p="lg" h="100%">
-          <Group gap="xs" mb="md">
-            <ThemeIcon variant="light" size="md" radius="md">
-              <IconCreditCard size={16} />
-            </ThemeIcon>
-            <Text fw={700}>{t('billing.paymentMethod')}</Text>
-          </Group>
-          {paymentMethod ? (
-            <Stack gap="xs">
-              <Text size="sm" fw={700} tt="capitalize">
-                {paymentMethod.brand} ···· {paymentMethod.last4}
-              </Text>
-              <Text size="xs" c="dimmed">
-                expires {paymentMethod.expires}
-              </Text>
-              <Button
-                variant="light"
-                mt="sm"
-                onClick={() => portalMutation.mutate()}
-                loading={portalMutation.isPending}
-              >
-                {t('billing.manage')}
-              </Button>
-            </Stack>
-          ) : (
+          <Card withBorder radius="lg" p="lg" h="100%">
+            <Group gap="xs" mb="md">
+              <ThemeIcon variant="light" size="md" radius="md">
+                <IconCreditCard size={16} />
+              </ThemeIcon>
+              <Text fw={700}>{t('billing.paymentMethod')}</Text>
+            </Group>
             <Stack>
               <Text size="sm" c="dimmed">
                 {t('billing.noPaymentMethod')}
               </Text>
-              <Button onClick={() => portalMutation.mutate()}>
+              <Button onClick={() => portalMutation.mutate()} loading={portalMutation.isPending}>
                 {t('billing.addPaymentMethod')}
               </Button>
             </Stack>
-          )}
-          <Divider my="md" />
-          <Group gap="xs">
-            <IconShieldCheck size={15} />
-            <Text size="10px" c="dimmed">
-              {t('billing.securePayments')}
-            </Text>
-          </Group>
-        </Card>
+            <Divider my="md" />
+            <Group gap="xs">
+              <IconShieldCheck size={15} />
+              <Text size="10px" c="dimmed">
+                {t('billing.securePayments')}
+              </Text>
+            </Group>
+          </Card>
         </Grid.Col>
       </Grid>
 
@@ -223,22 +186,12 @@ export default function BillingPage() {
           <LimitBar
             label={t('billing.bots')}
             value={usage.bots}
-            limit={currentPlan.limits.bots}
+            limit={currentPlan?.limits.bots ?? 0}
           />
           <LimitBar
             label={t('billing.executions')}
             value={usage.executions}
-            limit={currentPlan.limits.executions}
-          />
-          <LimitBar
-            label={t('billing.guilds')}
-            value={usage.guilds}
-            limit={currentPlan.limits.guilds}
-          />
-          <LimitBar
-            label={t('billing.members')}
-            value={usage.members}
-            limit={currentPlan.limits.members}
+            limit={currentPlan?.limits.executions ?? 0}
           />
         </SimpleGrid>
         <Text size="xs" c="dimmed" mt="md">
@@ -251,7 +204,7 @@ export default function BillingPage() {
           {t('billing.title')}
         </Title>
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
-          {plans.map((plan) => {
+          {availablePlans.map((plan) => {
             const current = plan.id === subscription.planId
             return (
               <Card
@@ -272,9 +225,6 @@ export default function BillingPage() {
                       {plan.name}
                     </Title>
                     {current && <Badge color="teal">{t('billing.currentPlan')}</Badge>}
-                    {!current && plan.highlighted && (
-                      <Badge color="brand">Popular</Badge>
-                    )}
                   </Group>
                   <Group align="flex-end" gap={4}>
                     <Text fz={30} fw={800} lh={1}>
@@ -284,19 +234,23 @@ export default function BillingPage() {
                       {t('billing.perMonth')}
                     </Text>
                   </Group>
-                  <Text size="sm" c="dimmed">
-                    {plan.description}
-                  </Text>
-                  <Stack gap={6} mt="xs" style={{ flex: 1 }}>
-                    {plan.features.map((feature) => (
-                      <Group key={feature} gap="xs" align="flex-start" wrap="nowrap">
-                        <ThemeIcon size={17} radius="xl" variant="light" color="teal">
-                          <IconCheck size={10} />
-                        </ThemeIcon>
-                        <Text size="sm">{feature}</Text>
-                      </Group>
-                    ))}
-                  </Stack>
+                  {plan.description && (
+                    <Text size="sm" c="dimmed">
+                      {plan.description}
+                    </Text>
+                  )}
+                  {plan.features.length > 0 && (
+                    <Stack gap={6} mt="xs" style={{ flex: 1 }}>
+                      {plan.features.map((feature) => (
+                        <Group key={feature} gap="xs" align="flex-start" wrap="nowrap">
+                          <ThemeIcon size={17} radius="xl" variant="light" color="teal">
+                            <IconCheck size={10} />
+                          </ThemeIcon>
+                          <Text size="sm">{feature}</Text>
+                        </Group>
+                      ))}
+                    </Stack>
+                  )}
                   <Button
                     fullWidth
                     variant={current ? 'light' : plan.highlighted ? 'filled' : 'default'}
@@ -373,18 +327,23 @@ export default function BillingPage() {
                   </Badge>
                 </Table.Td>
                 <Table.Td>
-                  <Button
-                    variant="subtle"
-                    size="compact-xs"
-                    leftSection={<IconDownload size={13} />}
-                    loading={
-                      downloadMutation.isPending &&
-                      downloadMutation.variables === invoice.id
-                    }
-                    onClick={() => downloadMutation.mutate(invoice.id)}
-                  >
-                    PDF
-                  </Button>
+                  {invoice.downloadUrl ? (
+                    <Button
+                      component="a"
+                      href={invoice.downloadUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      variant="subtle"
+                      size="compact-xs"
+                      leftSection={<IconDownload size={13} />}
+                    >
+                      PDF
+                    </Button>
+                  ) : (
+                    <Text size="xs" c="dimmed">
+                      —
+                    </Text>
+                  )}
                 </Table.Td>
               </Table.Tr>
             ))}
@@ -396,17 +355,6 @@ export default function BillingPage() {
           </Alert>
         )}
       </Card>
-
-      <ConfirmModal
-        opened={cancelOpened}
-        onClose={() => setCancelOpened(false)}
-        onConfirm={() => cancelMutation.mutate()}
-        loading={cancelMutation.isPending}
-        title={t('billing.cancelTitle')}
-        description={t('billing.cancelText')}
-        confirmLabel={t('common.confirm')}
-        color="red"
-      />
     </Stack>
   )
 }

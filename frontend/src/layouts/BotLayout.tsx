@@ -41,8 +41,6 @@ const tabs = [
   { value: 'overview', labelKey: 'nav.overview', icon: 'dashboard' },
   { value: 'modules', labelKey: 'nav.modules', icon: 'layout' },
   { value: 'commands', labelKey: 'nav.commands', icon: 'terminal' },
-  { value: 'flows', labelKey: 'nav.flows', icon: 'bolt' },
-  { value: 'messages', labelKey: 'nav.messages', icon: 'messages' },
   { value: 'guilds', labelKey: 'nav.guilds', icon: 'server' },
   { value: 'status', labelKey: 'bot.diagnostics', icon: 'activity' },
   { value: 'profile', labelKey: 'nav.botProfile', icon: 'settings' },
@@ -148,11 +146,16 @@ export function BotLayout() {
         </Group>
 
         <Group gap="sm">
-          <Tooltip label={t('bot.inviteCopied')}>
+          <Tooltip
+            label={
+              bot.inviteUrl ? t('bot.inviteCopied') : t('bot.inviteUnavailable')
+            }
+          >
             <Button
               variant="default"
               leftSection={<IconBrandDiscord size={17} />}
               rightSection={<IconCopy size={14} />}
+              disabled={!bot.inviteUrl}
               onClick={() => void copyInvite()}
             >
               {t('bot.invite')}

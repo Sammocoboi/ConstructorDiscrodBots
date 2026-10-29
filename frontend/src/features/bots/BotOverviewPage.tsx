@@ -42,7 +42,7 @@ export default function BotOverviewPage() {
   const { t } = useTranslation()
   const { botId } = useParams()
   const { data: bot } = useBot(botId)
-  const modules = useBotModules(botId)
+  const modules = useBotModules(botId, bot?.guilds[0]?.id)
   const commands = useCommands(botId)
   const events = useBotEvents(botId)
 
@@ -81,8 +81,8 @@ export default function BotOverviewPage() {
   const quickLinks = [
     { to: `/app/bots/${bot.id}/modules`, label: t('nav.modules'), icon: 'layout', hint: `${enabledModules.length} / ${modules.data?.length ?? 0}` },
     { to: `/app/bots/${bot.id}/commands`, label: t('nav.commands'), icon: 'terminal', hint: `${commands.data?.length ?? 0}` },
-    { to: `/app/bots/${bot.id}/flows`, label: t('nav.flows'), icon: 'bolt', hint: 'Visual' },
-    { to: `/app/bots/${bot.id}/messages`, label: t('nav.messages'), icon: 'messages', hint: 'Embed builder' },
+    { to: `/app/bots/${bot.id}/guilds`, label: t('nav.guilds'), icon: 'server', hint: `${bot.guilds.length}` },
+    { to: `/app/bots/${bot.id}/status`, label: t('bot.diagnostics'), icon: 'activity', hint: bot.status },
   ]
 
   return (

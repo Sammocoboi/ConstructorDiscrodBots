@@ -10,7 +10,6 @@ import {
   Divider,
   Drawer,
   Group,
-  Modal,
   SimpleGrid,
   Skeleton,
   Stack,
@@ -23,7 +22,6 @@ import {
   IconArrowRight,
   IconBrandDiscord,
   IconCheck,
-  IconPlayerPlay,
   IconPlus,
   IconSparkles,
 } from '@tabler/icons-react'
@@ -33,6 +31,7 @@ import { Logo } from '../../shared/components/Logo'
 import { ThemeToggle } from '../../shared/components/ThemeToggle'
 import { AppIcon } from '../../shared/components/icons'
 import { useTemplates } from '../../shared/api/hooks'
+import { useAuthStore } from '../../shared/stores/authStore'
 import { plans } from '../../shared/mocks/plans'
 import { formatMoney } from '../../shared/lib/format'
 import '../../theme/global.css'
@@ -96,8 +95,8 @@ const faqEn = [
 export function LandingPage() {
   const { t, i18n } = useTranslation()
   const [navOpened, nav] = useDisclosure(false)
-  const [demoOpened, demo] = useDisclosure(false)
-  const templatesQuery = useTemplates()
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const templatesQuery = useTemplates(isAuthenticated)
   const featured = (templatesQuery.data ?? []).filter((template) => template.featured).slice(0, 3)
   const faq = i18n.language.startsWith('en') ? faqEn : faqRu
 
@@ -179,8 +178,8 @@ export function LandingPage() {
                 <Button
                   size="lg"
                   variant="default"
-                  leftSection={<IconPlayerPlay size={17} />}
-                  onClick={demo.open}
+                  component={Link}
+                  to="/login"
                 >
                   {t('landing.ctaSecondary')}
                 </Button>
@@ -372,51 +371,68 @@ export function LandingPage() {
           <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg">
             {templatesQuery.isLoading
               ? [0, 1, 2].map((index) => <Skeleton key={index} height={230} radius="lg" />)
-              : featured.map((template) => (
-                  <Card
-                    key={template.id}
-                    withBorder
-                    radius="lg"
-                    p="lg"
-                    className="bf-hover-lift landing-template-card"
-                  >
-                    <Group justify="space-between" align="flex-start">
-                      <ThemeIcon
-                        size={44}
-                        radius="md"
-                        style={{ background: `${template.iconColor}22`, color: template.iconColor }}
-                      >
-                        <AppIcon name="template" size={23} />
-                      </ThemeIcon>
-                      <Badge variant="light" color="gray" size="sm">
-                        {template.modules.length} модулей
-                      </Badge>
-                    </Group>
-                    <Text fw={700} mt="md">
-                      {template.name}
-                    </Text>
-                    <Text size="sm" c="dimmed" mt={6} lineClamp={3} style={{ lineHeight: 1.55 }}>
-                      {template.description}
-                    </Text>
-                    <Group mt="md" gap={6}>
-                      {template.tags.slice(0, 3).map((tag) => (
-                        <Badge key={tag} size="xs" variant="light" color="brand">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </Group>
-                    <Button
-                      component={Link}
-                      to={`/app/bots/new?template=${template.id}`}
-                      variant="light"
-                      fullWidth
-                      mt="lg"
-                      rightSection={<IconArrowRight size={15} />}
+              : featured.length > 0
+                ? featured.map((template) => (
+                    <Card
+                      key={template.id}
+                      withBorder
+                      radius="lg"
+                      p="lg"
+                      className="bf-hover-lift landing-template-card"
                     >
-                      {t('templates.use')}
-                    </Button>
-                  </Card>
-                ))}
+                      <Group justify="space-between" align="flex-start">
+                        <ThemeIcon
+                          size={44}
+                          radius="md"
+                          style={{ background: `${template.iconColor}22`, color: template.iconColor }}
+                        >
+                          <AppIcon name="template" size={23} />
+                        </ThemeIcon>
+                        <Badge variant="light" color="gray" size="sm">
+                          {t('landing.modulesCount', { count: template.modules.length })}
+                        </Badge>
+                      </Group>
+                      <Text fw={700} mt="md">
+                        {template.name}
+                      </Text>
+                      <Text size="sm" c="dimmed" mt={6} lineClamp={3} style={{ lineHeight: 1.55 }}>
+                        {template.description}
+                      </Text>
+                      <Group mt="md" gap={6}>
+                        {template.tags.slice(0, 3).map((tag) => (
+                          <Badge key={tag} size="xs" variant="light" color="brand">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </Group>
+                      <Button
+                        component={Link}
+                        to="/app/bots/new"
+                        variant="light"
+                        fullWidth
+                        mt="lg"
+                        rightSection={<IconArrowRight size={15} />}
+                      >
+                        {t('templates.use')}
+                      </Button>
+                    </Card>
+                  ))
+                : (
+                    <Card withBorder radius="lg" p="xl" style={{ gridColumn: '1 / -1' }}>
+                      <Stack align="center" gap="sm">
+                        <ThemeIcon size={52} radius="xl" variant="light">
+                          <AppIcon name="template" size={26} />
+                        </ThemeIcon>
+                        <Text fw={600}>{t('landing.templatesEmptyTitle')}</Text>
+                        <Text size="sm" c="dimmed" ta="center" maw={460}>
+                          {t('landing.templatesEmptyText')}
+                        </Text>
+                        <Button component={Link} to="/login" mt="xs">
+                          {t('auth.login')}
+                        </Button>
+                      </Stack>
+                    </Card>
+                  )}
           </SimpleGrid>
         </Container>
       </section>
@@ -574,27 +590,6 @@ export function LandingPage() {
           </Group>
         </Container>
       </footer>
-
-      <Modal opened={demoOpened} onClose={demo.close} title={t('landing.demoTitle')} size="lg">
-        <Stack>
-          <div className="landing-demo-box">
-            <Stack align="center" gap="sm">
-              <ThemeIcon size={64} radius="xl" color="white" c="brand.6">
-                <IconPlayerPlay size={30} />
-              </ThemeIcon>
-              <Text fw={600}>BotForge · 00:00 / 00:00</Text>
-            </Stack>
-          </div>
-          <Text size="sm" c="dimmed">
-            {t('landing.demoText')}
-          </Text>
-          <Group justify="flex-end">
-            <Button component={Link} to="/register" onClick={demo.close}>
-              {t('landing.ctaPrimary')}
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
     </Box>
   )
 }

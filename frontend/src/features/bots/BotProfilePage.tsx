@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import {
-  Alert,
   Badge,
   Box,
   Button,
@@ -20,7 +19,7 @@ import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
-import { IconAlertTriangle, IconCheck, IconKey, IconTemplate } from '@tabler/icons-react'
+import { IconCheck, IconTemplate } from '@tabler/icons-react'
 import { api } from '../../shared/api'
 import {
   qk,
@@ -32,23 +31,19 @@ import { BotAvatar } from '../../shared/components/bits'
 import { PageHeader } from '../../shared/components/bits'
 import { LoadingState } from '../../shared/components/states'
 import { formatRelative } from '../../shared/lib/format'
-import { errorMessage } from '../../shared/api/errors'
 
-const activityLabels: Record<string, string> = {
-  playing: 'Играет в',
-  watching: 'Смотрит',
-  listening: 'Слушает',
-  competing: 'Соревнуется в',
-}
+const activityLabelKeys = [
+  { value: 'playing', labelKey: 'bot.activityPlaying' },
+  { value: 'watching', labelKey: 'bot.activityWatching' },
+  { value: 'listening', labelKey: 'bot.activityListening' },
+  { value: 'competing', labelKey: 'bot.activityCompeting' },
+] as const
 
 export default function BotProfilePage() {
   const { t } = useTranslation()
   const { botId } = useParams()
   const { data: bot } = useBot(botId)
-  const [tokenOpened, setTokenOpened] = useState(false)
   const [templateOpened, setTemplateOpened] = useState(false)
-  const [newToken, setNewToken] = useState('')
-  const [tokenError, setTokenError] = useState<string | null>(null)
   const [templateName, setTemplateName] = useState('')
   const [templateDescription, setTemplateDescription] = useState('')
 
@@ -102,22 +97,6 @@ export default function BotProfilePage() {
     onSuccess: (_data, formValues) => reset(formValues),
   })
 
-  const validateTokenMutation = useToastMutation({
-    mutationFn: () => api.bots.validateToken(newToken),
-    successMessage: t('bot.tokenValid'),
-  })
-
-  const replaceTokenMutation = useToastMutation({
-    mutationFn: () => api.bots.replaceToken(botId as string, newToken),
-    successMessage: t('bot.tokenReplaced'),
-    invalidateKeys: [qk.bot(botId ?? ''), qk.bots],
-    onSuccess: () => {
-      setTokenOpened(false)
-      setNewToken('')
-      setTokenError(null)
-    },
-  })
-
   const templateMutation = useToastMutation({
     mutationFn: () =>
       api.bots.saveAsTemplate(botId as string, {
@@ -142,7 +121,7 @@ export default function BotProfilePage() {
               variant="default"
               leftSection={<IconTemplate size={16} />}
               onClick={() => {
-                setTemplateName(`${bot.name} — шаблон`)
+                setTemplateName(`${bot.name} — ${t('bot.templateSuffix')}`)
                 setTemplateDescription(bot.description)
                 setTemplateOpened(true)
               }}
@@ -179,17 +158,6 @@ export default function BotProfilePage() {
                   value={bot.tokenMasked}
                   readOnly
                   className="bf-token-field"
-                  rightSectionWidth={110}
-                  rightSection={
-                    <Button
-                      size="compact-xs"
-                      variant="light"
-                      leftSection={<IconKey size={13} />}
-                      onClick={() => setTokenOpened(true)}
-                    >
-                      {t('bot.replaceToken')}
-                    </Button>
-                  }
                 />
               </SimpleGrid>
               <Textarea
@@ -213,7 +181,7 @@ export default function BotProfilePage() {
                   control={control}
                   render={({ field }) => (
                     <ColorInput
-                      label="Цвет аватара"
+                      label={t('bot.avatarColor')}
                       value={field.value}
                       onChange={field.onChange}
                       format="hex"
@@ -226,7 +194,7 @@ export default function BotProfilePage() {
                   control={control}
                   render={({ field }) => (
                     <ColorInput
-                      label="Цвет баннера"
+                      label={t('bot.bannerColor')}
                       value={field.value}
                       onChange={field.onChange}
                       format="hex"
@@ -245,9 +213,9 @@ export default function BotProfilePage() {
                     control={control}
                     render={({ field }) => (
                       <Select
-                        data={Object.entries(activityLabels).map(([value, label]) => ({
+                        data={activityLabelKeys.map(({ value, labelKey }) => ({
                           value,
-                          label,
+                          label: t(labelKey),
                         }))}
                         value={field.value}
                         onChange={(value) => field.onChange(value ?? 'playing')}
@@ -257,7 +225,7 @@ export default function BotProfilePage() {
                     )}
                   />
                   <TextInput
-                    placeholder="Собирает сообщество"
+                    placeholder={t('bot.activityPlaceholder')}
                     style={{ flex: 1, minWidth: 200 }}
                     error={
                       errors.activityText?.message
@@ -299,7 +267,10 @@ export default function BotProfilePage() {
               </Text>
               <Group gap={6} mt="sm">
                 <Badge variant="light" size="sm">
-                  {activityLabels[values.activityType] ?? values.activityType}{' '}
+                  {t(
+                    activityLabelKeys.find((item) => item.value === values.activityType)
+                      ?.labelKey ?? 'bot.activityPlaying',
+                  )}{' '}
                   {values.activityText}
                 </Badge>
               </Group>
@@ -326,7 +297,7 @@ export default function BotProfilePage() {
               </Group>
               <Group justify="space-between">
                 <Text size="xs" c="dimmed">
-                  Создан
+                  {t('bot.createdAt')}
                 </Text>
                 <Text size="xs" fw={600}>
                   {formatRelative(bot.createdAt)}
@@ -344,55 +315,6 @@ export default function BotProfilePage() {
           </Card>
         </Stack>
       </SimpleGrid>
-
-      <Modal
-        opened={tokenOpened}
-        onClose={() => setTokenOpened(false)}
-        title={t('bot.replaceToken')}
-      >
-        <Stack>
-          <Alert color="yellow" icon={<IconAlertTriangle size={16} />}>
-            {t('bot.replaceTokenText')}
-          </Alert>
-          {tokenError && (
-            <Alert color="red" withCloseButton onClose={() => setTokenError(null)}>
-              {tokenError}
-            </Alert>
-          )}
-          <TextInput
-            label={t('bot.token')}
-            value={newToken}
-            onChange={(event) => setNewToken(event.currentTarget.value)}
-            className="bf-token-field"
-            type="password"
-          />
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setTokenOpened(false)}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="light"
-              loading={validateTokenMutation.isPending}
-              disabled={newToken.trim().length < 20}
-              onClick={() => {
-                setTokenError(null)
-                validateTokenMutation.mutate(undefined, {
-                  onError: (error) => setTokenError(errorMessage(error)),
-                })
-              }}
-            >
-              {t('common.test')}
-            </Button>
-            <Button
-              loading={replaceTokenMutation.isPending}
-              disabled={newToken.trim().length < 20}
-              onClick={() => replaceTokenMutation.mutate()}
-            >
-              {t('common.save')}
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
 
       <Modal
         opened={templateOpened}

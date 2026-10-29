@@ -17,7 +17,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { IconAlertTriangle, IconBrandDiscord, IconLock, IconMail } from '@tabler/icons-react'
-import { api } from '../../shared/api'
+import { api, isMockMode } from '../../shared/api'
 import { errorMessage } from '../../shared/api/errors'
 import { loginSchema, type LoginFormValues } from '../../shared/lib/validation'
 import { useAuthStore } from '../../shared/stores/authStore'
@@ -40,7 +40,7 @@ export function LoginPage() {
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: 'danila@example.com', password: 'password123' },
+    defaultValues: { email: '', password: '' },
   })
 
   const loginMutation = useMutation({
@@ -118,9 +118,13 @@ export function LoginPage() {
             {...register('password')}
           />
           <Group justify="space-between">
-            <Text size="xs" c="dimmed">
-              {t('auth.demoHint')}
-            </Text>
+            {isMockMode ? (
+              <Text size="xs" c="dimmed">
+                {t('auth.demoHint')}
+              </Text>
+            ) : (
+              <span />
+            )}
             <Anchor component={Link} to="/forgot-password" size="sm" fw={600}>
               {t('auth.forgot')}
             </Anchor>

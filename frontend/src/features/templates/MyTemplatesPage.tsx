@@ -158,7 +158,7 @@ function TemplateCard({ template }: { template: Template }) {
             </Button>
             <Button
               component={Link}
-              to={`/app/bots/new?templateId=${template.id}`}
+              to="/app/bots/new"
               variant="light"
               size="compact-sm"
               ml="auto"

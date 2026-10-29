@@ -47,7 +47,9 @@ export function RegisterPage() {
         password: values.password,
       }),
     onSuccess: (session) => {
-      setSession(session.user, session.accessToken)
+      if (session.accessToken) {
+        setSession(session.user, session.accessToken)
+      }
       navigate(`/verify-email?email=${encodeURIComponent(session.user.email)}`, {
         replace: true,
       })

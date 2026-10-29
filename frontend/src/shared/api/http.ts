@@ -12,22 +12,72 @@ interface RequestOptions {
 }
 
 let refreshPromise: Promise<string | null> | null = null
+let csrfPromise: Promise<string | null> | null = null
+
+function readCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+/**
+ * Django protects cookie-authenticated endpoints (refresh, logout) with CSRF.
+ * The backend exposes GET /auth/csrf which sets the csrftoken cookie.
+ */
+async function ensureCsrfToken(): Promise<string | null> {
+  const existing = readCookie('csrftoken')
+  if (existing) return existing
+
+  if (!csrfPromise) {
+    csrfPromise = (async () => {
+      try {
+        const response = await fetch(`${API_BASE}/auth/csrf`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: { Accept: 'application/json' },
+        })
+        if (!response.ok) return null
+        return readCookie('csrftoken')
+      } catch {
+        return null
+      } finally {
+        csrfPromise = null
+      }
+    })()
+  }
+  return csrfPromise
+}
+
+function isAuthAttempt(path: string): boolean {
+  return (
+    path.startsWith('/auth/login') ||
+    path.startsWith('/auth/register') ||
+    path.startsWith('/auth/refresh') ||
+    path.startsWith('/auth/discord/exchange') ||
+    path.startsWith('/auth/email/verify') ||
+    path.startsWith('/auth/password/')
+  )
+}
 
 async function refreshAccessToken(): Promise<string | null> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
+        const csrfToken = await ensureCsrfToken()
+        const headers: Record<string, string> = { Accept: 'application/json' }
+        if (csrfToken) headers['X-CSRFToken'] = csrfToken
         const response = await fetch(`${API_BASE}/auth/refresh`, {
           method: 'POST',
           credentials: 'include',
-          headers: { Accept: 'application/json' },
+          headers,
         })
         if (!response.ok) return null
         const payload = (await response.json()) as {
+          access?: string
           access_token?: string
           accessToken?: string
         }
-        const token = payload.access_token ?? payload.accessToken ?? null
+        const token = payload.access ?? payload.access_token ?? payload.accessToken ?? null
         if (token) useAuthStore.getState().setAccessToken(token)
         return token
       } catch {
@@ -53,7 +103,9 @@ async function parseError(response: Response): Promise<ApiError> {
       ? payload.message
       : typeof payload.detail === 'string'
         ? payload.detail
-        : `Запрос завершился с ошибкой ${response.status}.`
+        : response.status === 429
+          ? 'Слишком много запросов. Попробуйте немного позже.'
+          : `Запрос завершился с ошибкой ${response.status}.`
   const requestId =
     (typeof payload.request_id === 'string' ? payload.request_id : undefined) ??
     response.headers.get('x-request-id') ??
@@ -62,12 +114,13 @@ async function parseError(response: Response): Promise<ApiError> {
     response.status,
     code,
     message,
-    payload.details ?? payload.errors,
+    payload.details ?? payload.errors ?? payload,
     requestId,
   )
 }
 
 async function send<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const method = options.method ?? 'GET'
   const token = getAccessToken()
   const headers: Record<string, string> = {
     Accept: 'application/json',
@@ -81,15 +134,24 @@ async function send<T>(path: string, options: RequestOptions = {}): Promise<T> {
     body = JSON.stringify(options.body)
   }
 
+  if (method !== 'GET') {
+    const csrfToken = await ensureCsrfToken()
+    if (csrfToken) headers['X-CSRFToken'] = csrfToken
+  }
+
   const response = await fetch(`${API_BASE}${path}`, {
-    method: options.method ?? 'GET',
+    method,
     headers,
     body,
     credentials: 'include',
     signal: options.signal,
   })
 
-  if (response.status === 401 && options.retryOnUnauthorized !== false) {
+  if (
+    response.status === 401 &&
+    options.retryOnUnauthorized !== false &&
+    !isAuthAttempt(path)
+  ) {
     const newToken = await refreshAccessToken()
     if (newToken) {
       return send<T>(path, { ...options, retryOnUnauthorized: false })
