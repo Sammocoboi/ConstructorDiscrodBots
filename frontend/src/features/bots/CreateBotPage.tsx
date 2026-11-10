@@ -15,7 +15,12 @@ import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
-import { IconAlertTriangle, IconArrowLeft, IconCheck } from '@tabler/icons-react'
+import {
+  IconAlertTriangle,
+  IconArrowLeft,
+  IconCheck,
+  IconExternalLink,
+} from '@tabler/icons-react'
 import { api } from '../../shared/api'
 import { qk, useToastMutation } from '../../shared/api/hooks'
 import { createBotSchema, type CreateBotFormValues } from '../../shared/lib/validation'
@@ -85,14 +90,43 @@ export default function CreateBotPage() {
           {t('nav.dashboard')}
         </Button>
       </Group>
-      <PageHeader
-        title={t('nav.newBot')}
-        description={t('bot.createSubtitle')}
-      />
+      <PageHeader title={t('nav.newBot')} description={t('bot.createSubtitle')} />
 
       <Card withBorder radius="lg" p={{ base: 'md', md: 'xl' }}>
         <form onSubmit={handleSubmit(submit)}>
           <Stack gap="lg">
+            <Card withBorder radius="md" p="md" bg="var(--mantine-color-blue-light)">
+              <Stack gap="sm">
+                <Text fw={600}>{t('bot.discordSetupTitle')}</Text>
+                <Text size="sm" c="dimmed">
+                  {t('bot.discordSetupDescription')}
+                </Text>
+                <ol style={{ margin: 0, paddingLeft: 22 }}>
+                  <li>
+                    <Text size="sm">{t('bot.discordSetupStep1')}</Text>
+                  </li>
+                  <li>
+                    <Text size="sm">{t('bot.discordSetupStep2')}</Text>
+                  </li>
+                  <li>
+                    <Text size="sm">{t('bot.discordSetupStep3')}</Text>
+                  </li>
+                </ol>
+                <Group>
+                  <Button
+                    component="a"
+                    href="https://discord.com/developers/applications"
+                    target="_blank"
+                    rel="noreferrer"
+                    variant="light"
+                    rightSection={<IconExternalLink size={15} />}
+                  >
+                    {t('bot.openDeveloperPortal')}
+                  </Button>
+                </Group>
+              </Stack>
+            </Card>
+
             <Group align="flex-start" gap="lg" wrap="wrap">
               <BotAvatar name={name || 'Bot'} color={avatarColor} size={86} radius={24} />
               <Stack gap="sm" style={{ flex: 1, minWidth: 260 }}>
