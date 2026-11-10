@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { FlowEnabledSwitch } from './FlowEnabledSwitch'
 import {
   Alert,
   Badge,
@@ -31,15 +32,18 @@ import {
   Controls,
   Handle,
   MiniMap,
+  Panel,
   Position,
   ReactFlow,
   addEdge,
   useEdgesState,
   useNodesState,
+  useReactFlow,
   type Connection,
   type Edge,
   type Node,
   type NodeProps,
+  type OnDelete,
   type OnNodesChange,
 } from '@xyflow/react'
 import {
@@ -57,13 +61,14 @@ import {
   IconArrowForwardUp,
   IconX,
 } from '@tabler/icons-react'
-import { useMutation } from '@tanstack/react-query'
+import { hashKey, useMutation } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import { api } from '../../shared/api'
 import {
   qk,
   useBot,
   useFlow,
+  useModuleGuilds,
   useToastMutation,
 } from '../../shared/api/hooks'
 import type {
@@ -86,6 +91,9 @@ import { AppIcon } from '../../shared/components/icons'
 import { ErrorState, LoadingState } from '../../shared/components/states'
 import { simulateFlow, validateFlowGraph } from '../../shared/lib/flowGraph'
 import { formatRelative } from '../../shared/lib/format'
+import { discordLabel } from '../../shared/lib/status'
+import { FlowTemplateTextarea } from './FlowTemplateTextarea'
+import { GuildResourcePicker } from '../../shared/components/GuildResourcePicker'
 
 type FlowNodeType = Node<FlowNodeData>
 
@@ -132,6 +140,24 @@ function fromFlowNodes(nodes: FlowNode[]): FlowNodeType[] {
 
 function fromFlowEdges(edges: FlowEdge[]): Edge[] {
   return edges.map((edge) => ({ ...edge, animated: true }))
+}
+
+function DeleteEdgeToolbar({ edgeId }: { edgeId: string }) {
+  const { t } = useTranslation()
+  const { deleteElements } = useReactFlow<FlowNodeType, Edge>()
+
+  return (
+    <Panel position="top-right" className="nopan nodrag">
+      <Button
+        color="red"
+        size="compact-sm"
+        leftSection={<IconTrash size={14} />}
+        onClick={() => void deleteElements({ edges: [{ id: edgeId }] })}
+      >
+        {t('flows.deleteEdge')}
+      </Button>
+    </Panel>
+  )
 }
 
 const BlockNode = memo(function BlockNode({ data, selected }: NodeProps) {
@@ -196,14 +222,14 @@ const nodeTypes = { block: BlockNode }
 function FieldEditor({
   field,
   value,
-  channels,
-  roles,
+  botId,
+  guildId,
   onChange,
 }: {
   field: BlockField
   value: unknown
-  channels: { value: string; label: string }[]
-  roles: { value: string; label: string }[]
+  botId: string
+  guildId?: string
   onChange: (value: unknown) => void
 }) {
   const label = `${field.label}${field.required ? ' *' : ''}`
@@ -241,31 +267,16 @@ function FieldEditor({
       />
     )
   }
-  if (field.type === 'channel') {
+  if (field.type === 'channel' || field.type === 'role') {
     return (
-      <Select
+      <GuildResourcePicker
+        botId={botId}
+        guildId={guildId}
+        kind={field.type}
         label={label}
         description={field.description}
-        data={channels}
-        value={typeof value === 'string' && value ? value : null}
-        onChange={(next) => onChange(next ?? '')}
-        searchable
-        clearable
-        placeholder="Выберите канал"
-      />
-    )
-  }
-  if (field.type === 'role') {
-    return (
-      <Select
-        label={label}
-        description={field.description}
-        data={roles}
-        value={typeof value === 'string' && value ? value : null}
-        onChange={(next) => onChange(next ?? '')}
-        searchable
-        clearable
-        placeholder="Выберите роль"
+        value={value}
+        onChange={onChange}
       />
     )
   }
@@ -282,15 +293,12 @@ function FieldEditor({
   }
   if (field.type === 'textarea') {
     return (
-      <Textarea
+      <FlowTemplateTextarea
         label={label}
         description={field.description}
         placeholder={field.placeholder}
         value={typeof value === 'string' ? value : ''}
-        onChange={(event) => onChange(event.currentTarget.value)}
-        autosize
-        minRows={2}
-        maxRows={6}
+        onChange={onChange}
       />
     )
   }
@@ -310,6 +318,9 @@ export default function FlowEditorPage() {
   const { botId, flowId } = useParams()
   const isMobile = useMediaQuery('(max-width: 62em)')
   const { data: bot } = useBot(botId)
+  const { guilds } = useModuleGuilds(botId, bot?.guilds)
+  const [selectedGuildId, setSelectedGuildId] = useState<string | null>(null)
+  const guildId = (guilds.find((guild) => guild.id === selectedGuildId) ?? guilds[0])?.id
   const { data: flow, isLoading, isError, refetch } = useFlow(botId, flowId)
   const [nodes, setNodes, handleNodesChange] = useNodesState<FlowNodeType>([])
   const [edges, setEdges, handleEdgesChange] = useEdgesState<Edge>([])
@@ -376,8 +387,7 @@ export default function FlowEditorPage() {
     mutationFn: (snapshot: FlowSnapshot) =>
       api.flows.save(botId as string, flowId as string, snapshot),
     onSuccess: () => {
-      dirtyRef.current = false
-      setDirty(false)
+      setDirty(dirtyRef.current)
       setLastSaved(new Date().toISOString())
     },
     onError: (error) => {
@@ -478,12 +488,21 @@ export default function FlowEditorPage() {
     }
   }
 
-  const onEdgesChange = (changes: Parameters<typeof handleEdgesChange>[0]) => {
-    handleEdgesChange(changes)
-    if (changes.some((change) => change.type === 'remove' || change.type === 'add')) {
-      markDirty()
-      pushHistory(nodesRef.current, edgesRef.current)
+  const onDelete: OnDelete<FlowNodeType, Edge> = ({ nodes: removedNodes, edges: removedEdges }) => {
+    const previousNodes = nodesRef.current
+    const previousEdges = edgesRef.current
+    const previousSnapshot = { nodes: toFlowNodes(previousNodes), edges: toFlowEdges(previousEdges) }
+    if (hashKey([previousSnapshot]) !== hashKey([historyRef.current[historyIndexRef.current]])) {
+      pushHistory(previousNodes, previousEdges)
     }
+    const removedNodeIds = new Set(removedNodes.map((node) => node.id))
+    const removedEdgeIds = new Set(removedEdges.map((edge) => edge.id))
+    pushHistory(
+      previousNodes.filter((node) => !removedNodeIds.has(node.id)),
+      previousEdges.filter((edge) => !removedEdgeIds.has(edge.id)),
+    )
+    if (selectedId && removedNodeIds.has(selectedId)) setSelectedId(null)
+    markDirty()
   }
 
   const onConnect = (connection: Connection) => {
@@ -580,29 +599,8 @@ export default function FlowEditorPage() {
     markDirty()
   }
 
-  const channels = useMemo(() => {
-    if (!bot) return []
-    return bot.guilds.flatMap((guild) =>
-      guild.channels
-        .filter((channel) => channel.type === 'text' || channel.type === 'forum')
-        .map((channel) => ({
-          value: channel.id,
-          label: `${guild.name} · #${channel.name}`,
-        })),
-    )
-  }, [bot])
-
-  const roles = useMemo(() => {
-    if (!bot) return []
-    return bot.guilds.flatMap((guild) =>
-      guild.roles.map((role) => ({
-        value: role.id,
-        label: `${guild.name} · ${role.name}`,
-      })),
-    )
-  }, [bot])
-
   const selectedNode = nodes.find((node) => node.id === selectedId)
+  const selectedEdge = edges.find((edge) => edge.selected)
   const selectedDefinition = selectedNode
     ? getBlockDefinition(selectedNode.data.blockId)
     : undefined
@@ -684,6 +682,12 @@ export default function FlowEditorPage() {
 
   const errorCount = issues?.filter((issue) => issue.severity === 'error').length ?? 0
   const warningCount = issues?.filter((issue) => issue.severity === 'warning').length ?? 0
+  const publishedSnapshot = flow.versions.find((version) => version.status === 'published')?.snapshot
+  const hasUnpublishedChanges = publishedSnapshot && hydratedId === flow.id &&
+    hashKey([toFlowNodes(nodes), toFlowEdges(edges)]) !== hashKey([
+      toFlowNodes(fromFlowNodes(publishedSnapshot.nodes)),
+      toFlowEdges(fromFlowEdges(publishedSnapshot.edges)),
+    ])
 
   return (
     <Stack gap="md">
@@ -712,9 +716,15 @@ export default function FlowEditorPage() {
               >
                 {flow.status === 'published' ? t('flows.publishedStatus') : t('flows.draft')}
               </Badge>
+              {hasUnpublishedChanges && (
+                <Badge variant="light" color="yellow" size="sm">
+                  {t('flows.unpublishedChanges')}
+                </Badge>
+              )}
               <Badge variant="light" color="gray" size="sm">
                 v{flow.version}
               </Badge>
+              <FlowEnabledSwitch flow={flow} />
             </Group>
             <Text size="xs" c="dimmed" mt={2}>
               {t('flows.nodeCount')}: {nodes.length} · {t('flows.edgeCount')}: {edges.length}
@@ -808,13 +818,23 @@ export default function FlowEditorPage() {
             { value: 'simple', label: t('flows.simpleMode') },
           ]}
         />
+        {guilds.length > 0 && (
+          <Select
+            aria-label={t('modules.selectGuild')}
+            size="xs"
+            data={guilds.map((guild) => ({ value: guild.id, label: guild.name }))}
+            value={guildId ?? null}
+            onChange={setSelectedGuildId}
+            allowDeselect={false}
+          />
+        )}
         {issues && (
           <Group gap="xs">
             <Badge color={errorCount ? 'red' : 'teal'} variant="light">
               {t('flows.issues')}: {errorCount}
             </Badge>
             <Badge color={warningCount ? 'yellow' : 'gray'} variant="light">
-              warnings: {warningCount}
+              {t('modules.warning')}: {warningCount}
             </Badge>
           </Group>
         )}
@@ -894,9 +914,12 @@ export default function FlowEditorPage() {
               edges={edges}
               nodeTypes={nodeTypes}
               onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
+              onEdgesChange={handleEdgesChange}
+              onDelete={onDelete}
+              deleteKeyCode={['Backspace', 'Delete']}
               onConnect={onConnect}
               onNodeClick={(_, node) => setSelectedId(node.id)}
+              onEdgeClick={() => setSelectedId(null)}
               onPaneClick={() => setSelectedId(null)}
               onNodeDragStop={() => {
                 pushHistory(nodesRef.current, edgesRef.current)
@@ -906,8 +929,13 @@ export default function FlowEditorPage() {
               nodesConnectable={!isMobile}
               fitView
               proOptions={{ hideAttribution: true }}
-              defaultEdgeOptions={{ animated: true, style: { stroke: '#5865f2', strokeWidth: 2 } }}
+              defaultEdgeOptions={{ animated: true, interactionWidth: 24, style: { strokeWidth: 2 } }}
+              style={{
+                '--xy-edge-stroke': '#5865f2',
+                '--xy-edge-stroke-selected': '#a5a8ff',
+              } as React.CSSProperties}
             >
+              {selectedEdge && <DeleteEdgeToolbar edgeId={selectedEdge.id} />}
               <Background gap={22} size={1} />
               <Controls showInteractive={!isMobile} />
               <MiniMap pannable zoomable />
@@ -969,15 +997,15 @@ export default function FlowEditorPage() {
                         key={field.key}
                         field={field}
                         value={selectedNode.data.config[field.key]}
-                        channels={channels}
-                        roles={roles}
+                        botId={bot.id}
+                        guildId={guildId}
                         onChange={(value) => updateConfig(selectedNode.id, field.key, value)}
                       />
                     ))}
                     {selectedDefinition.permissions?.length ? (
                       <Alert color="orange" variant="light" p="xs" icon={<IconAlertTriangle size={14} />}>
                         <Text size="xs">
-                          {t('modules.permissions')}: {selectedDefinition.permissions.join(', ')}
+                          {t('modules.permissions')}: {selectedDefinition.permissions.map((permission) => discordLabel(permission, t)).join(', ')}
                         </Text>
                       </Alert>
                     ) : null}
@@ -1078,8 +1106,8 @@ export default function FlowEditorPage() {
                         key={field.key}
                         field={field}
                         value={node.data.config[field.key]}
-                        channels={channels}
-                        roles={roles}
+                        botId={bot.id}
+                        guildId={guildId}
                         onChange={(value) => updateConfig(node.id, field.key, value)}
                       />
                     ))}

@@ -113,6 +113,24 @@ async def _if(params: dict[str, Any], ctx: Context) -> dict[str, Any]:
     return {"branch": "true" if result else "false", "output": {"result": result}}
 
 
+async def _channel(params: dict[str, Any], ctx: Context) -> dict[str, Any]:
+    expected_id = ctx.resolve_deep(params.get("channel_id"))
+    actual_id = ctx.channel.get("id")
+    matches = bool(expected_id and actual_id and str(expected_id) == str(actual_id))
+    return {"stop": not matches, "output": {"matches": matches}}
+
+
+async def _get_user(params: dict[str, Any], ctx: Context) -> dict[str, Any]:
+    user = ctx.args.get("user") if params.get("source") == "target" else ctx.user
+    if not isinstance(user, dict) or not user.get("id"):
+        raise ValueError("Не удалось определить участника для блока «Данные участника».")
+    profile = dict(user)
+    name = ctx.resolve_deep(params.get("name"))
+    if isinstance(name, str) and name.strip():
+        ctx.set(name.strip().removeprefix("variables."), profile)
+    return {"output": {"user": profile}}
+
+
 async def _switch(params: dict[str, Any], ctx: Context) -> dict[str, Any]:
     value = ctx.resolve_deep(params.get("value"))
     cases = params.get("cases", [])
@@ -166,6 +184,8 @@ def build_default_registry(registry: BlockRegistry) -> BlockRegistry:
         "remove_role": _remove_role,
         "set_variable": _set_variable,
         "if": _if,
+        "channel": _channel,
+        "get_user": _get_user,
         "switch": _switch,
         "random_chance": _random_chance,
         "delay": _delay,

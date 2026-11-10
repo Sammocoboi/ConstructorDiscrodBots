@@ -132,7 +132,7 @@ const modules: ModuleManifest[] = [
     settingsSchema: {
       type: 'object',
       title: 'Приветствия',
-      description: 'Настройки приветствия для выбранной гильдии.',
+      description: 'Настройки приветствия для выбранного сервера.',
       properties: {
         channelId: {
           type: 'string',
@@ -735,7 +735,7 @@ const libraryCommand = (
 
 const library: LibraryCommand[] = [
   libraryCommand('lib_welcome', 'welcome', 'Настроить приветствие нового участника', 'community', 'slash', ['Manage Guild'], [{ name: 'channel', type: 'channel', required: true, description: 'Канал приветствий' }], 'Приветствие обновлено. Новые участники увидят новое сообщение.', ['Slash-команда /welcome', 'Сохранить канал', 'Отправить подтверждение'], 6_420),
-  libraryCommand('lib_serverinfo', 'serverinfo', 'Информация о сервере: участники, каналы, роли', 'utility', 'slash', [], [], 'Сервер: Дизайн-сообщество · 12 840 участников · 6 каналов', ['Slash-команда /serverinfo', 'Собрать статистику гильдии', 'Ответить эмбедом'], 5_180),
+  libraryCommand('lib_serverinfo', 'serverinfo', 'Информация о сервере: участники, каналы, роли', 'utility', 'slash', [], [], 'Сервер: Дизайн-сообщество · 12 840 участников · 6 каналов', ['Slash-команда /serverinfo', 'Собрать статистику сервера', 'Ответить эмбедом'], 5_180),
   libraryCommand('lib_userinfo', 'userinfo', 'Карточка участника с датой регистрации и ролями', 'utility', 'slash', [], [{ name: 'user', type: 'user', required: false, description: 'Участник' }], 'Пользователь: danila · На сервере с 12 мая 2025 · Роли: VIP, Участник', ['Slash-команда /userinfo', 'Получить данные участника', 'Ответить эмбедом'], 4_730),
   libraryCommand('lib_avatar', 'avatar', 'Показать аватар участника в полном размере', 'utility', 'slash', [], [{ name: 'user', type: 'user', required: false, description: 'Участник' }], 'Аватар участника danila (PNG, 1024×1024)', ['Slash-команда /avatar', 'Получить аватар', 'Отправить изображение'], 3_890),
   libraryCommand('lib_ping', 'ping', 'Проверить задержку бота и uptime', 'utility', 'slash', [], [], 'Pong! Задержка: 34 мс · Uptime: 4д 7ч', ['Slash-команда /ping', 'Замерить Gateway latency', 'Ответить эмбедом'], 8_210),
@@ -1182,7 +1182,7 @@ const notifications: Notification[] = [
     id: 'ntf_3',
     type: 'success',
     title: 'Сценарий опубликован',
-    message: '«Приветствие нового участника» v3 активен на 2 гильдиях.',
+    message: '«Приветствие нового участника» v3 активен на 2 серверах.',
     read: false,
     createdAt: ago(hour * 2),
     link: '/app/bots/bot_community/flows/flow_welcome/versions',
@@ -1209,7 +1209,7 @@ const notifications: Notification[] = [
     id: 'ntf_6',
     type: 'info',
     title: 'Новый участник в команде',
-    message: 'Пользователь sanya получил доступ к гильдии «Учебный сервер».',
+    message: 'Пользователь sanya получил доступ к серверу «Учебный сервер».',
     read: true,
     createdAt: ago(day * 14),
   },

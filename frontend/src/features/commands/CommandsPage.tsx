@@ -12,7 +12,7 @@ import {
 } from '@mantine/core'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
-import { IconBooks, IconSearch } from '@tabler/icons-react'
+import { IconBolt, IconBooks, IconSearch } from '@tabler/icons-react'
 import { useBot, useCommands } from '../../shared/api/hooks'
 import type { Command } from '../../shared/api/types'
 import { PageHeader } from '../../shared/components/bits'
@@ -93,13 +93,23 @@ export default function CommandsPage() {
         title={t('commands.title')}
         description={t('commands.subtitle')}
         actions={
-          <Button
-            component={Link}
-            to={`/app/bots/${bot.id}/commands/library`}
-            leftSection={<IconBooks size={16} />}
-          >
-            {t('commands.library')}
-          </Button>
+          <Group gap="sm">
+            <Button
+              component={Link}
+              to={`/app/bots/${bot.id}/flows`}
+              leftSection={<IconBolt size={16} />}
+            >
+              {t('commands.builder')}
+            </Button>
+            <Button
+              component={Link}
+              to={`/app/bots/${bot.id}/commands/library`}
+              variant="default"
+              leftSection={<IconBooks size={16} />}
+            >
+              {t('commands.library')}
+            </Button>
+          </Group>
         }
       />
 

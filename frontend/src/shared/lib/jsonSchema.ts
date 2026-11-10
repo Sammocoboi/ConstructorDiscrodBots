@@ -11,6 +11,10 @@ export function propertyDefault(property: JsonSchemaProperty): unknown {
       return property.minimum ?? 0
     case 'array':
       return []
+    case 'object':
+      return Object.fromEntries(
+        Object.entries(property.properties ?? {}).map(([key, child]) => [key, propertyDefault(child)]),
+      )
     default:
       return ''
   }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Alert,
   Badge,
@@ -32,11 +32,14 @@ import {
   qk,
   useBot,
   useCommands,
+  useGuildResources,
+  useModuleGuilds,
   useToastMutation,
 } from '../../shared/api/hooks'
 import type { Command, CommandType } from '../../shared/api/types'
 import { PageHeader } from '../../shared/components/bits'
 import { ConfirmModal } from '../../shared/components/ConfirmModal'
+import { GuildResourcePicker } from '../../shared/components/GuildResourcePicker'
 import { LoadingState } from '../../shared/components/states'
 import { commandCategoryOptions, commandTypeLabel } from '../../shared/lib/status'
 
@@ -52,6 +55,10 @@ export default function CommandEditorPage() {
   const { botId, commandId } = useParams()
   const navigate = useNavigate()
   const { data: bot } = useBot(botId)
+  const { guilds } = useModuleGuilds(botId, bot?.guilds)
+  const [selectedGuildId, setSelectedGuildId] = useState<string | null>(null)
+  const guildId = (guilds.find((guild) => guild.id === selectedGuildId) ?? guilds[0])?.id
+  const { data: resources } = useGuildResources(botId, guildId)
   const commands = useCommands(botId)
   const existing = commands.data?.find((command) => command.id === commandId)
   const isEdit = Boolean(commandId)
@@ -86,16 +93,6 @@ export default function CommandEditorPage() {
     setEmbedDescription(existing.embed?.description ?? '')
     setEmbedColor(existing.embed?.color ?? '#5865F2')
   }, [existing])
-
-  const roleOptions = useMemo(() => {
-    if (!bot) return []
-    return bot.guilds.flatMap((guild) =>
-      guild.roles.map((role) => ({
-        value: role.id,
-        label: `${guild.name} · ${role.name}`,
-      })),
-    )
-  }, [bot])
 
   const payload = (): Partial<Command> => ({
     name: name.trim().toLowerCase(),
@@ -154,7 +151,7 @@ export default function CommandEditorPage() {
         id: 'role',
         title: t('commands.roleCondition'),
         status: userHasRole ? 'ok' : 'error',
-        detail: roleOptions.find((role) => role.value === requiredRoleId)?.label ?? requiredRoleId,
+        detail: resources?.roles.find((role) => role.id === requiredRoleId)?.name ?? requiredRoleId,
       })
     } else {
       steps.push({
@@ -249,14 +246,22 @@ export default function CommandEditorPage() {
                 onChange={(value) => setCategory(value ?? 'utility')}
                 allowDeselect={false}
               />
-              <Select
+              {guilds.length > 1 && (
+                <Select
+                  label={t('modules.selectGuild')}
+                  data={guilds.map((guild) => ({ value: guild.id, label: guild.name }))}
+                  value={guildId ?? null}
+                  onChange={setSelectedGuildId}
+                  allowDeselect={false}
+                />
+              )}
+              <GuildResourcePicker
+                botId={bot.id}
+                guildId={guildId}
+                kind="role"
                 label={t('commands.roleCondition')}
-                data={roleOptions}
                 value={requiredRoleId}
-                onChange={setRequiredRoleId}
-                clearable
-                searchable
-                placeholder={t('common.none')}
+                onChange={(next) => setRequiredRoleId(typeof next === 'string' && next ? next : null)}
               />
             </SimpleGrid>
 

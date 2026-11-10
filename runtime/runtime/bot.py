@@ -174,12 +174,14 @@ class DiscordBotClient(discord.Client):
         flows = config.get("flows", [])
         uses_members = any(
             isinstance(flow, dict)
+            and flow.get("enabled", True)
             and isinstance(flow.get("trigger"), dict)
             and flow["trigger"].get("type") == "join_member"
             for flow in flows
         )
         uses_messages = any(
             isinstance(flow, dict)
+            and flow.get("enabled", True)
             and isinstance(flow.get("trigger"), dict)
             and flow["trigger"].get("type") == "message"
             for flow in flows
@@ -198,6 +200,9 @@ class DiscordBotClient(discord.Client):
         self._started_at = time.monotonic()
         self._ready_event.set()
         log.info("bot %s connected as %s", self.spec.id, self.user)
+        for guild in self.guilds:
+            await self._remember_guild(guild)
+        await self._sync_guild_commands()
 
     async def on_member_join(self, member: discord.Member) -> None:
         if not self._join_flows:
@@ -224,6 +229,9 @@ class DiscordBotClient(discord.Client):
     async def on_guild_join(self, guild: discord.Guild) -> None:
         """Sync guild to DB when the bot is added to a server."""
         log.info("bot %s joined guild %s (%s)", self.spec.id, guild.id, guild.name)
+        await self._remember_guild(guild)
+
+    async def _remember_guild(self, guild: discord.Guild) -> None:
         if _guild_repo is not None:
             try:
                 await _guild_repo.upsert_guild(
@@ -384,15 +392,20 @@ class DiscordBotClient(discord.Client):
         )
 
     def _apply_config(self, config: dict[str, Any]) -> None:
-        self._flows_by_id = {
+        flows_by_id = {
             str(flow["id"]): flow
             for flow in config.get("flows", [])
             if isinstance(flow, dict) and isinstance(flow.get("id"), str)
+        }
+        disabled_ids = {flow_id for flow_id, flow in flows_by_id.items() if not flow.get("enabled", True)}
+        self._flows_by_id = {
+            flow_id: flow for flow_id, flow in flows_by_id.items() if flow_id not in disabled_ids
         }
         self._command_defs = {
             str(command["name"]): command
             for command in config.get("commands", [])
             if isinstance(command, dict) and isinstance(command.get("name"), str)
+            and str(command.get("flow_id")) not in disabled_ids
         }
         self._command_flows = {}
         for name, command in self._command_defs.items():
@@ -435,6 +448,21 @@ class DiscordBotClient(discord.Client):
             await self.tree.sync()
         except discord.HTTPException:
             log.exception("failed to sync slash commands for bot %s", self.spec.id)
+
+    async def _sync_guild_commands(self) -> None:
+        """Copy global commands to joined guilds so they are available immediately."""
+        for guild in self.guilds:
+            guild_ref = discord.Object(id=guild.id)
+            self.tree.clear_commands(guild=guild_ref)
+            self.tree.copy_global_to(guild=guild_ref)
+            try:
+                await self.tree.sync(guild=guild_ref)
+            except discord.HTTPException:
+                log.exception(
+                    "failed to sync slash commands for bot %s in guild %s",
+                    self.spec.id,
+                    guild.id,
+                )
 
     def _make_command_callback(self, name: str, flow: dict[str, Any]) -> Any:
         command_def = self._command_defs.get(name, {})
@@ -563,6 +591,7 @@ class DiscordBotClient(discord.Client):
         self._message_flows = []
         self._apply_config(config)
         await self._sync_commands()
+        await self._sync_guild_commands()
         log.info("bot %s configuration reloaded", self.spec.id)
 
 

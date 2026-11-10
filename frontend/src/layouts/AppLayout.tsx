@@ -258,7 +258,7 @@ export function AppLayout() {
                   to={`/app/bots/${bot.id}/overview`}
                   active={location.pathname.startsWith(`/app/bots/${bot.id}`)}
                   onClick={navHandlers.close}
-                  leftSection={<BotAvatar name={bot.name} color={bot.avatarColor} size={24} radius={7} />}
+                  leftSection={<BotAvatar name={bot.name} color={bot.avatarColor} src={bot.avatarUrl} size={24} radius={7} />}
                   label={bot.name}
                   rightSection={
                     <Box

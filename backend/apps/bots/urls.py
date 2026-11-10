@@ -2,11 +2,33 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from . import views
+from .guild_resources import BotGuildResourcesView
+from .flow_views import BotFlowActionView, BotFlowDetailView, BotFlowListCreateView
 
 router = DefaultRouter()
 router.register("bots", views.BotViewSet, basename="bot")
 
 urlpatterns = [
+    path(
+        "bots/<uuid:bot_id>/guilds/<str:guild_id>/resources",
+        BotGuildResourcesView.as_view(),
+        name="bot-guild-resources",
+    ),
+    path(
+        "bots/<uuid:bot_id>/flows",
+        BotFlowListCreateView.as_view(),
+        name="bot-flow-list-create",
+    ),
+    path(
+        "bots/<uuid:bot_id>/flows/<uuid:flow_id>",
+        BotFlowDetailView.as_view(),
+        name="bot-flow-detail",
+    ),
+    path(
+        "bots/<uuid:bot_id>/flows/<uuid:flow_id>/<str:action>",
+        BotFlowActionView.as_view(),
+        name="bot-flow-action",
+    ),
     path(
         "bots/<uuid:bot_id>/guilds/sync",
         views.BotGuildSyncView.as_view(),

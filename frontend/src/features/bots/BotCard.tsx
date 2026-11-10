@@ -62,7 +62,7 @@ export function BotCard({ bot }: { bot: Bot }) {
         <Stack gap="md">
           <Group justify="space-between" align="flex-start" wrap="nowrap">
             <Group gap="sm" wrap="nowrap" align="flex-start">
-              <BotAvatar name={bot.name} color={bot.avatarColor} size={46} radius={13} />
+              <BotAvatar name={bot.name} color={bot.avatarColor} src={bot.avatarUrl} size={46} radius={13} />
               <Stack gap={4}>
                 <Group gap={8} wrap="wrap">
                   <Title order={3} fz={17} lh={1.2}>

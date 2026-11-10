@@ -1,4 +1,10 @@
 import type { BotStatus, CommandType, ModuleCategory, TemplateCategory } from '../api/types'
+import type { TFunction } from 'i18next'
+
+export function discordLabel(value: string, t: TFunction): string {
+  const key = value.toLowerCase().replace(/\s+/g, '_')
+  return t(`discordLabels.${key}`, { defaultValue: value })
+}
 
 export const botStatusMeta: Record<
   BotStatus,

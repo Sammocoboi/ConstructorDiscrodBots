@@ -73,6 +73,9 @@ docker compose up --build
 Корневой `docker-compose.yml` — dev-only: PostgreSQL и backend с `runserver`.
 Frontend запускается через `npm run dev`, Runtime — отдельно.
 
+Для локального показа с Discord без Docker используйте
+[`docs/demo-local.md`](docs/demo-local.md). Понадобится установленный PostgreSQL.
+
 ## Production
 
 Единый production-стек: [`docker-compose.prod.yml`](docker-compose.prod.yml).

@@ -23,13 +23,14 @@ import {
   qk,
   useBot,
   useBotModules,
+  useModuleGuilds,
   useToastMutation,
 } from '../../shared/api/hooks'
 import type { ModuleManifest, ModuleState } from '../../shared/api/types'
 import { AppIcon } from '../../shared/components/icons'
 import { PageHeader } from '../../shared/components/bits'
-import { EmptyState, LoadingState } from '../../shared/components/states'
-import { moduleCategoryLabel, moduleCategoryOptions } from '../../shared/lib/status'
+import { EmptyState, ErrorState, LoadingState } from '../../shared/components/states'
+import { discordLabel, moduleCategoryLabel, moduleCategoryOptions } from '../../shared/lib/status'
 
 function ModuleCard({
   botId,
@@ -116,7 +117,7 @@ function ModuleCard({
         <Group gap={5}>
           {manifest.permissions.slice(0, 3).map((permission) => (
             <Badge key={permission} size="xs" variant="dot" color="gray" tt="none">
-              {permission}
+              {discordLabel(permission, t)}
             </Badge>
           ))}
         </Group>
@@ -129,8 +130,10 @@ export default function ModulesPage() {
   const { t } = useTranslation()
   const { botId } = useParams()
   const { data: bot } = useBot(botId)
+  const { guilds, isPending: guildsLoading, isError: guildsError, refetch: refetchGuilds } =
+    useModuleGuilds(botId, bot?.guilds)
   const [selectedGuildId, setSelectedGuildId] = useState<string | null>(null)
-  const guildId = selectedGuildId ?? bot?.guilds[0]?.id
+  const guildId = (guilds.find((guild) => guild.id === selectedGuildId) ?? guilds[0])?.id
   const modules = useBotModules(botId, guildId)
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string | null>(null)
@@ -169,11 +172,11 @@ export default function ModulesPage() {
         <Group gap="sm" wrap="wrap">
           <Select
             placeholder={t('modules.selectGuild')}
-            data={(bot.guilds ?? []).map((guild) => ({ value: guild.id, label: guild.name }))}
+            data={guilds.map((guild) => ({ value: guild.id, label: guild.name }))}
             value={guildId ?? null}
             onChange={setSelectedGuildId}
             allowDeselect={false}
-            disabled={(bot.guilds ?? []).length === 0}
+            disabled={guilds.length === 0}
             w={{ base: '100%', sm: 220 }}
           />
           <TextInput
@@ -202,7 +205,10 @@ export default function ModulesPage() {
         </Group>
       </Card>
 
-      {(bot.guilds ?? []).length === 0 && (
+      {guildsError && guilds.length === 0 && (
+        <ErrorState message={t('bot.guildsLoadError')} onRetry={() => void refetchGuilds()} />
+      )}
+      {!guildsLoading && !guildsError && guilds.length === 0 && (
         <Alert color="yellow" icon={<IconAlertTriangle size={16} />}>
           <Text fw={600}>{t('modules.noGuildTitle')}</Text>
           <Text size="sm">{t('modules.noGuildText')}</Text>

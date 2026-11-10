@@ -1,0 +1,11 @@
+{
+  "type": "channel",
+  "category": "condition",
+  "title": "Канал",
+  "description": "Продолжает выполнение только в выбранном канале.",
+  "params": {
+    "channel_id": {"type": "channel", "required": true}
+  },
+  "inputs": ["flow"],
+  "outputs": ["flow"]
+}

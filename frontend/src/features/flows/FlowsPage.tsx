@@ -5,9 +5,11 @@ import {
   Card,
   Group,
   Menu,
+  Modal,
   SimpleGrid,
   Stack,
   Text,
+  TextInput,
   ThemeIcon,
   Title,
 } from '@mantine/core'
@@ -18,6 +20,7 @@ import {
   IconClock,
   IconDots,
   IconGitBranch,
+  IconPencil,
   IconPlus,
   IconTrash,
 } from '@tabler/icons-react'
@@ -33,10 +36,21 @@ import { PageHeader } from '../../shared/components/bits'
 import { ConfirmModal } from '../../shared/components/ConfirmModal'
 import { EmptyState, LoadingState } from '../../shared/components/states'
 import { formatRelative } from '../../shared/lib/format'
+import { FlowEnabledSwitch } from './FlowEnabledSwitch'
 
 function FlowCard({ botId, flow }: { botId: string; flow: Flow }) {
   const { t } = useTranslation()
   const [deleteOpened, setDeleteOpened] = useState(false)
+  const [renameOpened, setRenameOpened] = useState(false)
+  const [name, setName] = useState('')
+  const renameMutation = useToastMutation({
+    mutationFn: (newName: string) => api.flows.rename(botId, flow.id, newName),
+    successMessage: t('flows.renamed'),
+    invalidateKeys: [qk.flows(botId)],
+    onSuccess: () => setRenameOpened(false),
+  })
+  const trimmedName = name.trim()
+  const canRename = trimmedName.length > 0 && trimmedName !== flow.name
   const deleteMutation = useToastMutation({
     mutationFn: () => api.flows.remove(botId, flow.id),
     successMessage: t('flows.deleted'),
@@ -73,6 +87,15 @@ function FlowCard({ botId, flow }: { botId: string; flow: Flow }) {
                   {t('common.edit')}
                 </Menu.Item>
                 <Menu.Item
+                  leftSection={<IconPencil size={14} />}
+                  onClick={() => {
+                    setName(flow.name)
+                    setRenameOpened(true)
+                  }}
+                >
+                  {t('flows.rename')}
+                </Menu.Item>
+                <Menu.Item
                   component={Link}
                   to={`/app/bots/${botId}/flows/${flow.id}/versions`}
                 >
@@ -107,6 +130,7 @@ function FlowCard({ botId, flow }: { botId: string; flow: Flow }) {
             <Badge variant="light" color="gray" size="sm">
               {flow.edges.length} {t('flows.edgeCount').toLowerCase()}
             </Badge>
+            <FlowEnabledSwitch flow={flow} />
           </Group>
 
           <Group justify="space-between" mt="auto">
@@ -137,6 +161,47 @@ function FlowCard({ botId, flow }: { botId: string; flow: Flow }) {
           </Group>
         </Stack>
       </Card>
+
+      <Modal
+        opened={renameOpened}
+        onClose={() => setRenameOpened(false)}
+        title={t('flows.renameTitle')}
+        closeOnClickOutside={!renameMutation.isPending}
+        closeOnEscape={!renameMutation.isPending}
+        withCloseButton={!renameMutation.isPending}
+      >
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            if (canRename && !renameMutation.isPending) renameMutation.mutate(trimmedName)
+          }}
+        >
+          <Stack gap="md">
+            <TextInput
+              label={t('flows.nameLabel')}
+              value={name}
+              onChange={(event) => setName(event.currentTarget.value)}
+              maxLength={100}
+              disabled={renameMutation.isPending}
+              required
+              data-autofocus
+            />
+            <Group justify="flex-end">
+              <Button
+                type="button"
+                variant="default"
+                onClick={() => setRenameOpened(false)}
+                disabled={renameMutation.isPending}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button type="submit" disabled={!canRename} loading={renameMutation.isPending}>
+                {t('common.save')}
+              </Button>
+            </Group>
+          </Stack>
+        </form>
+      </Modal>
 
       <ConfirmModal
         opened={deleteOpened}

@@ -412,10 +412,12 @@ class Supervisor:
 
     async def stop_bot(self, bot_id: str) -> None:
         runner = self._runners.pop(bot_id, None)
-        if runner is not None:
-            await runner.stop()
         lock = self._locks.pop(bot_id, None)
-        await _release_lock(lock)
+        try:
+            if runner is not None:
+                await runner.stop()
+        finally:
+            await _release_lock(lock)
 
     async def restart_bot(self, bot_id: str) -> None:
         self.metrics.restarts_total += 1

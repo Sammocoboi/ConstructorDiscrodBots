@@ -24,6 +24,8 @@ import {
   useBotEvents,
   useBotModules,
   useCommands,
+  useFlows,
+  useModuleGuilds,
 } from '../../shared/api/hooks'
 import { StatCard } from '../../shared/components/bits'
 import { LoadingState } from '../../shared/components/states'
@@ -42,13 +44,22 @@ export default function BotOverviewPage() {
   const { t } = useTranslation()
   const { botId } = useParams()
   const { data: bot } = useBot(botId)
-  const modules = useBotModules(botId, bot?.guilds[0]?.id)
+  const { guilds } = useModuleGuilds(botId, bot?.guilds)
+  const modules = useBotModules(botId, guilds[0]?.id)
   const commands = useCommands(botId)
+  const flows = useFlows(botId)
   const events = useBotEvents(botId)
 
   if (!bot) return <LoadingState minHeight={280} />
 
   const enabledModules = modules.data?.filter((item) => item.state.enabled) ?? []
+  const hasEnabledModule = enabledModules.length > 0 || bot.guilds.some(
+    (guild) => guilds.some((installed) => installed.id === guild.id) && (guild.enabledModules?.length ?? 0) > 0,
+  )
+  const hasPublishedCommand = flows.data?.some(
+    (flow) => flow.status === 'published' && flow.enabled !== false &&
+      flow.nodes.some((node) => node.data.blockId === 'trigger.slash'),
+  ) ?? false
   const checklist = [
     {
       key: 'token',
@@ -59,19 +70,19 @@ export default function BotOverviewPage() {
     {
       key: 'invite',
       label: t('bot.checklistInvite'),
-      done: bot.guilds.some((guild) => guild.botAdded),
+      done: guilds.length > 0,
       to: `/app/bots/${bot.id}/guilds`,
     },
     {
       key: 'module',
       label: t('bot.checklistModule'),
-      done: enabledModules.length > 0,
+      done: hasEnabledModule,
       to: `/app/bots/${bot.id}/modules`,
     },
     {
       key: 'command',
       label: t('bot.checklistCommand'),
-      done: (commands.data?.length ?? 0) > 0,
+      done: (commands.data?.length ?? 0) > 0 || hasPublishedCommand,
       to: `/app/bots/${bot.id}/commands`,
     },
   ]
@@ -81,7 +92,7 @@ export default function BotOverviewPage() {
   const quickLinks = [
     { to: `/app/bots/${bot.id}/modules`, label: t('nav.modules'), icon: 'layout', hint: `${enabledModules.length} / ${modules.data?.length ?? 0}` },
     { to: `/app/bots/${bot.id}/commands`, label: t('nav.commands'), icon: 'terminal', hint: `${commands.data?.length ?? 0}` },
-    { to: `/app/bots/${bot.id}/guilds`, label: t('nav.guilds'), icon: 'server', hint: `${bot.guilds.length}` },
+    { to: `/app/bots/${bot.id}/guilds`, label: t('nav.guilds'), icon: 'server', hint: `${guilds.length}` },
     { to: `/app/bots/${bot.id}/status`, label: t('bot.diagnostics'), icon: 'activity', hint: bot.status },
   ]
 
@@ -104,7 +115,7 @@ export default function BotOverviewPage() {
         />
         <StatCard
           label={t('bot.guilds')}
-          value={bot.guilds.length}
+          value={guilds.length}
           icon="server"
           hint={t('bot.guildsSubtitle')}
         />
@@ -291,7 +302,7 @@ export default function BotOverviewPage() {
               </Text>
             </Group>
             <Text size="xs" c="dimmed">
-              {formatRelative(bot.createdAt)} · {bot.guilds.length} {t('nav.guilds').toLowerCase()}
+              {formatRelative(bot.createdAt)} · {guilds.length} {t('nav.guilds').toLowerCase()}
             </Text>
           </Card>
         </Stack>

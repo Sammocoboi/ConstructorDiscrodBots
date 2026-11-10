@@ -7,11 +7,13 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import generics, status, viewsets
 from rest_framework import serializers as drf_serializers
 from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.common.permissions import IsOwner, IsRuntimeService
+from integrations.discord.images import guild_icon_url
 from integrations.discord.permissions import calculate_permissions_integer, generate_invite_url
 
 from .models import Bot, BotGuild, BotRuntimeState, BotVersion, RuntimeCommand
@@ -31,12 +33,15 @@ from .serializers import (
 )
 from .services import (
     DiscordAPIError,
+    fetch_bot_guilds,
+    get_bot_token,
     inspect_bot_token,
     replace_bot_token,
     request_restart,
     request_start,
     request_stop,
     sync_bot_guilds,
+    update_bot_avatar,
     validate_bot_token,
 )
 
@@ -84,6 +89,24 @@ class BotViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         bot = serializer.save()
         return Response(BotSerializer(bot).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(responses={200: BotSerializer}, summary="Обновить аватар бота в Discord")
+    @action(detail=True, methods=["post"], parser_classes=[MultiPartParser])
+    def avatar(self, request, pk=None):
+        bot = self.get_object()
+        upload = request.FILES.get("avatar")
+        if upload is None:
+            return Response(
+                {"detail": "Выберите изображение для аватара."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            bot = update_bot_avatar(bot, upload)
+        except DiscordAPIError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except drf_serializers.ValidationError as exc:
+            return Response({"detail": str(exc.detail[0])}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(BotSerializer(bot).data)
 
     @extend_schema(
         request=BotTokenInputSerializer,
@@ -204,6 +227,26 @@ class BotViewSet(viewsets.ModelViewSet):
         bot = self.get_object()
         return Response(BotGuildSerializer(bot.guilds.all(), many=True).data)
 
+    @action(detail=True, methods=["get"], url_path="discord-guilds")
+    def discord_guilds(self, request, pk=None):
+        bot = self.get_object()
+        if not bot.has_token:
+            return Response([])
+        try:
+            guilds = fetch_bot_guilds(get_bot_token(bot))
+        except DiscordAPIError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+        return Response(
+            [
+                {
+                    "id": guild["id"],
+                    "name": guild["name"],
+                    "iconUrl": guild_icon_url(str(guild["id"]), guild.get("icon")),
+                }
+                for guild in guilds
+            ]
+        )
+
     @extend_schema(
         request=None,
         responses={200: None},
@@ -212,7 +255,8 @@ class BotViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="invite-url")
     def invite_url(self, request, pk=None):
         bot = self.get_object()
-        if not bot.discord_application_id:
+        application_id = bot.discord_application_id or bot.discord_bot_user_id
+        if not application_id:
             return Response(
                 {"detail": "discord_application_id is required for invite URL"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -227,7 +271,7 @@ class BotViewSet(viewsets.ModelViewSet):
         )
         permissions = calculate_permissions_integer(enabled_modules)
         url = generate_invite_url(
-            bot.discord_application_id,
+            application_id,
             permissions,
             guild_id=guild_id,
             disable_guild_select=disable_guild_select,

@@ -29,6 +29,9 @@ const ModulesPage = lazy(() => import('./features/modules/ModulesPage'))
 const ModuleDetailPage = lazy(() => import('./features/modules/ModuleDetailPage'))
 const CommandsPage = lazy(() => import('./features/commands/CommandsPage'))
 const CommandLibraryPage = lazy(() => import('./features/commands/CommandLibraryPage'))
+const FlowsPage = lazy(() => import('./features/flows/FlowsPage'))
+const FlowEditorPage = lazy(() => import('./features/flows/FlowEditorPage'))
+const FlowVersionsPage = lazy(() => import('./features/flows/FlowVersionsPage'))
 const TemplatesPage = lazy(() => import('./features/templates/TemplatesPage'))
 const MyTemplatesPage = lazy(() => import('./features/templates/MyTemplatesPage'))
 const BillingPage = lazy(() => import('./features/billing/BillingPage'))
@@ -87,6 +90,9 @@ function AppRoutes() {
               <Route path="modules/:moduleId" element={<ModuleDetailPage />} />
               <Route path="commands" element={<CommandsPage />} />
               <Route path="commands/library" element={<CommandLibraryPage />} />
+              <Route path="flows" element={<FlowsPage />} />
+              <Route path="flows/:flowId" element={<FlowEditorPage />} />
+              <Route path="flows/:flowId/versions" element={<FlowVersionsPage />} />
             </Route>
             <Route path="templates" element={<TemplatesPage />} />
             <Route path="templates/mine" element={<MyTemplatesPage />} />

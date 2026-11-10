@@ -27,7 +27,24 @@ export const useAuthStore = create<AuthState>()(
         })),
       logout: () => set({ user: null, accessToken: null, isAuthenticated: false }),
     }),
-    { name: 'botforge.auth' },
+    {
+      name: 'botforge.auth',
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<AuthState> | undefined
+        const persistedToken = persisted?.accessToken
+
+        // A demo session must never be treated as a real backend session.
+        if (
+          import.meta.env.VITE_USE_MOCKS !== 'true' &&
+          typeof persistedToken === 'string' &&
+          persistedToken.startsWith('mock-access-')
+        ) {
+          return currentState
+        }
+
+        return { ...currentState, ...persisted }
+      },
+    },
   ),
 )
 

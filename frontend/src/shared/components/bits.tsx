@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import {
+  Avatar,
   Badge,
   Box,
   Card,
@@ -19,14 +20,23 @@ import { AppIcon } from './icons'
 export function BotAvatar({
   name,
   color,
+  src,
   size = 48,
   radius = 14,
 }: {
   name: string
   color: string
+  src?: string
   size?: number
   radius?: number
 }) {
+  if (src) {
+    return (
+      <Avatar src={src} alt={name} size={size} radius={radius} style={{ flexShrink: 0 }}>
+        {initials(name) || 'B'}
+      </Avatar>
+    )
+  }
   return (
     <Box
       style={{

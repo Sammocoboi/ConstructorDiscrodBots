@@ -153,6 +153,7 @@ class DiscordUserGuildSerializer(serializers.Serializer):
     id = serializers.CharField()
     name = serializers.CharField()
     iconColor = serializers.CharField()
+    iconUrl = serializers.URLField(allow_null=True, default=None)
     memberCount = serializers.IntegerField()
     botAdded = serializers.BooleanField()
     owner = serializers.BooleanField()

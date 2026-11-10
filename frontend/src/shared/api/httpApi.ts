@@ -7,12 +7,14 @@ import type {
   BotStatus,
   Command,
   CreateBotInput,
+  CreateGuildResourceInput,
   DashboardStats,
   Flow,
   FlowIssue,
   FlowSaveInput,
   FlowTestResult,
   Guild,
+  GuildResources,
   Invoice,
   JsonSchema,
   JsonSchemaProperty,
@@ -78,6 +80,7 @@ interface RawBot {
   intents?: string[]
   has_token?: boolean
   token_masked?: string
+  avatar_url?: string | null
   last_error?: string
   last_error_at?: string | null
   created_at: string
@@ -394,6 +397,7 @@ function mapGuild(raw: RawBotGuild): Guild {
     iconColor: hashColor(id),
     memberCount: 0,
     botAdded: !raw.left_at,
+    enabledModules: raw.enabled_modules,
     owner: false,
     canManage: true,
     channels: [],
@@ -405,6 +409,7 @@ function mapBot(
   raw: RawBot,
   guilds: Guild[] = [],
   status?: RawBotStatus | null,
+  inviteUrl = '',
 ): Bot {
   const profile = raw.profile ?? {}
   const runtime = status?.runtime
@@ -422,9 +427,8 @@ function mapBot(
     lastError: raw.last_error || (runtime?.is_alive === false ? 'Runtime недоступен' : undefined),
     tokenMasked: raw.token_masked || '',
     applicationId: appId,
-    inviteUrl: appId
-      ? `https://discord.com/oauth2/authorize?client_id=${appId}&scope=bot%20applications.commands&permissions=1099511627776`
-      : '',
+    inviteUrl,
+    avatarUrl: raw.avatar_url || undefined,
     avatarColor: profileString(profile, 'avatar_color', '#5865f2'),
     bannerColor: profileString(profile, 'banner_color', '#1f2160'),
     activity: profileActivity(profile),
@@ -454,12 +458,13 @@ async function fetchStatus(botId: string): Promise<RawBotStatus | null> {
 }
 
 async function fetchBot(botId: string): Promise<Bot> {
-  const [raw, status, guilds] = await Promise.all([
+  const [raw, status, guilds, invite] = await Promise.all([
     http.get<RawBot>(`/bots/${botId}`),
     fetchStatus(botId),
     fetchGuilds(botId),
+    http.get<{ url: string }>(`/bots/${botId}/invite-url`).catch(() => null),
   ])
-  return mapBot(raw, guilds, status)
+  return mapBot(raw, guilds, status, invite?.url)
 }
 
 async function listBots(): Promise<Bot[]> {
@@ -478,20 +483,26 @@ function permissionsFromMask(mask: number | string[] | undefined): string[] {
   if (Array.isArray(mask)) return mask.map(String)
   if (!mask) return []
   const flags: Record<number, string> = {
-    4: 'Kick Members',
-    8: 'Ban Members',
-    16: 'Manage Channels',
-    1024: 'View Channels',
-    2048: 'Send Messages',
-    4096: 'Manage Messages',
-    8192: 'Embed Links',
-    16384: 'Attach Files',
-    32768: 'Read History',
-    65536: 'Mention Everyone',
-    134217728: 'Manage Roles',
+    1: 'Kick Members',
+    2: 'Ban Members',
+    3: 'Administrator',
+    4: 'Manage Channels',
+    5: 'Manage Server',
+    6: 'Add Reactions',
+    7: 'View Audit Log',
+    10: 'View Channels',
+    11: 'Send Messages',
+    13: 'Manage Messages',
+    14: 'Embed Links',
+    15: 'Attach Files',
+    16: 'Read History',
+    17: 'Mention Everyone',
+    28: 'Manage Roles',
+    31: 'Use Application Commands',
+    40: 'Moderate Members',
   }
   return Object.entries(flags)
-    .filter(([bit]) => (Number(bit) & Number(mask)) !== 0)
+    .filter(([bit]) => Math.floor(mask / 2 ** Number(bit)) % 2 === 1)
     .map(([, label]) => label)
 }
 
@@ -656,9 +667,9 @@ function inferFormat(key: string, property: Record<string, unknown>): JsonSchema
   ) {
     return explicit
   }
-  const lower = key.toLowerCase()
-  if (lower.includes('channel') || lower.endsWith('_id')) return 'channel'
-  if (lower.includes('role')) return 'role'
+  const lower = key.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase()
+  if (/(?:^|_)role_ids?$/.test(lower)) return 'role'
+  if (/(?:^|_)channel_ids?$/.test(lower) || lower === 'category_id') return 'channel'
   if (lower.includes('color')) return 'color'
   if (lower.includes('token') || lower.includes('password') || lower.includes('secret')) {
     return 'secret'
@@ -677,55 +688,7 @@ function normalizeSchema(raw: Record<string, unknown> | undefined): JsonSchema {
   const properties: Record<string, JsonSchemaProperty> = {}
   for (const [key, value] of Object.entries(propertiesRaw)) {
     if (!value || typeof value !== 'object') continue
-    const property = value as Record<string, unknown>
-    const declared = Array.isArray(property.type)
-      ? property.type.find((item) => typeof item === 'string' && item !== 'null')
-      : property.type
-    const type =
-      declared === 'number' ||
-      declared === 'integer' ||
-      declared === 'boolean' ||
-      declared === 'array'
-        ? declared
-        : 'string'
-    const normalized: JsonSchemaProperty = {
-      type,
-      title:
-        typeof property.title === 'string'
-          ? property.title
-          : key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
-    }
-    if (typeof property.description === 'string') normalized.description = property.description
-    if (property.default !== undefined) normalized.default = property.default
-    if (Array.isArray(property.enum)) {
-      normalized.enum = property.enum.map((option) => {
-        if (option && typeof option === 'object') {
-          const record = option as Record<string, unknown>
-          const optionValue =
-            typeof record.value === 'string' || typeof record.value === 'number'
-              ? record.value
-              : String(record.value ?? '')
-          return { value: optionValue, label: String(record.label ?? optionValue) }
-        }
-        return {
-          value: typeof option === 'number' ? option : String(option),
-          label: String(option),
-        }
-      })
-    }
-    if (typeof property.minimum === 'number') normalized.minimum = property.minimum
-    if (typeof property.maximum === 'number') normalized.maximum = property.maximum
-    if (type === 'array') {
-      const items = property.items
-      const itemType =
-        items && typeof items === 'object'
-          ? (items as Record<string, unknown>).type
-          : undefined
-      normalized.items = { type: itemType === 'number' || itemType === 'integer' ? 'number' : 'string' }
-    }
-    const format = inferFormat(key, property)
-    if (format) normalized.format = format
-    properties[key] = normalized
+    properties[key] = normalizeSchemaProperty(key, value as Record<string, unknown>)
   }
   return {
     type: 'object',
@@ -736,6 +699,58 @@ function normalizeSchema(raw: Record<string, unknown> | undefined): JsonSchema {
       ? raw.required.filter((item): item is string => typeof item === 'string')
       : [],
   }
+}
+
+function normalizeSchemaProperty(key: string, property: Record<string, unknown>): JsonSchemaProperty {
+  const declared = Array.isArray(property.type)
+    ? property.type.find((item) => typeof item === 'string' && item !== 'null')
+    : property.type
+  const type =
+    declared === 'number' ||
+    declared === 'integer' ||
+    declared === 'boolean' ||
+    declared === 'array' ||
+    declared === 'object'
+      ? declared
+      : 'string'
+  const normalized: JsonSchemaProperty = {
+    type,
+    title:
+      typeof property.title === 'string'
+        ? property.title
+        : key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
+  }
+  if (typeof property.description === 'string') normalized.description = property.description
+  if (property.default !== undefined) normalized.default = property.default
+  if (Array.isArray(property.enum)) {
+    normalized.enum = property.enum.map((option) => {
+      if (option && typeof option === 'object') {
+        const record = option as Record<string, unknown>
+        const optionValue =
+          typeof record.value === 'string' || typeof record.value === 'number'
+            ? record.value
+            : String(record.value ?? '')
+        return { value: optionValue, label: String(record.label ?? optionValue) }
+      }
+      return {
+        value: typeof option === 'number' ? option : String(option),
+        label: String(option),
+      }
+    })
+  }
+  if (typeof property.minimum === 'number') normalized.minimum = property.minimum
+  if (typeof property.maximum === 'number') normalized.maximum = property.maximum
+  if (type === 'array' && property.items && typeof property.items === 'object') {
+    normalized.items = normalizeSchemaProperty(key, property.items as Record<string, unknown>)
+  }
+  if (type === 'object') {
+    const schema = normalizeSchema(property)
+    normalized.properties = schema.properties
+    normalized.required = schema.required
+  }
+  const format = inferFormat(key, property)
+  if (format) normalized.format = format
+  return normalized
 }
 
 function mapManifest(raw: RawModule): ModuleManifest {
@@ -1073,6 +1088,11 @@ export const httpApi: MockApi = {
       })
       return fetchBot(botId)
     },
+    async updateAvatar(botId: string, file: File): Promise<void> {
+      const form = new FormData()
+      form.append('avatar', file)
+      await http.post(`/bots/${botId}/avatar`, form)
+    },
     async remove(botId) {
       await http.delete(`/bots/${botId}`)
     },
@@ -1094,8 +1114,25 @@ export const httpApi: MockApi = {
     async replaceToken() {
       unsupported()
     },
-    async availableGuilds() {
-      return []
+    async availableGuilds(): Promise<Guild[]> {
+      return http.get<Guild[]>('/me/discord-guilds')
+    },
+    async discordGuilds(botId: string): Promise<Pick<Guild, 'id' | 'name' | 'iconUrl'>[]> {
+      return http.get<Pick<Guild, 'id' | 'name' | 'iconUrl'>[]>(`/bots/${botId}/discord-guilds`)
+    },
+    async guildResources(botId: string, guildId: string): Promise<GuildResources> {
+      return http.get(`/bots/${botId}/guilds/${guildId}/resources`)
+    },
+    async createGuildResource(
+      botId: string,
+      guildId: string,
+      input: CreateGuildResourceInput,
+    ): Promise<{ id: string }> {
+      return http.post(`/bots/${botId}/guilds/${guildId}/resources`, {
+        kind: input.kind,
+        name: input.name,
+        channel_type: input.channelType,
+      })
     },
     async guilds(botId) {
       const guilds = await http.get<RawBotGuild[]>(`/bots/${botId}/guilds`)
@@ -1262,32 +1299,38 @@ export const httpApi: MockApi = {
   },
 
   flows: {
-    async list() {
-      return unsupported() as Flow[]
+    async list(botId: string): Promise<Flow[]> {
+      return http.get<Flow[]>(`/bots/${botId}/flows`)
     },
-    async get() {
-      return unsupported() as Flow
+    async get(botId: string, flowId: string): Promise<Flow> {
+      return http.get<Flow>(`/bots/${botId}/flows/${flowId}`)
     },
-    async create() {
-      return unsupported() as Flow
+    async create(botId: string, input?: { name?: string; description?: string }): Promise<Flow> {
+      return http.post<Flow>(`/bots/${botId}/flows`, input ?? {})
     },
-    async save() {
-      return unsupported() as Flow
+    async save(botId: string, flowId: string, input: FlowSaveInput): Promise<Flow> {
+      return http.put<Flow>(`/bots/${botId}/flows/${flowId}`, input)
     },
-    async remove() {
-      unsupported()
+    async remove(botId: string, flowId: string): Promise<void> {
+      return http.delete(`/bots/${botId}/flows/${flowId}`)
     },
-    async validate() {
-      return unsupported() as FlowIssue[]
+    async setEnabled(botId: string, flowId: string, enabled: boolean): Promise<Flow> {
+      return http.post<Flow>(`/bots/${botId}/flows/${flowId}/enabled`, { enabled })
     },
-    async test() {
-      return unsupported() as FlowTestResult
+    async rename(botId: string, flowId: string, name: string): Promise<Flow> {
+      return http.patch<Flow>(`/bots/${botId}/flows/${flowId}`, { name })
     },
-    async publish() {
-      return unsupported() as Flow
+    async validate(botId: string, flowId: string, input?: FlowSaveInput): Promise<FlowIssue[]> {
+      return http.post<FlowIssue[]>(`/bots/${botId}/flows/${flowId}/validate`, input ?? {})
     },
-    async rollback() {
-      return unsupported() as Flow
+    async test(botId: string, flowId: string, input?: FlowSaveInput): Promise<FlowTestResult> {
+      return http.post<FlowTestResult>(`/bots/${botId}/flows/${flowId}/test`, input ?? {})
+    },
+    async publish(botId: string, flowId: string, comment: string): Promise<Flow> {
+      return http.post<Flow>(`/bots/${botId}/flows/${flowId}/publish`, { comment })
+    },
+    async rollback(botId: string, flowId: string, versionId: string): Promise<Flow> {
+      return http.post<Flow>(`/bots/${botId}/flows/${flowId}/rollback`, { versionId })
     },
   },
 

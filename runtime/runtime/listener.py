@@ -58,7 +58,10 @@ class CommandListener:
             except TimeoutError:
                 pass
             self._wakeup.clear()
-            await self.process_pending()
+            try:
+                await self.process_pending()
+            except Exception:
+                log.exception("failed to process runtime commands; will retry")
 
     async def process_pending(self, command_id: str | None = None) -> int:
         commands = await self._repository.fetch_pending_commands(self._batch_size)

@@ -23,21 +23,23 @@ def normalize_image(upload, kind: str) -> ContentFile:
         raise serializers.ValidationError("Unknown image kind")
     try:
         image: Image.Image = Image.open(upload)
+        if image.width * image.height > 4096 * 4096:
+            raise serializers.ValidationError("Image resolution is too large")
+        if image.format not in ALLOWED_FORMATS:
+            raise serializers.ValidationError("Only PNG, JPEG and WebP images are allowed")
+        if image.width < 32 or image.height < 32:
+            raise serializers.ValidationError("Image is too small")
         image.verify()
         upload.seek(0)
-        image = Image.open(upload)
-    except (UnidentifiedImageError, OSError, ValueError) as exc:
+        with Image.open(upload) as source:
+            image = ImageOps.exif_transpose(source)
+            if image.mode not in {"RGB", "RGBA"}:
+                image = image.convert("RGBA")
+            image = ImageOps.fit(image, SIZES[kind], method=Image.Resampling.LANCZOS)
+            output = io.BytesIO()
+            image.save(output, format="PNG", optimize=True)
+    except (UnidentifiedImageError, Image.DecompressionBombError, OSError, ValueError) as exc:
         raise serializers.ValidationError("Unsupported image file") from exc
-    if image.format not in ALLOWED_FORMATS:
-        raise serializers.ValidationError("Only PNG, JPEG and WebP images are allowed")
-    if image.width < 32 or image.height < 32:
-        raise serializers.ValidationError("Image is too small")
-    image = ImageOps.exif_transpose(image)
-    if image.mode not in {"RGB", "RGBA"}:
-        image = image.convert("RGBA")
-    image = ImageOps.fit(image, SIZES[kind], method=Image.Resampling.LANCZOS)
-    output = io.BytesIO()
-    image.save(output, format="PNG", optimize=True)
     return ContentFile(output.getvalue(), name=f"{kind}.png")
 
 

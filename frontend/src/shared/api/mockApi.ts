@@ -4,12 +4,14 @@ import type {
   BillingOverview,
   Command,
   CreateBotInput,
+  CreateGuildResourceInput,
   DashboardStats,
   Flow,
   FlowIssue,
   FlowSaveInput,
   FlowTestResult,
   Guild,
+  GuildResources,
   LibraryCommand,
   MessageDraft,
   ModuleManifest,
@@ -299,6 +301,17 @@ export const mockApi = {
       persistDb()
       return clone(bot)
     },
+    async updateAvatar(botId: string, file: File): Promise<void> {
+      const bot = findBot(botId)
+      bot.avatarUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result))
+        reader.onerror = () => reject(reader.error)
+        reader.readAsDataURL(file)
+      })
+      bot.updatedAt = nowIso()
+      persistDb()
+    },
     async remove(botId: string) {
       await randomDelay(250, 450)
       const db = getDb()
@@ -403,6 +416,30 @@ export const mockApi = {
       await randomDelay(180, 380)
       return clone(getDb().guilds.filter((guild) => guild.canManage || guild.owner))
     },
+    async discordGuilds(botId: string): Promise<Pick<Guild, 'id' | 'name' | 'iconUrl'>[]> {
+      return findBot(botId).guilds.filter((guild) => guild.botAdded)
+        .map(({ id, name, iconUrl }) => ({ id, name, iconUrl }))
+    },
+    async guildResources(botId: string, guildId: string): Promise<GuildResources> {
+      const guild = findBot(botId).guilds.find((item) => item.id === guildId)
+      return clone({ channels: guild?.channels ?? [], roles: guild?.roles ?? [] })
+    },
+    async createGuildResource(
+      botId: string,
+      guildId: string,
+      input: CreateGuildResourceInput,
+    ): Promise<{ id: string }> {
+      const guild = findBot(botId).guilds.find((item) => item.id === guildId)
+      if (!guild) throw new ApiError(404, 'guild_not_found', 'Сервер не найден.')
+      const id = crypto.randomUUID()
+      if (input.kind === 'role') {
+        guild.roles.push({ id, name: input.name, color: '#99aab5', position: 0 })
+      } else {
+        guild.channels.push({ id, name: input.name, type: input.channelType ?? 'text' })
+      }
+      persistDb()
+      return { id }
+    },
     async guilds(botId: string): Promise<Guild[]> {
       await randomDelay(120, 260)
       return clone(findBot(botId).guilds)
@@ -428,7 +465,7 @@ export const mockApi = {
           state.settings[input.toGuildId] = clone(state.settings[input.fromGuildId])
         }
       }
-      logEvent(botId, 'module', 'Настройки гильдий скопированы')
+      logEvent(botId, 'module', 'Настройки серверов скопированы')
       persistDb()
     },
     async saveAsTemplate(botId: string, input: { name: string; description: string }) {
@@ -792,6 +829,30 @@ export const mockApi = {
       if (input.name !== undefined) flow.name = input.name
       if (input.description !== undefined) flow.description = input.description
       flow.updatedAt = nowIso()
+      persistDb()
+      return clone(flow)
+    },
+    async rename(botId: string, flowId: string, name: string): Promise<Flow> {
+      await randomDelay(200, 380)
+      const flow = findFlow(flowId)
+      if (flow.botId !== botId) throw new ApiError(404, 'flow_not_found', 'Сценарий не найден.')
+      const trimmed = name.trim()
+      if (!trimmed || trimmed.length > 100) {
+        throw new ApiError(400, 'invalid_flow_name', 'Введите название сценария длиной от 1 до 100 символов.')
+      }
+      flow.name = trimmed
+      flow.updatedAt = nowIso()
+      persistDb()
+      return clone(flow)
+    },
+    async setEnabled(botId: string, flowId: string, enabled: boolean): Promise<Flow> {
+      await randomDelay(200, 380)
+      const flow = findFlow(flowId)
+      if (flow.botId !== botId) throw new ApiError(404, 'flow_not_found', 'Сценарий не найден.')
+      if (flow.status !== 'published') {
+        throw new ApiError(409, 'flow_not_published', 'Сначала опубликуйте сценарий.')
+      }
+      flow.enabled = enabled
       persistDb()
       return clone(flow)
     },

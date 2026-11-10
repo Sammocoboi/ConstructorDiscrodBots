@@ -3,14 +3,18 @@ import { notifications } from '@mantine/notifications'
 import { useTranslation } from 'react-i18next'
 import { api } from './index'
 import { errorMessage } from './errors'
+import { useAuthStore } from '../stores/authStore'
+import type { Guild } from './types'
 
 export const qk = {
   dashboard: ['dashboard'] as const,
   bots: ['bots'] as const,
   bot: (botId: string) => ['bots', botId] as const,
   botGuilds: (botId: string) => ['bots', botId, 'guilds'] as const,
+  guildResources: (botId: string, guildId: string) => ['bots', botId, 'guild-resources', guildId] as const,
   botEvents: (botId: string) => ['bots', botId, 'events'] as const,
-  availableGuilds: ['discord-guilds'] as const,
+  availableGuilds: (userId: string) => ['discord-guilds', userId] as const,
+  discordBotGuilds: (botId: string) => ['bots', botId, 'discord-guilds'] as const,
   modules: ['modules'] as const,
   botModules: (botId: string, guildId?: string) =>
     guildId
@@ -55,15 +59,36 @@ export function useBot(botId: string | undefined) {
     queryKey: qk.bot(botId ?? ''),
     queryFn: () => api.bots.get(botId as string),
     enabled: Boolean(botId),
-    refetchInterval: 12_000,
+    refetchInterval: (query) => query.state.data?.status === 'starting' ? 1_500 : 12_000,
   })
 }
 
 export function useAvailableGuilds() {
+  const userId = useAuthStore((state) => state.user?.id)
   return useQuery({
-    queryKey: qk.availableGuilds,
+    queryKey: qk.availableGuilds(userId ?? ''),
     queryFn: () => api.bots.availableGuilds(),
+    enabled: Boolean(userId),
   })
+}
+
+export function useDiscordBotGuilds(botId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: qk.discordBotGuilds(botId ?? ''),
+    queryFn: () => api.bots.discordGuilds(botId as string),
+    enabled: Boolean(botId) && enabled,
+    retry: false,
+  })
+}
+
+export function useModuleGuilds(botId: string | undefined, savedGuilds: Guild[] = []) {
+  const query = useDiscordBotGuilds(botId)
+  const guilds = query.data?.map((guild) => {
+    const saved = savedGuilds.find((item) => item.id === guild.id)
+    return { ...guild, channels: saved?.channels ?? [], roles: saved?.roles ?? [] }
+  }) ?? savedGuilds.filter((guild) => guild.botAdded)
+
+  return { guilds, isPending: query.isPending, isError: query.isError, refetch: query.refetch }
 }
 
 export function useBotGuilds(botId: string | undefined) {
@@ -71,6 +96,16 @@ export function useBotGuilds(botId: string | undefined) {
     queryKey: qk.botGuilds(botId ?? ''),
     queryFn: () => api.bots.guilds(botId as string),
     enabled: Boolean(botId),
+  })
+}
+
+export function useGuildResources(botId: string | undefined, guildId: string | undefined) {
+  return useQuery({
+    queryKey: qk.guildResources(botId ?? '', guildId ?? ''),
+    queryFn: () => api.bots.guildResources(botId as string, guildId as string),
+    enabled: Boolean(botId && guildId),
+    staleTime: 15_000,
+    retry: false,
   })
 }
 

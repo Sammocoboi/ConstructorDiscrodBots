@@ -129,7 +129,9 @@ async function send<T>(path: string, options: RequestOptions = {}): Promise<T> {
   if (token) headers.Authorization = `Bearer ${token}`
 
   let body: BodyInit | undefined
-  if (options.body !== undefined) {
+  if (options.body instanceof FormData) {
+    body = options.body
+  } else if (options.body !== undefined) {
     headers['Content-Type'] = 'application/json'
     body = JSON.stringify(options.body)
   }

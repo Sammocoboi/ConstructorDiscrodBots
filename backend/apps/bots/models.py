@@ -50,6 +50,7 @@ class Bot(SoftDeleteModel):
     banner = models.ImageField(upload_to=bot_banner_path, blank=True)
     discord_application_id = models.CharField(max_length=32, blank=True, default="")
     discord_bot_user_id = models.CharField(max_length=32, blank=True, default="")
+    discord_avatar_hash = models.CharField(max_length=34, blank=True, default="")
     token_encrypted = models.TextField(blank=True, default="")
     status = models.CharField(max_length=20, choices=BotStatus.choices, default=BotStatus.STOPPED)
     desired_state = models.CharField(

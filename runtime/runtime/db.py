@@ -88,12 +88,12 @@ class ListenerHandle:
         except Exception:
             log.exception("runtime command listener failed")
 
-    def start(self) -> None:
-        self._connection.add_listener("runtime_commands_channel", self._on_notify)
+    async def start(self) -> None:
+        await self._connection.add_listener("runtime_commands_channel", self._on_notify)
 
     async def close(self) -> None:
         try:
-            self._connection.remove_listener("runtime_commands_channel", self._on_notify)
+            await self._connection.remove_listener("runtime_commands_channel", self._on_notify)
         finally:
             await self._connection.close()
 
@@ -240,17 +240,18 @@ class PostgresRepository:
                     INSERT INTO bots_botruntimestate (
                         id, bot_id, created_at, updated_at, worker_id, status,
                         latency_ms, guild_count, uptime_seconds, version_number,
-                        heartbeat_at
+                        heartbeat_at, last_error
                     )
                     VALUES (
                         $1, $2::uuid, now(), now(), $3, $4,
-                        0, $5, 0, $6, now()
+                        0, $5, 0, $6, now(), COALESCE($7::text, '')
                     )
                     ON CONFLICT (bot_id) DO UPDATE
                     SET worker_id = EXCLUDED.worker_id,
                         status = EXCLUDED.status,
                         guild_count = EXCLUDED.guild_count,
                         version_number = EXCLUDED.version_number,
+                        last_error = EXCLUDED.last_error,
                         latency_ms = CASE
                             WHEN EXCLUDED.status = 'starting' THEN 0
                             ELSE bots_botruntimestate.latency_ms
@@ -268,6 +269,7 @@ class PostgresRepository:
                     status,
                     guild_count,
                     version_number,
+                    error,
                 )
 
     async def write_heartbeat(
@@ -286,11 +288,11 @@ class PostgresRepository:
             INSERT INTO bots_botruntimestate (
                 id, bot_id, created_at, updated_at, worker_id, status,
                 latency_ms, guild_count, uptime_seconds, version_number,
-                heartbeat_at
+                heartbeat_at, last_error
             )
             VALUES (
                 $1, $2::uuid, now(), now(), $3, $4,
-                $5, $6, $7, $8, now()
+                $5, $6, $7, $8, now(), ''
             )
             ON CONFLICT (bot_id) DO UPDATE
             SET worker_id = EXCLUDED.worker_id,
@@ -363,10 +365,10 @@ class PostgresRepository:
         await self._pool.execute(
             """
             UPDATE bots_runtimecommand
-            SET status = $2,
+            SET status = $2::varchar,
                 error = COALESCE($3::text, ''),
                 processed_at = CASE
-                    WHEN $2 IN ('acknowledged', 'failed') THEN now()
+                    WHEN $2::varchar IN ('acknowledged', 'failed') THEN now()
                     ELSE processed_at
                 END,
                 updated_at = now()
@@ -415,7 +417,7 @@ class PostgresRepository:
     ) -> ListenerHandle:
         connection = await asyncpg.connect(self._dsn)
         handle = ListenerHandle(connection, callback)
-        handle.start()
+        await handle.start()
         return handle
 
     async def acquire_bot_lock(self, bot_id: str) -> BotLock | None:
@@ -771,9 +773,9 @@ class PostgresRepository:
         """Insert or update a guild for a bot (on_guild_join)."""
         await self._pool.execute(
             """
-            INSERT INTO bot_guilds
-                (id, bot_id, guild_id, guild_name, joined_at, created_at, updated_at)
-            VALUES (gen_random_uuid(), $1::uuid, $2, $3, now(), now(), now())
+            INSERT INTO bots_botguild
+                (id, bot_id, guild_id, guild_name, joined_at, created_at, updated_at, settings, enabled_modules)
+            VALUES (gen_random_uuid(), $1::uuid, $2, $3, now(), now(), now(), '{}'::jsonb, '[]'::jsonb)
             ON CONFLICT ON CONSTRAINT unique_bot_guild DO UPDATE
             SET guild_name = EXCLUDED.guild_name,
                 left_at = NULL,
@@ -793,7 +795,7 @@ class PostgresRepository:
         """Mark a guild as left (on_guild_remove)."""
         await self._pool.execute(
             """
-            UPDATE bot_guilds
+            UPDATE bots_botguild
             SET left_at = now(), updated_at = now()
             WHERE bot_id = $1::uuid AND guild_id = $2 AND left_at IS NULL
             """,
@@ -805,7 +807,7 @@ class PostgresRepository:
         """Count active guilds for a bot."""
         count = await self._pool.fetchval(
             """
-            SELECT COUNT(*) FROM bot_guilds
+            SELECT COUNT(*) FROM bots_botguild
             WHERE bot_id = $1::uuid AND left_at IS NULL AND deleted_at IS NULL
             """,
             _uuid(bot_id),

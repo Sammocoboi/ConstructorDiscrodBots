@@ -36,7 +36,7 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
                 },
                 "welcome_embed": {
                     "type": "boolean",
-                    "title": "Отправлять как Embed",
+                    "title": "Отправлять оформленным сообщением",
                     "default": True,
                 },
                 "autorole_id": {
@@ -111,7 +111,7 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
                     "items": {"type": "string"},
                     "default": [],
                 },
-                "default_reason": {"type": "string", "default": "Причина не указана"},
+                "default_reason": { "title": "Причина по умолчанию","type": "string", "default": "Причина не указана"},
             },
         },
     },
@@ -133,31 +133,35 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
             "type": "object",
             "properties": {
                 "max_messages_per_5s": {
+                    "title": "Максимум сообщений за 5 секунд",
                     "type": "integer",
                     "minimum": 2,
                     "maximum": 20,
                     "default": 5,
                 },
                 "max_mentions_per_message": {
+                    "title": "Максимум упоминаний в сообщении",
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 20,
                     "default": 5,
                 },
-                "block_discord_invites": {"type": "boolean", "default": True},
-                "block_links": {"type": "boolean", "default": False},
+                "block_discord_invites": { "title": "Блокировать приглашения Discord","type": "boolean", "default": True},
+                "block_links": { "title": "Блокировать ссылки","type": "boolean", "default": False},
                 "max_caps_percentage": {
+                    "title": "Максимальная доля заглавных букв, %",
                     "type": "integer",
                     "minimum": 50,
                     "maximum": 100,
                     "default": 70,
                 },
                 "punishment": {
+                    "title": "Действие при нарушении",
                     "type": "string",
                     "enum": ["delete", "warn", "timeout_10m"],
                     "default": "timeout_10m",
                 },
-                "whitelist_role_ids": {"type": "array", "items": {"type": "string"}, "default": []},
+                "whitelist_role_ids": { "title": "Роли в списке исключений","type": "array", "items": {"type": "string"}, "default": []},
             },
         },
     },
@@ -185,10 +189,11 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
             "type": "object",
             "properties": {
                 "category_id": {"type": ["string", "null"], "title": "Категория каналов тикетов"},
-                "support_role_ids": {"type": "array", "items": {"type": "string"}, "default": []},
-                "max_open_tickets": {"type": "integer", "minimum": 1, "maximum": 10, "default": 1},
-                "transcript_channel_id": {"type": ["string", "null"]},
+                "support_role_ids": { "title": "Роли поддержки","type": "array", "items": {"type": "string"}, "default": []},
+                "max_open_tickets": { "title": "Максимум открытых обращений","type": "integer", "minimum": 1, "maximum": 10, "default": 1},
+                "transcript_channel_id": { "title": "Канал для копий обращений","type": ["string", "null"]},
                 "welcome_text": {
+                    "title": "Приветствие в обращении",
                     "type": "string",
                     "default": "Спасибо за обращение! Опишите проблему, агент скоро подключится.",
                 },
@@ -212,25 +217,28 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
-                "min_xp_per_msg": {"type": "integer", "default": 15},
-                "max_xp_per_msg": {"type": "integer", "default": 25},
-                "cooldown_seconds": {"type": "integer", "default": 60},
+                "min_xp_per_msg": { "title": "Минимум опыта за сообщение","type": "integer", "default": 15},
+                "max_xp_per_msg": { "title": "Максимум опыта за сообщение","type": "integer", "default": 25},
+                "cooldown_seconds": { "title": "Пауза между начислениями опыта, сек.","type": "integer", "default": 60},
                 "levelup_channel_mode": {
+                    "title": "Куда отправлять сообщение о новом уровне",
                     "type": "string",
                     "enum": ["current", "custom", "dm", "silent"],
                     "default": "current",
                 },
-                "levelup_channel_id": {"type": ["string", "null"]},
+                "levelup_channel_id": { "title": "Канал для сообщений о новых уровнях","type": ["string", "null"]},
                 "levelup_message": {
+                    "title": "Сообщение о новом уровне",
                     "type": "string",
                     "default": "Поздравляем, {user.mention}! Ты достиг уровня {level}!",
                 },
                 "reward_roles": {
+                    "title": "Роли за уровни",
                     "type": "array",
                     "items": {
                         "type": "object",
                         "required": ["level", "role_id"],
-                        "properties": {"level": {"type": "integer"}, "role_id": {"type": "string"}},
+                        "properties": {"level": { "title": "Уровень","type": "integer"}, "role_id": { "title": "Роль","type": "string"}},
                     },
                     "default": [],
                 },
@@ -264,12 +272,13 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
-                "currency_name": {"type": "string", "default": "Монет"},
-                "currency_symbol": {"type": "string", "default": "🪙"},
-                "daily_amount": {"type": "integer", "default": 100},
-                "work_min": {"type": "integer", "default": 20},
-                "work_max": {"type": "integer", "default": 80},
+                "currency_name": { "title": "Название валюты","type": "string", "default": "Монет"},
+                "currency_symbol": { "title": "Символ валюты","type": "string", "default": "🪙"},
+                "daily_amount": { "title": "Ежедневная награда","type": "integer", "default": 100},
+                "work_min": { "title": "Минимальная награда за работу","type": "integer", "default": 20},
+                "work_max": { "title": "Максимальная награда за работу","type": "integer", "default": 80},
                 "transfer_fee_percent": {
+                    "title": "Комиссия за перевод, %",
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 50,
@@ -295,12 +304,12 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
-                "message_logs_channel_id": {"type": ["string", "null"]},
-                "member_logs_channel_id": {"type": ["string", "null"]},
-                "voice_logs_channel_id": {"type": ["string", "null"]},
-                "log_message_deletes": {"type": "boolean", "default": True},
-                "log_message_edits": {"type": "boolean", "default": True},
-                "log_role_changes": {"type": "boolean", "default": True},
+                "message_logs_channel_id": { "title": "Канал журнала сообщений","type": ["string", "null"]},
+                "member_logs_channel_id": { "title": "Канал журнала участников","type": ["string", "null"]},
+                "voice_logs_channel_id": { "title": "Канал журнала голосовых событий","type": ["string", "null"]},
+                "log_message_deletes": { "title": "Записывать удаление сообщений","type": "boolean", "default": True},
+                "log_message_edits": { "title": "Записывать редактирование сообщений","type": "boolean", "default": True},
+                "log_role_changes": { "title": "Записывать изменения ролей","type": "boolean", "default": True},
             },
         },
     },
@@ -329,21 +338,23 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
             "type": "object",
             "properties": {
                 "role_menus": {
+                    "title": "Меню выбора ролей",
                     "type": "array",
                     "items": {
                         "type": "object",
                         "properties": {
-                            "id": {"type": "string"},
-                            "title": {"type": "string"},
-                            "channel_id": {"type": "string"},
+                            "id": { "title": "Идентификатор меню","type": "string"},
+                            "title": { "title": "Название меню","type": "string"},
+                            "channel_id": { "title": "Канал","type": "string"},
                             "options": {
+                                "title": "Варианты выбора",
                                 "type": "array",
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "label": {"type": "string"},
-                                        "role_id": {"type": "string"},
-                                        "emoji": {"type": "string"},
+                                        "label": { "title": "Подпись","type": "string"},
+                                        "role_id": { "title": "Роль","type": "string"},
+                                        "emoji": { "title": "Эмодзи","type": "string"},
                                     },
                                 },
                             },
@@ -395,13 +406,14 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
             "type": "object",
             "properties": {
                 "autoresponders": {
+                    "title": "Автоответы",
                     "type": "array",
                     "items": {
                         "type": "object",
                         "properties": {
-                            "trigger": {"type": "string"},
-                            "response": {"type": "string"},
-                            "exact_match": {"type": "boolean", "default": False},
+                            "trigger": { "title": "Текст для срабатывания","type": "string"},
+                            "response": { "title": "Текст ответа","type": "string"},
+                            "exact_match": { "title": "Точное совпадение","type": "boolean", "default": False},
                         },
                     },
                     "default": [],
@@ -425,8 +437,8 @@ BUILTIN_MODULES: dict[str, dict[str, Any]] = {
         "settings_schema": {
             "type": "object",
             "properties": {
-                "default_channel_id": {"type": ["string", "null"]},
-                "manager_role_id": {"type": ["string", "null"]},
+                "default_channel_id": { "title": "Канал по умолчанию","type": ["string", "null"]},
+                "manager_role_id": { "title": "Роль организатора","type": ["string", "null"]},
             },
         },
     },

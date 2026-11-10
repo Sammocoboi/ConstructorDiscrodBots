@@ -1,0 +1,12 @@
+{
+  "type": "get_user",
+  "category": "data",
+  "title": "Данные участника",
+  "description": "Получает данные автора события или пользователя из параметра команды.",
+  "params": {
+    "source": {"type": "string", "default": "author", "enum": ["author", "target"]},
+    "name": {"type": "string", "required": false}
+  },
+  "inputs": ["flow"],
+  "outputs": ["flow"]
+}

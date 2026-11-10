@@ -52,12 +52,25 @@ export interface Role {
   managed?: boolean
 }
 
+export interface GuildResources {
+  channels: Channel[]
+  roles: Role[]
+}
+
+export interface CreateGuildResourceInput {
+  kind: 'channel' | 'role'
+  name: string
+  channelType?: 'text' | 'category'
+}
+
 export interface Guild {
   id: string
   name: string
   iconColor: string
+  iconUrl?: string | null
   memberCount: number
   botAdded: boolean
+  enabledModules?: string[]
   owner: boolean
   canManage: boolean
   channels: Channel[]
@@ -83,6 +96,7 @@ export interface Bot {
   tokenMasked: string
   applicationId: string
   inviteUrl: string
+  avatarUrl?: string
   avatarColor: string
   bannerColor: string
   activity: BotActivity
@@ -107,13 +121,15 @@ export interface JsonSchemaEnumOption {
 }
 
 export interface JsonSchemaProperty {
-  type: 'string' | 'number' | 'integer' | 'boolean' | 'array'
+  type: 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object'
   title: string
   description?: string
   default?: unknown
   enum?: JsonSchemaEnumOption[]
   format?: 'text' | 'textarea' | 'channel' | 'role' | 'color' | 'duration' | 'secret'
-  items?: { type: 'string' | 'number' }
+  items?: JsonSchemaProperty
+  properties?: Record<string, JsonSchemaProperty>
+  required?: string[]
   minimum?: number
   maximum?: number
 }
@@ -230,6 +246,7 @@ export interface Flow {
   name: string
   description: string
   status: 'draft' | 'published'
+  enabled?: boolean
   version: number
   updatedAt: string
   nodes: FlowNode[]

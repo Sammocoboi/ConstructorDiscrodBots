@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   ColorInput,
+  FileInput,
   Group,
   Modal,
   Select,
@@ -46,6 +47,8 @@ export default function BotProfilePage() {
   const [templateOpened, setTemplateOpened] = useState(false)
   const [templateName, setTemplateName] = useState('')
   const [templateDescription, setTemplateDescription] = useState('')
+  const [avatar, setAvatar] = useState<File | null>(null)
+  const avatarTooLarge = Boolean(avatar && avatar.size > 2 * 1024 * 1024)
 
   const {
     register,
@@ -106,6 +109,13 @@ export default function BotProfilePage() {
     successMessage: t('bot.templateCreated'),
     invalidateKeys: [qk.myTemplates],
     onSuccess: () => setTemplateOpened(false),
+  })
+
+  const avatarMutation = useToastMutation({
+    mutationFn: (file: File) => api.bots.updateAvatar(botId as string, file),
+    successMessage: t('bot.discordAvatarSaved'),
+    invalidateKeys: [qk.bots],
+    onSuccess: () => setAvatar(null),
   })
 
   if (!bot) return <LoadingState minHeight={280} />
@@ -175,6 +185,28 @@ export default function BotProfilePage() {
               <Title order={3} fz={18} mb="md">
                 {t('bot.appearance')}
               </Title>
+              <Group mb="md" align="flex-end">
+                <FileInput
+                  label={t('bot.discordAvatar')}
+                  placeholder={t('bot.discordAvatarFormats')}
+                  accept="image/png,image/jpeg,image/webp"
+                  value={avatar}
+                  onChange={setAvatar}
+                  disabled={!bot.tokenMasked || avatarMutation.isPending}
+                  error={avatarTooLarge ? t('bot.discordAvatarSize') : undefined}
+                  clearable
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  type="button"
+                  variant="light"
+                  loading={avatarMutation.isPending}
+                  disabled={!bot.tokenMasked || !avatar || avatarTooLarge}
+                  onClick={() => avatar && avatarMutation.mutate(avatar)}
+                >
+                  {t('bot.discordAvatarSave')}
+                </Button>
+              </Group>
               <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
                 <Controller
                   name="avatarColor"
@@ -256,6 +288,7 @@ export default function BotProfilePage() {
               <BotAvatar
                 name={values.name || bot.name}
                 color={values.avatarColor}
+                src={bot.avatarUrl}
                 size={68}
                 radius={20}
               />

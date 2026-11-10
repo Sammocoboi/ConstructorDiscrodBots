@@ -297,9 +297,15 @@ export const blockDefinitions: BlockDefinition[] = [
     id: 'action.dm',
     category: 'action',
     title: 'Личное сообщение',
-    description: 'Отправляет сообщение в личку участнику.',
+    description: 'Отправляет личное сообщение автору события.',
     icon: 'mail',
-    fields: [{ key: 'text', label: 'Текст', type: 'textarea', required: true }],
+    fields: [{
+      key: 'text',
+      label: 'Текст',
+      type: 'textarea',
+      description: 'Для триггера «Новое сообщение» получатель — автор сообщения.',
+      required: true,
+    }],
   },
   {
     id: 'action.delete_message',

@@ -14,12 +14,18 @@ from .models import (
     RuntimeCommand,
     ScheduledJob,
 )
-from .services import DiscordAPIError, encrypt_bot_token, validate_bot_token
+from .services import (
+    DiscordAPIError,
+    encrypt_bot_token,
+    fetch_bot_application,
+    validate_bot_token,
+)
 
 
 class BotSerializer(serializers.ModelSerializer):
     has_token = serializers.BooleanField(read_only=True)
     token_masked = serializers.SerializerMethodField()
+    avatar_url = serializers.SerializerMethodField()
     active_version_number = serializers.IntegerField(
         source="active_version.version_number", read_only=True
     )
@@ -38,6 +44,7 @@ class BotSerializer(serializers.ModelSerializer):
             "intents",
             "has_token",
             "token_masked",
+            "avatar_url",
             "last_error",
             "last_error_at",
             "created_at",
@@ -47,6 +54,14 @@ class BotSerializer(serializers.ModelSerializer):
 
     def get_token_masked(self, obj: Bot) -> str:
         return "••••••••" if obj.has_token else ""
+
+    def get_avatar_url(self, obj: Bot) -> str | None:
+        if obj.discord_bot_user_id and obj.discord_avatar_hash:
+            return (
+                f"https://cdn.discordapp.com/avatars/"
+                f"{obj.discord_bot_user_id}/{obj.discord_avatar_hash}.png?size=128"
+            )
+        return None
 
 
 class BotCreateSerializer(serializers.ModelSerializer):
@@ -72,7 +87,27 @@ class BotCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({"token": str(exc)}) from exc
             bot.token_encrypted = encrypt_bot_token(token)
             bot.discord_bot_user_id = str(discord_user.get("id", ""))
-            bot.save(update_fields=["token_encrypted", "discord_bot_user_id", "updated_at"])
+            bot.discord_avatar_hash = str(discord_user.get("avatar") or "")
+            try:
+                application = fetch_bot_application(token)
+            except DiscordAPIError as exc:
+                bot.delete()
+                raise serializers.ValidationError({"token": str(exc)}) from exc
+            bot.discord_application_id = str(application.get("id", ""))
+            if not bot.discord_application_id:
+                bot.delete()
+                raise serializers.ValidationError(
+                    {"token": "Discord did not return an application ID for this bot."}
+                )
+            bot.save(
+                update_fields=[
+                    "token_encrypted",
+                    "discord_bot_user_id",
+                    "discord_avatar_hash",
+                    "discord_application_id",
+                    "updated_at",
+                ]
+            )
         return bot
 
 
@@ -80,6 +115,12 @@ class BotUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bot
         fields = ("name", "discord_application_id", "profile", "intents")
+
+    def update(self, instance, validated_data):
+        for name, value in validated_data.items():
+            setattr(instance, name, value)
+        instance.save(update_fields=[*validated_data, "updated_at"])
+        return instance
 
 
 class BotGuildSerializer(serializers.ModelSerializer):

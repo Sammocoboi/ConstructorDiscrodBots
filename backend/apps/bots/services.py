@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
+import base64
 import logging
+import re
 
 import requests
+from cryptography.exceptions import InvalidTag
 from django.conf import settings
+from django.db import transaction
 from django.utils import timezone
 
-from apps.common.crypto import encrypt_secret
+from apps.common.crypto import decrypt_secret, encrypt_secret
+from integrations.discord.client import DiscordAPIError as DiscordRestError
+from integrations.discord.client import DiscordRestClient
 
+from .images import normalize_image
 from .models import Bot, BotGuild, DesiredState, RuntimeCommand
 
 logger = logging.getLogger(__name__)
@@ -92,6 +99,47 @@ def encrypt_bot_token(token: str) -> str:
     return encrypt_secret(token)
 
 
+def get_bot_token(bot: Bot) -> str:
+    try:
+        token = decrypt_secret(bot.token_encrypted)
+    except (ValueError, InvalidTag) as exc:
+        raise DiscordAPIError("Не удалось прочитать токен бота. Подключите его заново.") from exc
+    if not token:
+        raise DiscordAPIError("Сначала подключите токен бота.")
+    return token
+
+
+def update_bot_avatar(bot: Bot, upload) -> Bot:
+    with normalize_image(upload, "avatar") as image:
+        encoded = base64.b64encode(image.read()).decode("ascii")
+
+    with transaction.atomic():
+        # Keep Discord updates and saved hashes in the same order for concurrent uploads.
+        bot = Bot.objects.select_for_update().get(pk=bot.pk)
+        client = DiscordRestClient(bot_token=get_bot_token(bot), max_retries=0)
+        try:
+            user = client.modify_current_bot_user(avatar_base64=f"data:image/png;base64,{encoded}")
+        except DiscordRestError as exc:
+            messages = {
+                401: "Discord отклонил токен бота. Проверьте токен.",
+                429: "Discord ограничил частоту смены аватара. Попробуйте позже.",
+            }
+            raise DiscordAPIError(
+                messages.get(exc.status_code, "Не удалось обновить аватар в Discord.")
+            ) from exc
+
+        avatar_hash = str(user.get("avatar") or "") if isinstance(user, dict) else ""
+        user_id = str(user.get("id") or "") if isinstance(user, dict) else ""
+        if not re.fullmatch(r"(?:a_)?[a-f0-9]{32}", avatar_hash) or not re.fullmatch(
+            r"[0-9]{1,20}", user_id
+        ):
+            raise DiscordAPIError("Discord не вернул данные нового аватара.")
+        bot.discord_bot_user_id = user_id
+        bot.discord_avatar_hash = avatar_hash
+        bot.save(update_fields=["discord_bot_user_id", "discord_avatar_hash", "updated_at"])
+    return bot
+
+
 def build_invite_url(application_id: str, permissions: int = 0) -> str:
     if not application_id:
         raise DiscordAPIError("Discord application id is required")
@@ -154,6 +202,7 @@ def replace_bot_token(bot: Bot, token: str, requested_by=None) -> Bot:
     user = validate_bot_token(token)
     bot.token_encrypted = encrypt_bot_token(token)
     bot.discord_bot_user_id = str(user.get("id", ""))
+    bot.discord_avatar_hash = str(user.get("avatar") or "")
     try:
         application = fetch_bot_application(token)
     except DiscordAPIError:
@@ -167,6 +216,7 @@ def replace_bot_token(bot: Bot, token: str, requested_by=None) -> Bot:
         update_fields=[
             "token_encrypted",
             "discord_bot_user_id",
+            "discord_avatar_hash",
             "discord_application_id",
             "last_error",
             "last_error_at",

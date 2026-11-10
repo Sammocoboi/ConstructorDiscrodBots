@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Alert,
   Badge,
@@ -27,14 +27,16 @@ import {
   qk,
   useBot,
   useBotModule,
+  useModuleGuilds,
   useToastMutation,
 } from '../../shared/api/hooks'
 import type { JsonSchemaProperty } from '../../shared/api/types'
 import { AppIcon } from '../../shared/components/icons'
 import { PageHeader } from '../../shared/components/bits'
+import { GuildResourcePicker } from '../../shared/components/GuildResourcePicker'
 import { ErrorState, LoadingState } from '../../shared/components/states'
 import { propertyDefault, schemaDefaults } from '../../shared/lib/jsonSchema'
-import { moduleCategoryLabel } from '../../shared/lib/status'
+import { discordLabel, moduleCategoryLabel } from '../../shared/lib/status'
 
 function SchemaField({
   fieldKey,
@@ -42,8 +44,8 @@ function SchemaField({
   required,
   value,
   error,
-  channels,
-  roles,
+  botId,
+  guildId,
   onChange,
 }: {
   fieldKey: string
@@ -51,8 +53,8 @@ function SchemaField({
   required: boolean
   value: unknown
   error?: string
-  channels: { value: string; label: string }[]
-  roles: { value: string; label: string }[]
+  botId: string
+  guildId?: string
   onChange: (value: unknown) => void
 }) {
   const { t } = useTranslation()
@@ -67,7 +69,7 @@ function SchemaField({
         required={required}
         data={property.enum.map((option) => ({
           value: String(option.value),
-          label: option.label,
+          label: t(`modules.optionLabels.${option.value}`, { defaultValue: option.label }),
         }))}
         value={value === undefined || value === null ? null : String(value)}
         onChange={(next) => {
@@ -106,78 +108,99 @@ function SchemaField({
     )
   }
 
+  if (property.format === 'channel' || property.format === 'role') {
+    return (
+      <GuildResourcePicker
+        botId={botId}
+        guildId={guildId}
+        kind={property.format}
+        channelType={fieldKey === 'category_id' || fieldKey === 'categoryId' ? 'category' : 'text'}
+        multiple={property.type === 'array'}
+        label={label}
+        description={description}
+        required={required}
+        value={value}
+        onChange={onChange}
+        error={error}
+      />
+    )
+  }
+
+  if (property.type === 'object') {
+    const fields = value && typeof value === 'object' && !Array.isArray(value)
+      ? value as Record<string, unknown>
+      : {}
+    return (
+      <Stack gap="sm">
+        {Object.entries(property.properties ?? {}).map(([key, child]) => (
+          <SchemaField
+            key={key}
+            fieldKey={key}
+            property={child}
+            required={Boolean(property.required?.includes(key))}
+            value={fields[key] ?? propertyDefault(child)}
+            botId={botId}
+            guildId={guildId}
+            onChange={(next) => onChange({ ...fields, [key]: next })}
+          />
+        ))}
+      </Stack>
+    )
+  }
+
   if (property.type === 'array') {
+    const items = Array.isArray(value) ? value : []
+    const item = property.items
+    if (item?.type === 'object') {
+      return (
+        <Stack gap="sm">
+          <Text size="sm" fw={500}>{label}</Text>
+          {items.map((entry, index) => (
+            <Card key={index} withBorder p="sm">
+              <Stack gap="sm">
+                <SchemaField
+                  fieldKey={fieldKey}
+                  property={item}
+                  required={false}
+                  value={entry}
+                  botId={botId}
+                  guildId={guildId}
+                  onChange={(next) => onChange(items.map((old, i) => i === index ? next : old))}
+                />
+                <Button
+                  type="button"
+                  color="red"
+                  variant="subtle"
+                  size="compact-xs"
+                  style={{ alignSelf: 'flex-start' }}
+                  onClick={() => onChange(items.filter((_, i) => i !== index))}
+                >
+                  {t('common.delete')}
+                </Button>
+              </Stack>
+            </Card>
+          ))}
+          <Button
+            type="button"
+            variant="light"
+            size="compact-sm"
+            style={{ alignSelf: 'flex-start' }}
+            onClick={() => onChange([...items, propertyDefault(item)])}
+          >
+            {t('modules.addValue')}
+          </Button>
+        </Stack>
+      )
+    }
     return (
       <TagsInput
         label={label}
         description={description}
         required={required}
-        value={Array.isArray(value) ? value.map(String) : []}
-        onChange={(next) => onChange(next)}
+        value={items.map(String)}
+        onChange={onChange}
         error={error}
         placeholder={t('modules.addValue')}
-      />
-    )
-  }
-
-  if (property.format === 'channel') {
-    if (channels.length === 0) {
-      return (
-        <TextInput
-          label={label}
-          description={description}
-          required={required}
-          value={typeof value === 'string' ? value : ''}
-          onChange={(event) => onChange(event.currentTarget.value)}
-          error={error}
-          placeholder={t('modules.channelIdPlaceholder')}
-          styles={{ input: { fontFamily: 'monospace' } }}
-        />
-      )
-    }
-    return (
-      <Select
-        label={label}
-        description={description}
-        required={required}
-        data={channels}
-        searchable
-        clearable
-        value={typeof value === 'string' && value ? value : null}
-        onChange={(next) => onChange(next ?? '')}
-        error={error}
-        placeholder={t('modules.selectChannel')}
-      />
-    )
-  }
-
-  if (property.format === 'role') {
-    if (roles.length === 0) {
-      return (
-        <TextInput
-          label={label}
-          description={description}
-          required={required}
-          value={typeof value === 'string' ? value : ''}
-          onChange={(event) => onChange(event.currentTarget.value)}
-          error={error}
-          placeholder={t('modules.roleIdPlaceholder')}
-          styles={{ input: { fontFamily: 'monospace' } }}
-        />
-      )
-    }
-    return (
-      <Select
-        label={label}
-        description={description}
-        required={required}
-        data={roles}
-        searchable
-        clearable
-        value={typeof value === 'string' && value ? value : null}
-        onChange={(next) => onChange(next ?? '')}
-        error={error}
-        placeholder={t('modules.selectRole')}
       />
     )
   }
@@ -244,25 +267,19 @@ export default function ModuleDetailPage() {
   const { botId, moduleId } = useParams()
   const [searchParams] = useSearchParams()
   const { data: bot } = useBot(botId)
-  const [guildId, setGuildId] = useState<string | null>(
-    searchParams.get('guild') ?? null,
-  )
+  const { guilds, isPending: guildsLoading, isError: guildsError, refetch: refetchGuilds } =
+    useModuleGuilds(botId, bot?.guilds)
+  const [selectedGuildId, setSelectedGuildId] = useState<string | null>(null)
+  const preferredGuildId = selectedGuildId ?? searchParams.get('guild')
+  const guild = guilds.find((item) => item.id === preferredGuildId) ?? guilds[0]
+  const guildId = guild?.id
   const { data, isLoading, isError, error, refetch } = useBotModule(
     botId,
     moduleId,
-    guildId ?? undefined,
+    guildId,
   )
   const [values, setValues] = useState<Record<string, unknown>>({})
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-
-  const guild = useMemo(
-    () => bot?.guilds.find((item) => item.id === guildId) ?? bot?.guilds[0],
-    [bot, guildId],
-  )
-
-  useEffect(() => {
-    if (guild && !guildId) setGuildId(guild.id)
-  }, [guild, guildId])
 
   useEffect(() => {
     if (!data) return
@@ -304,7 +321,7 @@ export default function ModuleDetailPage() {
     ],
   })
 
-  if (isLoading || !bot) return <LoadingState minHeight={280} />
+  if (isLoading || !bot || (guildsLoading && !guild)) return <LoadingState minHeight={280} />
   if (isError || !data) {
     return (
       <ErrorState
@@ -409,17 +426,19 @@ export default function ModuleDetailPage() {
             color="orange"
             leftSection={<IconShield size={11} />}
           >
-            {permission}
+            {discordLabel(permission, t)}
           </Badge>
         ))}
         {manifest.intents.map((intent) => (
           <Badge key={intent} variant="outline" color="gray">
-            {intent}
+            {discordLabel(intent, t)}
           </Badge>
         ))}
       </Group>
 
-      {bot.guilds.length === 0 ? (
+      {guildsError && !guild ? (
+        <ErrorState message={t('bot.guildsLoadError')} onRetry={() => void refetchGuilds()} />
+      ) : !guild ? (
         <Alert color="orange" title={t('modules.noGuildTitle')}>
           {t('modules.noGuildText')}
         </Alert>
@@ -431,9 +450,9 @@ export default function ModuleDetailPage() {
             </Title>
             <Select
               label={t('modules.selectGuild')}
-              data={bot.guilds.map((item) => ({ value: item.id, label: item.name }))}
+              data={guilds.map((item) => ({ value: item.id, label: item.name }))}
               value={guild?.id ?? null}
-              onChange={(next) => setGuildId(next)}
+              onChange={setSelectedGuildId}
               allowDeselect={false}
               w={{ base: '100%', sm: 280 }}
             />
@@ -453,14 +472,8 @@ export default function ModuleDetailPage() {
                     required={requiredFields.includes(key)}
                     value={values[key] ?? propertyDefault(property)}
                     error={fieldErrors[key]}
-                    channels={(guild?.channels ?? []).map((channel) => ({
-                      value: channel.id,
-                      label: `#${channel.name}`,
-                    }))}
-                    roles={(guild?.roles ?? []).map((role) => ({
-                      value: role.id,
-                      label: role.name,
-                    }))}
+                    botId={bot.id}
+                    guildId={guild.id}
                     onChange={(next) => {
                       setValues((current) => ({ ...current, [key]: next }))
                       setFieldErrors((current) => {

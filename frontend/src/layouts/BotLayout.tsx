@@ -27,7 +27,7 @@ import {
   IconTrash,
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
-import { qk, useBot, useToastMutation } from '../shared/api/hooks'
+import { qk, useBot, useDiscordBotGuilds, useToastMutation } from '../shared/api/hooks'
 import { api } from '../shared/api'
 import { errorMessage } from '../shared/api/errors'
 import { BotAvatar, StatusBadge } from '../shared/components/bits'
@@ -41,6 +41,7 @@ const tabs = [
   { value: 'overview', labelKey: 'nav.overview', icon: 'dashboard' },
   { value: 'modules', labelKey: 'nav.modules', icon: 'layout' },
   { value: 'commands', labelKey: 'nav.commands', icon: 'terminal' },
+  { value: 'flows', labelKey: 'nav.flows', icon: 'bolt' },
   { value: 'guilds', labelKey: 'nav.guilds', icon: 'server' },
   { value: 'status', labelKey: 'bot.diagnostics', icon: 'activity' },
   { value: 'profile', labelKey: 'nav.botProfile', icon: 'settings' },
@@ -52,6 +53,8 @@ export function BotLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { data: bot, isLoading, isError, error, refetch } = useBot(botId)
+  const segment = getBotSection(location.pathname)
+  const { data: discordGuilds } = useDiscordBotGuilds(botId, segment === 'guilds')
   const [deleteOpened, setDeleteOpened] = useState(false)
 
   const invalidate = [qk.bot(botId ?? ''), qk.bots, qk.dashboard, qk.botEvents(botId ?? '')]
@@ -89,7 +92,6 @@ export function BotLayout() {
     )
   }
 
-  const segment = getBotSection(location.pathname)
   const activeTab = tabs.some((tab) => tab.value === segment) ? segment : 'overview'
   const isRunning = bot.status === 'online' || bot.status === 'starting'
   const isBotOverview = activeTab === 'overview'
@@ -120,7 +122,7 @@ export function BotLayout() {
               <IconArrowLeft size={20} />
             </ActionIcon>
           </Tooltip>
-          <BotAvatar name={bot.name} color={bot.avatarColor} size={58} radius={17} />
+          <BotAvatar name={bot.name} color={bot.avatarColor} src={bot.avatarUrl} size={58} radius={17} />
           <Stack gap={4}>
             <Group gap="sm" wrap="wrap">
               <Title order={2} fz={{ base: 22, sm: 27 }} lh={1.1}>
@@ -139,7 +141,7 @@ export function BotLayout() {
                 {t('bot.ping')}: <strong>{bot.ping} ms</strong>
               </Text>
               <Text size="xs" c="dimmed">
-                {t('bot.guilds')}: <strong>{bot.guilds.length}</strong>
+                {t('bot.guilds')}: <strong>{discordGuilds?.length ?? bot.guilds.filter((guild) => guild.botAdded).length}</strong>
               </Text>
             </Group>
           </Stack>

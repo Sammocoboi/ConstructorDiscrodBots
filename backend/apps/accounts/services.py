@@ -20,6 +20,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.common.crypto import decrypt_secret, encrypt_secret
 from apps.common.utils import get_client_ip
+from integrations.discord.images import guild_icon_url
 
 from .models import OAuthAccount, RefreshSession, User
 
@@ -460,6 +461,7 @@ def fetch_user_manageable_guilds(user: User) -> list[dict]:
                 "id": guild_id,
                 "name": str(g.get("name", "Discord Server")),
                 "iconColor": icon_color,
+                "iconUrl": guild_icon_url(guild_id, g.get("icon")),
                 "memberCount": int(g.get("approximate_member_count") or g.get("member_count") or 0),
                 "botAdded": bot_added,
                 "owner": owner,
